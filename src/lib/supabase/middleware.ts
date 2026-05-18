@@ -1,3 +1,4 @@
+import { sanitizeAuthRedirect } from "@/lib/auth/redirects";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { computeAccessStatus } from "../subscription-access";
@@ -41,8 +42,8 @@ export async function updateSession(request: NextRequest) {
 
   if (user && (request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/signup")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    url.searchParams.delete("redirectTo");
+    url.pathname = sanitizeAuthRedirect(request.nextUrl.searchParams.get("redirectTo"));
+    url.search = "";
     return NextResponse.redirect(url);
   }
 

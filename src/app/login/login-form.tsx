@@ -1,5 +1,11 @@
 "use client";
 
+import { authInputClassName } from "@/lib/auth/auth-input";
+import {
+  DEFAULT_POST_AUTH_PATH,
+  getAuthCallbackUrl,
+  sanitizeAuthRedirect,
+} from "@/lib/auth/redirects";
 import { createClient } from "../../lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -9,11 +15,12 @@ interface LoginFormProps {
   redirectTo?: string;
   error?: string;
   signedOut?: boolean;
+  passwordReset?: boolean;
 }
 
-export function LoginForm({ redirectTo, error, signedOut }: LoginFormProps) {
+export function LoginForm({ redirectTo, error, signedOut, passwordReset }: LoginFormProps) {
   const router = useRouter();
-  const next = redirectTo ?? "/dashboard";
+  const next = sanitizeAuthRedirect(redirectTo ?? DEFAULT_POST_AUTH_PATH);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<{ type: "error"; text: string } | null>(null);
@@ -58,11 +65,10 @@ export function LoginForm({ redirectTo, error, signedOut }: LoginFormProps) {
   async function signInWithGoogle() {
     setMessage(null);
     const supabase = createClient();
-    const redirectUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: redirectUrl,
+        redirectTo: getAuthCallbackUrl(next),
         queryParams: { prompt: "select_account" },
       },
     });
@@ -80,11 +86,10 @@ export function LoginForm({ redirectTo, error, signedOut }: LoginFormProps) {
   async function signInWithGitHub() {
     setMessage(null);
     const supabase = createClient();
-    const redirectUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
     const { data, error: err } = await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
-        redirectTo: redirectUrl,
+        redirectTo: getAuthCallbackUrl(next),
         scopes: "repo",
         skipBrowserRedirect: true,
       },
@@ -106,11 +111,10 @@ export function LoginForm({ redirectTo, error, signedOut }: LoginFormProps) {
   async function signInWithGitLab() {
     setMessage(null);
     const supabase = createClient();
-    const redirectUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider: "gitlab",
       options: {
-        redirectTo: redirectUrl,
+        redirectTo: getAuthCallbackUrl(next),
         scopes: "read_api read_repository",
         queryParams: { prompt: "login" },
       },
@@ -126,14 +130,16 @@ export function LoginForm({ redirectTo, error, signedOut }: LoginFormProps) {
     }
   }
 
-  const inputClass =
-    "w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background";
-
   return (
     <div className="space-y-4">
       {signedOut && (
         <p className="text-sm text-center rounded-lg border border-border bg-surface px-3 py-2 text-foreground">
           You&apos;ve been signed out. Sign in again to continue.
+        </p>
+      )}
+      {passwordReset && (
+        <p className="text-sm text-center rounded-lg border border-border bg-surface px-3 py-2 text-foreground">
+          Your password was updated. Sign in with your new password.
         </p>
       )}
       {error === "auth" && (
@@ -217,7 +223,7 @@ export function LoginForm({ redirectTo, error, signedOut }: LoginFormProps) {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
           autoComplete="email"
-          className={inputClass}
+          className={authInputClassName}
         />
         <input
           type="password"
@@ -225,8 +231,16 @@ export function LoginForm({ redirectTo, error, signedOut }: LoginFormProps) {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
           autoComplete="current-password"
-          className={inputClass}
+          className={authInputClassName}
         />
+        <p className="text-right">
+          <Link
+            href="/forgot-password"
+            className="text-xs font-medium text-foreground underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background rounded"
+          >
+            Forgot password?
+          </Link>
+        </p>
         <button
           type="submit"
           disabled={isPending}
@@ -239,7 +253,11 @@ export function LoginForm({ redirectTo, error, signedOut }: LoginFormProps) {
       <p className="text-center text-xs text-muted">
         Don&apos;t have an account?{" "}
         <Link
-          href="/signup"
+          href={
+            next === DEFAULT_POST_AUTH_PATH
+              ? "/signup"
+              : `/signup?redirectTo=${encodeURIComponent(next)}`
+          }
           className="font-medium text-foreground underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background rounded"
         >
           Sign up

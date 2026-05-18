@@ -1,5 +1,11 @@
 "use client";
 
+import { authInputClassName } from "@/lib/auth/auth-input";
+import {
+  DEFAULT_POST_AUTH_PATH,
+  getAuthCallbackUrl,
+  sanitizeAuthRedirect,
+} from "@/lib/auth/redirects";
 import { createClient } from "../../lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -20,7 +26,7 @@ interface SignupFormProps {
 
 export function SignupForm({ redirectTo, error }: SignupFormProps) {
   const router = useRouter();
-  const next = redirectTo ?? "/dashboard";
+  const next = sanitizeAuthRedirect(redirectTo ?? DEFAULT_POST_AUTH_PATH);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isPending, setIsPending] = useState(false);
 
@@ -56,6 +62,7 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
       email,
       password,
       options: {
+        emailRedirectTo: getAuthCallbackUrl(next),
         data: {
           first_name: firstName,
           last_name: lastName,
@@ -84,18 +91,12 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
     router.push(next);
   }
 
-  function buildRedirectUrl() {
-    if (typeof window === "undefined") return "";
-    return `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
-  }
-
   async function signInWithGoogle() {
     const supabase = createClient();
-    const redirectUrl = buildRedirectUrl();
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: redirectUrl,
+        redirectTo: getAuthCallbackUrl(next),
         queryParams: { prompt: "select_account" },
       },
     });
@@ -112,11 +113,10 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
 
   async function signInWithGitHub() {
     const supabase = createClient();
-    const redirectUrl = buildRedirectUrl();
     const { data, error: err } = await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
-        redirectTo: redirectUrl,
+        redirectTo: getAuthCallbackUrl(next),
         scopes: "repo",
         skipBrowserRedirect: true,
       },
@@ -135,11 +135,10 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
 
   async function signInWithGitLab() {
     const supabase = createClient();
-    const redirectUrl = buildRedirectUrl();
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider: "gitlab",
       options: {
-        redirectTo: redirectUrl,
+        redirectTo: getAuthCallbackUrl(next),
         scopes: "read_api read_repository",
         queryParams: { prompt: "login" },
       },
@@ -155,8 +154,6 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
     }
   }
 
-  const inputClass =
-    "w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background";
   const labelClass = "block text-sm font-medium text-foreground mb-1";
 
   return (
@@ -233,7 +230,7 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
               type="text"
               autoComplete="given-name"
               required
-              className={inputClass}
+              className={authInputClassName}
               placeholder="Jane"
             />
           </div>
@@ -247,7 +244,7 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
               type="text"
               autoComplete="family-name"
               required
-              className={inputClass}
+              className={authInputClassName}
               placeholder="Doe"
             />
           </div>
@@ -262,7 +259,7 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
             type="text"
             autoComplete="organization"
             required
-            className={inputClass}
+            className={authInputClassName}
             placeholder="Acme Inc"
           />
         </div>
@@ -274,7 +271,7 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
             id="businessSector"
             name="businessSector"
             required
-            className={inputClass}
+            className={authInputClassName}
           >
             <option value="">Select sector</option>
             {BUSINESS_SECTORS.map((s) => (
@@ -294,7 +291,7 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
             type="email"
             autoComplete="email"
             required
-            className={inputClass}
+            className={authInputClassName}
             placeholder="you@company.com"
           />
         </div>
@@ -309,7 +306,7 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
             autoComplete="new-password"
             required
             minLength={8}
-            className={inputClass}
+            className={authInputClassName}
             placeholder="At least 8 characters"
           />
         </div>
@@ -324,7 +321,7 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
             autoComplete="new-password"
             required
             minLength={8}
-            className={inputClass}
+            className={authInputClassName}
             placeholder="Repeat password"
           />
         </div>

@@ -563,6 +563,17 @@ body {
   box-shadow: 0 0 0 2px rgb(34 211 238 / 0.35);
 }
 
+/* Auth forms (login, signup, password reset) */
+.auth-input::placeholder {
+  color: var(--muted-foreground);
+  opacity: 0.72;
+}
+
+.auth-input::-webkit-input-placeholder {
+  color: var(--muted-foreground);
+  opacity: 0.72;
+}
+
 /* ─────────────────────────────────────────────────────────
    Premium landing utilities
    ───────────────────────────────────────────────────────── */

@@ -1,3 +1,4 @@
+import { sanitizeAuthRedirect } from "@/lib/auth/redirects";
 import { createClient } from "../../lib/supabase/server";
 import { redirect } from "next/navigation";
 import { AuthSplitLayout } from "@/components/auth/auth-split-layout";
@@ -6,18 +7,23 @@ import { LoginForm } from "./login-form";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ redirectTo?: string; error?: string; signedOut?: string }>;
+  searchParams: Promise<{
+    redirectTo?: string;
+    error?: string;
+    signedOut?: string;
+    passwordReset?: string;
+  }>;
 }) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user) {
-    redirect("/dashboard");
-  }
+  const { redirectTo, error, signedOut, passwordReset } = await searchParams;
 
-  const { redirectTo, error, signedOut } = await searchParams;
+  if (user) {
+    redirect(sanitizeAuthRedirect(redirectTo));
+  }
 
   return (
     <AuthSplitLayout title="Sign in">
@@ -41,7 +47,12 @@ export default async function LoginPage({
         </ul>
       </div>
 
-      <LoginForm redirectTo={redirectTo} error={error} signedOut={signedOut === "1"} />
+      <LoginForm
+        redirectTo={redirectTo}
+        error={error}
+        signedOut={signedOut === "1"}
+        passwordReset={passwordReset === "1"}
+      />
     </AuthSplitLayout>
   );
 }

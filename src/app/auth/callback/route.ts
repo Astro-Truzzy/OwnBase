@@ -1,3 +1,4 @@
+import { sanitizeAuthRedirect } from "@/lib/auth/redirects";
 import { createClient } from "../../../lib/supabase/server";
 import { persistGitHubTokens } from "../../../lib/supabase/github-token";
 import { NextResponse } from "next/server";
@@ -5,7 +6,7 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const next = sanitizeAuthRedirect(searchParams.get("next"));
 
   if (code) {
     const supabase = await createClient();
