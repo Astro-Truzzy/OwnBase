@@ -567,10 +567,10 @@ export function LandingSections() {
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <div className="mb-12 text-center">
             <p className="text-[15px] font-medium text-foreground">
-              Trusted by teams building the future of business ownership.
+              Built for businesses that outsource development.
             </p>
             <p className="mt-1.5 text-sm text-muted dark:text-zinc-400">
-              From code security to access control, without the guesswork.
+              Keep your codebase secure, accessible, and under your control.
             </p>
           </div>
           <BrandGrid />
@@ -1119,14 +1119,14 @@ function TrustSection() {
           </blockquote>
         </motion.div>
 
-        {/* Trusted by */}
+        {/* Audience */}
         <motion.div
           className="mt-14 sm:mt-16 flex flex-wrap justify-center items-center gap-6 sm:gap-10 text-muted"
           initial={{ opacity: 0, y: 16 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.45, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
         >
-          <span className="text-sm font-medium opacity-80">Trusted by</span>
+          <span className="text-sm font-medium opacity-80">Built for</span>
           <div className="flex flex-wrap justify-center gap-3 sm:gap-5">
             {TRUSTED_BY.map((label, i) => (
               <motion.span
