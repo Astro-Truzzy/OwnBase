@@ -60,16 +60,16 @@ export function TrackSection({ owner, name, isTracked }: TrackSectionProps) {
   };
 
   return (
-    <section className="rounded-xl border border-border bg-surface p-6 sm:p-8">
+    <section className="dash-panel p-6 sm:p-8">
       <div className="flex items-center gap-3">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
           <IconBuilding className="h-5 w-5" aria-hidden />
         </div>
-        <h2 className="text-lg font-medium text-foreground">
+        <h2 className="text-lg font-medium text-cyan-50">
           Store in your organization
         </h2>
       </div>
-      <p className="mt-2 text-sm text-muted">
+      <p className="mt-2 text-sm text-cyan-100/65">
         Add this repository to your organization to keep it in one place and
         control access from here.
       </p>
@@ -84,7 +84,7 @@ export function TrackSection({ owner, name, isTracked }: TrackSectionProps) {
               type="button"
               onClick={handleRemove}
               disabled={isPending}
-              className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-muted hover:bg-surface-elevated hover:text-foreground transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
+              className="inline-flex items-center gap-2 rounded-lg border border-cyan-200/20 bg-[#050b16]/85 px-3 py-1.5 text-sm font-medium text-cyan-100/75 transition-colors hover:border-cyan-300/35 hover:bg-[#0f1a2e] hover:text-cyan-50 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
             >
               <IconBuildingOff className="h-4 w-4" aria-hidden />
               {isPending ? "Updating…" : "Remove from organization"}
@@ -95,7 +95,7 @@ export function TrackSection({ owner, name, isTracked }: TrackSectionProps) {
             type="button"
             onClick={handleAdd}
             disabled={isPending}
-            className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-elevated transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
+            className="inline-flex items-center gap-2 rounded-lg border border-cyan-300/35 bg-linear-to-r from-cyan-500/90 to-violet-600/85 px-4 py-2 text-sm font-medium text-white shadow-[0_8px_24px_rgba(34,211,238,0.2)] transition hover:brightness-110 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
           >
             <IconBuilding className="h-4 w-4" aria-hidden />
             {isPending ? "Adding…" : "Add to my organization"}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type CompareOption = "previous_quarter" | "industry_average";
 
@@ -20,7 +20,7 @@ function toSvgPoint(
   value: number,
   total: number,
   width: number,
-  height: number
+  height: number,
 ): string {
   const x = total <= 1 ? 0 : (index / (total - 1)) * width;
   const normalized = (value - MIN_Y) / (MAX_Y - MIN_Y);
@@ -35,6 +35,15 @@ export function SystemHealthTrendChart({
   industryAverageValues,
 }: SystemHealthTrendChartProps) {
   const [compareTo, setCompareTo] = useState<CompareOption>("previous_quarter");
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReducedMotion(mediaQuery.matches);
+    sync();
+    mediaQuery.addEventListener("change", sync);
+    return () => mediaQuery.removeEventListener("change", sync);
+  }, []);
 
   const compareValues =
     compareTo === "previous_quarter"
@@ -45,10 +54,14 @@ export function SystemHealthTrendChart({
     const chartWidth = 360;
     const chartHeight = 180;
     const current = currentValues
-      .map((v, i) => toSvgPoint(i, v, currentValues.length, chartWidth, chartHeight))
+      .map((v, i) =>
+        toSvgPoint(i, v, currentValues.length, chartWidth, chartHeight),
+      )
       .join(" ");
     const compare = compareValues
-      .map((v, i) => toSvgPoint(i, v, compareValues.length, chartWidth, chartHeight))
+      .map((v, i) =>
+        toSvgPoint(i, v, compareValues.length, chartWidth, chartHeight),
+      )
       .join(" ");
 
     const firstX = 0;
@@ -62,9 +75,11 @@ export function SystemHealthTrendChart({
   }, [currentValues, compareValues]);
 
   return (
-    <div className="rounded-sm border border-border bg-background/70 p-4">
+    <div className="rounded-xl border border-cyan-200/20 bg-[#070b14]/80 p-4 shadow-[0_18px_45px_rgba(2,10,35,0.35)] backdrop-blur-sm">
       <div className="mb-3 flex items-center justify-end gap-2">
-        <span className="text-xs text-muted">Compare to:</span>
+        <span className="text-xs uppercase tracking-wider text-cyan-100/70">
+          Compare to:
+        </span>
         <label className="sr-only" htmlFor="compare-to">
           Compare to
         </label>
@@ -72,7 +87,7 @@ export function SystemHealthTrendChart({
           id="compare-to"
           value={compareTo}
           onChange={(e) => setCompareTo(e.target.value as CompareOption)}
-          className="rounded-sm border border-border bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+          className="rounded-md border border-cyan-200/30 bg-[#090f1d] px-2 py-1 text-xs text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/60"
         >
           <option value="previous_quarter">Previous Quarter</option>
           <option value="industry_average">Industry Average</option>
@@ -80,7 +95,7 @@ export function SystemHealthTrendChart({
       </div>
 
       <div className="flex gap-3">
-        <div className="relative w-9 text-right text-[10px] text-muted">
+        <div className="relative w-9 text-right text-[10px] text-cyan-100/50">
           {TICK_VALUES.slice()
             .reverse()
             .map((tick) => (
@@ -97,7 +112,33 @@ export function SystemHealthTrendChart({
         </div>
 
         <div className="relative flex-1">
-          <svg viewBox="0 0 360 180" className="h-48 w-full" aria-label="System health trend chart">
+          <svg
+            viewBox="0 0 360 180"
+            className="h-48 w-full"
+            aria-label="System health trend chart"
+          >
+            <defs>
+              <linearGradient
+                id="healthAreaGradient"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
+                <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.35" />
+                <stop offset="100%" stopColor="#a78bfa" stopOpacity="0.03" />
+              </linearGradient>
+              <linearGradient
+                id="healthLineGradient"
+                x1="0"
+                y1="0"
+                x2="1"
+                y2="0"
+              >
+                <stop offset="0%" stopColor="#22d3ee" />
+                <stop offset="100%" stopColor="#c084fc" />
+              </linearGradient>
+            </defs>
             {TICK_VALUES.map((tick) => {
               const y = 180 - ((tick - MIN_Y) / (MAX_Y - MIN_Y)) * 180;
               return (
@@ -107,35 +148,51 @@ export function SystemHealthTrendChart({
                   y1={y}
                   x2="360"
                   y2={y}
-                  stroke="var(--border)"
+                  stroke="rgba(130, 151, 190, 0.24)"
                   strokeWidth="1"
                 />
               );
             })}
 
-            <polygon points={areaPolygon} fill="var(--foreground)" opacity="0.08" />
+            <polygon
+              points={areaPolygon}
+              fill="url(#healthAreaGradient)"
+              style={{
+                animation: reducedMotion ? "none" : "fadeArea 0.9s ease-out",
+              }}
+            />
 
             <polyline
               points={comparePoints}
               fill="none"
-              stroke="var(--muted)"
+              stroke="#6b7280"
               strokeWidth="2"
               strokeDasharray="5 5"
               strokeLinejoin="round"
               strokeLinecap="round"
+              className="opacity-80"
             />
 
             <polyline
               points={currentPoints}
               fill="none"
-              stroke="var(--foreground)"
+              stroke="url(#healthLineGradient)"
               strokeWidth="2"
               strokeLinejoin="round"
               strokeLinecap="round"
+              style={{
+                animation: reducedMotion ? "none" : "drawLine 1s ease-out",
+              }}
             />
 
             {currentValues.map((value, idx) => {
-              const point = toSvgPoint(idx, value, currentValues.length, 360, 180);
+              const point = toSvgPoint(
+                idx,
+                value,
+                currentValues.length,
+                360,
+                180,
+              );
               const [cx, cy] = point.split(",");
               return (
                 <circle
@@ -143,21 +200,42 @@ export function SystemHealthTrendChart({
                   cx={cx}
                   cy={cy}
                   r="2.8"
-                  fill="var(--foreground)"
-                  stroke="var(--background)"
+                  fill="#67e8f9"
+                  stroke="#050914"
                   strokeWidth="1.2"
+                  className="transition duration-300 hover:r-[4.2]"
                 />
               );
             })}
           </svg>
 
-          <div className="mt-2 grid grid-cols-6 text-center text-xs text-muted">
+          <div className="mt-2 grid grid-cols-6 text-center text-xs text-cyan-100/60">
             {months.map((m) => (
               <span key={m}>{m}</span>
             ))}
           </div>
         </div>
       </div>
+      <style jsx>{`
+        @keyframes drawLine {
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes fadeArea {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 }

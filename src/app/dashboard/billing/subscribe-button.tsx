@@ -41,11 +41,15 @@ export function SubscribeButton({ planId, label }: SubscribeButtonProps) {
         type="button"
         onClick={handleClick}
         disabled={pending}
-        className="rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50 transition-colors"
+        className="rounded-lg border border-cyan-300/35 bg-linear-to-r from-cyan-500/90 to-violet-600/85 px-4 py-2.5 text-sm font-medium text-white shadow-[0_10px_28px_rgba(34,211,238,0.2)] transition hover:brightness-110 disabled:opacity-50"
       >
-        {pending ? "Redirecting…" : label ?? PLAN_LABELS[planId] ?? `Subscribe ${planId}`}
+        {pending
+          ? "Redirecting…"
+          : (label ?? PLAN_LABELS[planId] ?? `Subscribe ${planId}`)}
       </button>
-      {error && <p className="text-xs text-red-500 dark:text-red-400">{error}</p>}
+      {error && (
+        <p className="text-xs text-red-500 dark:text-red-400">{error}</p>
+      )}
     </div>
   );
 }

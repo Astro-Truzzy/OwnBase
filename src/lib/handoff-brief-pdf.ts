@@ -3,6 +3,8 @@
  * Uses pdf-lib; no sensitive data (e.g. env values) is included.
  */
 
+import fs from "fs/promises";
+import path from "path";
 import {
   PDFDocument,
   StandardFonts,
@@ -15,12 +17,12 @@ import type { ExecutiveSummary } from "./db/types";
 const MARGIN = 50;
 const PAGE_WIDTH = 595;
 const PAGE_HEIGHT = 842;
-const CONTENT_WIDTH = PAGE_WIDTH - 2 * MARGIN;
 const LINE_HEIGHT = 14;
-const SECTION_GAP = 20;
-const TITLE_SIZE = 16;
+const SECTION_GAP = 18;
 const HEADING_SIZE = 12;
 const BODY_SIZE = 10;
+const FOOTER_RESERVE = 52;
+const MIN_Y = MARGIN + FOOTER_RESERVE;
 
 /** Wrap text into lines that fit within maxWidth (approx chars for Helvetica at 10pt). */
 function wrapLines(text: string, maxCharsPerLine: number): string[] {
@@ -43,87 +45,182 @@ function wrapLines(text: string, maxCharsPerLine: number): string[] {
   return lines.length ? lines : [text];
 }
 
-function drawWrappedText(
-  page: PDFPage,
-  text: string,
-  opts: {
-    x: number;
-    y: number;
-    font: PDFFont;
-    size?: number;
-    maxChars?: number;
-  }
-): number {
-  const { x, y, font, size = BODY_SIZE, maxChars = 85 } = opts;
-  const lines = wrapLines(text, maxChars);
-  let currentY = y;
-  for (const line of lines) {
-    page.drawText(line, {
-      x,
-      y: currentY,
-      size,
-      font,
-      color: rgb(0.2, 0.2, 0.2),
-    });
-    currentY -= LINE_HEIGHT;
-  }
-  return currentY;
+interface Layout {
+  doc: PDFDocument;
+  page: PDFPage;
+  y: number;
+  helvetica: PDFFont;
+  helveticaBold: PDFFont;
+  maxChars: number;
 }
 
-function drawSectionHeading(
-  page: PDFPage,
-  title: string,
-  opts: { x: number; y: number; font: PDFFont; fontBold: PDFFont }
-): number {
-  const { x, y, fontBold } = opts;
-  page.drawText(title, {
-    x,
-    y,
-    size: HEADING_SIZE,
-    font: fontBold,
-    color: rgb(0.1, 0.1, 0.1),
-  });
-  return y - LINE_HEIGHT - 4;
+function newPage(l: Layout): void {
+  l.page = l.doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+  l.y = PAGE_HEIGHT - MARGIN;
 }
 
-function drawBulletList(
-  page: PDFPage,
-  items: string[],
-  opts: { x: number; y: number; font: PDFFont; maxChars?: number }
-): number {
-  let { y } = opts;
-  const { x, font, maxChars = 80 } = opts;
-  for (const item of items) {
-    const lines = wrapLines(item, maxChars);
-    for (let i = 0; i < lines.length; i++) {
-      const prefix = i === 0 ? "• " : "  ";
-      page.drawText(prefix + lines[i], {
-        x,
-        y,
-        size: BODY_SIZE,
-        font,
-        color: rgb(0.25, 0.25, 0.25),
-      });
-      y -= LINE_HEIGHT;
-    }
-    y -= 2;
+function ensureLines(l: Layout, lineCount: number): void {
+  const need = lineCount * LINE_HEIGHT + 4;
+  if (l.y - need < MIN_Y) {
+    newPage(l);
   }
-  return y;
 }
 
-function drawNotAvailable(
-  page: PDFPage,
-  opts: { x: number; y: number; font: PDFFont }
-): number {
-  const { x, y, font } = opts;
-  page.drawText("Not available.", {
-    x,
-    y,
-    size: BODY_SIZE,
-    font,
+function drawFooterLine(l: Layout, fullName: string, generatedAt: string): void {
+  const footerY = MARGIN + 18;
+  const text = `Ownbase · ${fullName} · Generated ${generatedAt}`;
+  l.page.drawText(text.slice(0, 95), {
+    x: MARGIN,
+    y: footerY,
+    size: 8,
+    font: l.helvetica,
     color: rgb(0.45, 0.45, 0.45),
   });
-  return y - LINE_HEIGHT - 8;
+}
+
+function drawSectionHeading(l: Layout, title: string): void {
+  ensureLines(l, 2);
+  l.page.drawText(title, {
+    x: MARGIN,
+    y: l.y,
+    size: HEADING_SIZE,
+    font: l.helveticaBold,
+    color: rgb(0.1, 0.1, 0.1),
+  });
+  l.y -= LINE_HEIGHT + 6;
+}
+
+function drawParagraph(l: Layout, text: string, opts?: { muted?: boolean }): void {
+  const lines = wrapLines(text, l.maxChars);
+  const color = opts?.muted ? rgb(0.45, 0.45, 0.45) : rgb(0.2, 0.2, 0.2);
+  for (const line of lines) {
+    ensureLines(l, 1);
+    l.page.drawText(line, {
+      x: MARGIN,
+      y: l.y,
+      size: BODY_SIZE,
+      font: l.helvetica,
+      color,
+    });
+    l.y -= LINE_HEIGHT;
+  }
+  l.y -= 4;
+}
+
+function drawBulletList(l: Layout, items: string[]): void {
+  for (const item of items) {
+    const lines = wrapLines(item, l.maxChars - 2);
+    for (let i = 0; i < lines.length; i++) {
+      ensureLines(l, 1);
+      const prefix = i === 0 ? "• " : "  ";
+      l.page.drawText(prefix + lines[i], {
+        x: MARGIN,
+        y: l.y,
+        size: BODY_SIZE,
+        font: l.helvetica,
+        color: rgb(0.25, 0.25, 0.25),
+      });
+      l.y -= LINE_HEIGHT;
+    }
+    l.y -= 2;
+  }
+  l.y -= 4;
+}
+
+function dedupeStrings(items: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const s of items) {
+    const t = s.trim();
+    if (!t || seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+  }
+  return out;
+}
+
+function buildFallbackTechOverview(summary: ExecutiveSummary): string {
+  const parts: string[] = [];
+  if (summary.keyComponents.length) {
+    parts.push(
+      `Capability areas noted in the summary: ${summary.keyComponents.slice(0, 8).join(", ")}${summary.keyComponents.length > 8 ? ", …" : ""}.`
+    );
+  }
+  const integrations = dedupeStrings([
+    ...summary.externalServices,
+    ...summary.paymentIntegrations,
+  ]);
+  if (integrations.length) {
+    parts.push(
+      `Third-party surfaces referenced: ${integrations.slice(0, 10).join(", ")}${integrations.length > 10 ? ", …" : ""}. Regenerate the repository executive summary for a tighter stack paragraph if this brief is outdated.`
+    );
+  }
+  if (!parts.length) {
+    return "No dedicated tech stack paragraph was stored for this repository. Regenerate the executive summary from the dashboard after README or dependency changes.";
+  }
+  return parts.join(" ");
+}
+
+function buildFallbackLocalSetup(fullName: string, s: ExecutiveSummary): string {
+  const lines: string[] = [];
+  lines.push(
+    `Repository: ${fullName}. The steps below are typical after cloning; always confirm against the project README and manifests in the repo root.`
+  );
+  lines.push(
+    "1) Clone the repository and check out the default branch used for production (see provider settings if unsure)."
+  );
+  const vendors = dedupeStrings([
+    ...s.externalServices,
+    ...s.paymentIntegrations,
+    ...s.authentication,
+  ]);
+  if (vendors.length) {
+    lines.push(
+      `2) Create a local environment file (for example .env) and configure credentials for: ${vendors.slice(0, 12).join(", ")}${vendors.length > 12 ? ", …" : ""}. Obtain keys from each vendor console — this PDF never contains secret values.`
+    );
+  } else {
+    lines.push(
+      "2) Install dependencies using the manifest at the repository root (for example package.json, requirements.txt, go.mod, or Cargo.toml)."
+    );
+  }
+  lines.push(
+    "3) Run the development server using the script documented in the repository (for example npm run dev). Run the test suite before shipping changes if tests exist."
+  );
+  lines.push(
+    "4) If setup details are missing, regenerate the executive summary from Ownbase so AI can re-read README and config files."
+  );
+  return lines.join("\n\n");
+}
+
+function defaultHandoffNextSteps(fullName: string): string[] {
+  return [
+    `Confirm maintainer access to ${fullName} on GitHub, GitLab, or your host.`,
+    "Complete local setup, run tests, and reproduce the main flows listed in this brief.",
+    "Inventory production hosting, DNS, databases, background jobs, and CI/CD tied to this repo.",
+    "Rotate shared credentials and review vendor dashboards (billing, API limits, webhooks).",
+    "Capture contacts for security, compliance, and product stakeholders outside this document.",
+  ];
+}
+
+function buildIntegrationGuidance(summary: ExecutiveSummary): string[] {
+  const bullets: string[] = [];
+  const combined = dedupeStrings([
+    ...summary.externalServices,
+    ...summary.paymentIntegrations,
+    ...summary.authentication,
+  ]);
+  if (combined.length) {
+    bullets.push(
+      `Plan configuration time for: ${combined.join(", ")}. Exact environment variable names live in the repo (README, .env.example, deployment configs).`
+    );
+  }
+  bullets.push(
+    "Never commit API keys, tokens, or customer data. Use per-environment secrets in your host's secret store."
+  );
+  bullets.push(
+    "After ownership transfer, rotate credentials the previous team had access to and audit third-party integrations."
+  );
+  return bullets;
 }
 
 export interface HandoffBriefInput {
@@ -140,227 +237,175 @@ export async function buildHandoffBriefPdf(
   input: HandoffBriefInput
 ): Promise<Uint8Array> {
   const { fullName, summary, repoDescription } = input;
+  const generatedAt = new Date().toISOString().slice(0, 19) + "Z";
+
   const doc = await PDFDocument.create();
   const helvetica = await doc.embedFont(StandardFonts.Helvetica);
   const helveticaBold = await doc.embedFont(StandardFonts.HelveticaBold);
 
-  let page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-  let y = PAGE_HEIGHT - MARGIN;
+  const l: Layout = {
+    doc,
+    page: doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]),
+    y: PAGE_HEIGHT - MARGIN,
+    helvetica,
+    helveticaBold,
+    maxChars: 86,
+  };
 
-  // ----- Logo placeholder -----
-  page.drawRectangle({
-    x: MARGIN,
-    y: y - 28,
-    width: 120,
-    height: 28,
-    borderColor: rgb(0.75, 0.75, 0.75),
-    borderWidth: 1,
-  });
-  page.drawText("Ownbase", {
-    x: MARGIN + 8,
-    y: y - 22,
-    size: 11,
-    font: helveticaBold,
-    color: rgb(0.3, 0.3, 0.3),
-  });
-  y -= 50;
+  // ----- Brand logo -----
+  try {
+    const logoPath = path.join(
+      process.cwd(),
+      "public",
+      "LOGO",
+      "Icon-brandname.png",
+    );
+    const logoBytes = await fs.readFile(logoPath);
+    const logoImage = await doc.embedPng(logoBytes);
+    const drawW = 112;
+    const drawH = (logoImage.height * drawW) / logoImage.width;
+    l.page.drawImage(logoImage, {
+      x: MARGIN,
+      y: l.y - drawH,
+      width: drawW,
+      height: drawH,
+    });
+    l.y -= drawH + 16;
+  } catch {
+    l.page.drawText("Ownbase", {
+      x: MARGIN,
+      y: l.y - 14,
+      size: 12,
+      font: helveticaBold,
+      color: rgb(0.15, 0.15, 0.15),
+    });
+    l.y -= 32;
+  }
 
-  // ----- Title -----
-  page.drawText("Handoff Brief", {
+  l.page.drawText("Technical handoff brief", {
     x: MARGIN,
-    y,
+    y: l.y,
     size: 22,
     font: helveticaBold,
     color: rgb(0.1, 0.1, 0.1),
   });
-  y -= 28;
+  l.y -= 28;
 
-  page.drawText(fullName, {
+  l.page.drawText(fullName, {
     x: MARGIN,
-    y,
+    y: l.y,
     size: 12,
     font: helvetica,
     color: rgb(0.35, 0.35, 0.35),
   });
-  y -= 8;
+  l.y -= LINE_HEIGHT + SECTION_GAP;
 
-  if (repoDescription) {
-    y = drawWrappedText(page, repoDescription, {
-      x: MARGIN,
-      y,
-      font: helvetica,
-      maxChars: 90,
-    });
-    y -= SECTION_GAP;
+  drawParagraph(
+    l,
+    "This document summarizes what Ownbase inferred from the repository snapshot used when the executive summary was generated. It is meant to orient a new engineer or owner: scope, stack, integrations, setup, and sensible next actions. Regenerate the summary after large refactors so this brief stays aligned with the code.",
+  );
+  l.y -= 4;
+
+  drawSectionHeading(l, "Repository");
+  if (repoDescription?.trim()) {
+    drawParagraph(l, repoDescription.trim());
   } else {
-    y -= SECTION_GAP;
+    drawParagraph(
+      l,
+      "No live repository description was attached to this export. Open the project on your provider for the canonical description, topics, and default branch.",
+      { muted: true },
+    );
   }
+  l.y -= SECTION_GAP;
 
-  const sections: { heading: string; run: () => void }[] = [];
+  drawSectionHeading(l, "Project overview");
+  drawParagraph(l, summary.summary);
+  l.y -= SECTION_GAP;
 
-  // ----- 1. Project Overview -----
-  sections.push({
-    heading: "Project Overview",
-    run: () => {
-      y = drawSectionHeading(page, "Project Overview", {
-        x: MARGIN,
-        y,
-        font: helvetica,
-        fontBold: helveticaBold,
-      });
-      y = drawWrappedText(page, summary.summary, {
-        x: MARGIN,
-        y,
-        font: helvetica,
-      });
-      y -= SECTION_GAP;
-    },
-  });
+  drawSectionHeading(l, "Tech stack");
+  drawParagraph(
+    l,
+    summary.techStackOverview?.trim() || buildFallbackTechOverview(summary),
+  );
+  l.y -= SECTION_GAP;
 
-  // ----- 2. Tech Stack Detected -----
-  const techItems = [
-    ...summary.keyComponents,
-    ...summary.externalServices,
-  ].filter(Boolean);
-  sections.push({
-    heading: "Tech Stack Detected",
-    run: () => {
-      y = drawSectionHeading(page, "Tech Stack Detected", {
-        x: MARGIN,
-        y,
-        font: helvetica,
-        fontBold: helveticaBold,
-      });
-      if (techItems.length > 0) {
-        y = drawBulletList(page, techItems, { x: MARGIN, y, font: helvetica });
-      } else {
-        y = drawNotAvailable(page, { x: MARGIN, y, font: helvetica });
-      }
-      y -= SECTION_GAP;
-    },
-  });
+  drawSectionHeading(l, "Key capabilities");
+  if (summary.keyComponents.length > 0) {
+    drawBulletList(l, summary.keyComponents);
+  } else {
+    drawParagraph(l, "None listed in the stored summary.", { muted: true });
+  }
+  l.y -= SECTION_GAP;
 
-  // ----- 3. Key Features -----
-  sections.push({
-    heading: "Key Features",
-    run: () => {
-      y = drawSectionHeading(page, "Key Features", {
-        x: MARGIN,
-        y,
-        font: helvetica,
-        fontBold: helveticaBold,
-      });
-      if (summary.keyComponents.length > 0) {
-        y = drawBulletList(page, summary.keyComponents, {
-          x: MARGIN,
-          y,
-          font: helvetica,
-        });
-      } else {
-        y = drawNotAvailable(page, { x: MARGIN, y, font: helvetica });
-      }
-      y -= SECTION_GAP;
-    },
-  });
+  drawSectionHeading(l, "Operational flows");
+  const flows =
+    summary.operationalFlows?.filter((s) => s.trim().length > 0) ?? [];
+  if (flows.length > 0) {
+    drawBulletList(l, flows);
+  } else {
+    drawParagraph(
+      l,
+      "No dedicated flow list in the stored summary. Derive user and system flows from the overview and capabilities above, or regenerate the executive summary to populate flow bullets.",
+      { muted: true },
+    );
+  }
+  l.y -= SECTION_GAP;
 
-  // ----- 4. External Integrations -----
-  const integrations = [
+  drawSectionHeading(l, "Local setup & development");
+  drawParagraph(
+    l,
+    summary.localSetup?.trim() || buildFallbackLocalSetup(fullName, summary),
+  );
+  l.y -= SECTION_GAP;
+
+  drawSectionHeading(l, "Integrations & configuration");
+  const integrationList = dedupeStrings([
     ...summary.externalServices,
     ...summary.paymentIntegrations,
     ...summary.authentication,
-  ].filter(Boolean);
-  sections.push({
-    heading: "External Integrations",
-    run: () => {
-      y = drawSectionHeading(page, "External Integrations", {
-        x: MARGIN,
-        y,
-        font: helvetica,
-        fontBold: helveticaBold,
-      });
-      if (integrations.length > 0) {
-        y = drawBulletList(page, integrations, {
-          x: MARGIN,
-          y,
-          font: helvetica,
-        });
-      } else {
-        y = drawNotAvailable(page, { x: MARGIN, y, font: helvetica });
-      }
-      y -= SECTION_GAP;
-    },
-  });
-
-  // ----- 5. Environment Variables -----
-  sections.push({
-    heading: "Environment Variables",
-    run: () => {
-      y = drawSectionHeading(page, "Environment Variables", {
-        x: MARGIN,
-        y,
-        font: helvetica,
-        fontBold: helveticaBold,
-      });
-      page.drawText(
-        "Not detected. Configure per your deployment documentation. Do not commit secrets.",
-        {
-          x: MARGIN,
-          y,
-          size: BODY_SIZE,
-          font: helvetica,
-          color: rgb(0.45, 0.45, 0.45),
-        }
-      );
-      y -= LINE_HEIGHT + SECTION_GAP;
-    },
-  });
-
-  // ----- 6. Setup Instructions -----
-  sections.push({
-    heading: "Setup Instructions",
-    run: () => {
-      y = drawSectionHeading(page, "Setup Instructions", {
-        x: MARGIN,
-        y,
-        font: helvetica,
-        fontBold: helveticaBold,
-      });
-      y = drawNotAvailable(page, { x: MARGIN, y, font: helvetica });
-      y -= SECTION_GAP;
-    },
-  });
-
-  // ----- 7. Risk Indicators (optional, no clutter) -----
-  if (summary.riskIndicators.length > 0) {
-    sections.push({
-      heading: "Risk Indicators",
-      run: () => {
-        y = drawSectionHeading(page, "Risk Indicators", {
-          x: MARGIN,
-          y,
-          font: helvetica,
-          fontBold: helveticaBold,
-        });
-        y = drawBulletList(page, summary.riskIndicators, {
-          x: MARGIN,
-          y,
-          font: helvetica,
-        });
-        y -= SECTION_GAP;
-      },
+  ]);
+  if (integrationList.length > 0) {
+    drawBulletList(l, integrationList);
+  } else {
+    drawParagraph(l, "No third-party integrations were listed in the summary.", {
+      muted: true,
     });
   }
+  drawBulletList(l, buildIntegrationGuidance(summary));
+  l.y -= SECTION_GAP;
 
-  const minY = MARGIN + 40;
-  for (const s of sections) {
-    if (y < minY) {
-      page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-      y = PAGE_HEIGHT - MARGIN;
-    }
-    s.run();
+  drawSectionHeading(l, "Environment variables & secrets");
+  drawBulletList(l, [
+    "This PDF does not echo .env files or secret values.",
+    "Search the repo for .env.example, .env.local.example, docker-compose, Terraform, or host-specific docs to learn required keys.",
+    "Treat any list of vendors in this brief as a hint for which consoles and API keys you must provision.",
+  ]);
+  l.y -= SECTION_GAP;
+
+  if (summary.riskIndicators.length > 0) {
+    drawSectionHeading(l, "Risk & documentation signals");
+    drawBulletList(l, summary.riskIndicators);
+    l.y -= SECTION_GAP;
   }
 
-  // Metadata
+  drawSectionHeading(l, "Recipient checklist (next actions)");
+  const nextSteps =
+    summary.handoffNextSteps?.filter((s) => s.trim().length > 0) ?? [];
+  drawBulletList(
+    l,
+    nextSteps.length > 0 ? nextSteps : defaultHandoffNextSteps(fullName),
+  );
+  l.y -= SECTION_GAP;
+
+  drawSectionHeading(l, "Disclaimer");
+  drawParagraph(
+    l,
+    "Content is inferred from a partial file sample at summary time, not a full security audit. Validate assumptions in source control before production changes.",
+    { muted: true },
+  );
+
+  drawFooterLine(l, fullName, generatedAt);
+
   doc.setTitle(`Handoff Brief — ${fullName}`);
   doc.setCreator("Ownbase");
 

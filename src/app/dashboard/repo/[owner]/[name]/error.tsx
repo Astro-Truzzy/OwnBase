@@ -32,13 +32,11 @@ export default function RepoDetailError({
         <h2 className="text-base font-medium text-error-text">
           Something went wrong
         </h2>
-        <p className="mt-2 text-sm text-error-text/90">
-          {error.message}
-        </p>
+        <p className="mt-2 text-sm text-error-text/90">{error.message}</p>
         <button
           type="button"
           onClick={reset}
-          className="mt-4 rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium text-foreground hover:bg-border/50 transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
+          className="mt-4 rounded-lg border border-cyan-200/20 bg-[#08101f]/90 px-4 py-2.5 text-sm font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-[#0f1a2e] focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
         >
           Try again
         </button>

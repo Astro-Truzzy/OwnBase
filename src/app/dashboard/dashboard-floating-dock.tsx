@@ -1,17 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { createClient } from "../../lib/supabase/client";
+import { usePathname } from "next/navigation";
+import { navigateToServerSignOut } from "@/lib/auth/hard-sign-out";
 import {
-  IconLayoutDashboard,
-  IconUpload,
-  IconLogout,
-  IconFolder,
   IconBuilding,
   IconBuildingCommunity,
-  IconUsersGroup,
   IconCreditCard,
+  IconFolder,
+  IconLayoutDashboard,
+  IconLogout,
+  IconSparkles,
+  IconUpload,
+  IconUsersGroup,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import {
@@ -34,23 +35,46 @@ interface DashboardFloatingDockProps {
 }
 
 const QUICK_ACTIONS: { href: string; label: string; icon: ReactNode }[] = [
-  { href: "/dashboard", label: "Dashboard", icon: <IconLayoutDashboard className="h-5 w-5" /> },
-  { href: "/dashboard/organization", label: "Organization", icon: <IconBuildingCommunity className="h-5 w-5" /> },
-  { href: "/dashboard/devs", label: "Devs", icon: <IconUsersGroup className="h-5 w-5" /> },
-  { href: "/dashboard/upload", label: "Upload", icon: <IconUpload className="h-5 w-5" /> },
-  { href: "/dashboard/billing", label: "Billing", icon: <IconCreditCard className="h-5 w-5" /> },
+  {
+    href: "/dashboard",
+    label: "Dashboard",
+    icon: <IconLayoutDashboard className="h-5 w-5" />,
+  },
+  {
+    href: "/dashboard/organization",
+    label: "Organization",
+    icon: <IconBuildingCommunity className="h-5 w-5" />,
+  },
+  {
+    href: "/dashboard/ai",
+    label: "Ask AI",
+    icon: <IconSparkles className="h-5 w-5" />,
+  },
+  {
+    href: "/dashboard/devs",
+    label: "Devs",
+    icon: <IconUsersGroup className="h-5 w-5" />,
+  },
+  {
+    href: "/dashboard/upload",
+    label: "Upload",
+    icon: <IconUpload className="h-5 w-5" />,
+  },
+  {
+    href: "/dashboard/billing",
+    label: "Billing",
+    icon: <IconCreditCard className="h-5 w-5" />,
+  },
 ];
 
-export function DashboardFloatingDock({ recentItems = [] }: DashboardFloatingDockProps) {
+export function DashboardFloatingDock({
+  recentItems = [],
+}: DashboardFloatingDockProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const mouseY = useMotionValue(Infinity);
 
-  async function signOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.refresh();
-    router.push("/");
+  function signOut() {
+    navigateToServerSignOut();
   }
 
   const recent = recentItems.slice(0, 6);
@@ -60,8 +84,7 @@ export function DashboardFloatingDock({ recentItems = [] }: DashboardFloatingDoc
       onMouseMove={(e) => mouseY.set(e.pageY)}
       onMouseLeave={() => mouseY.set(Infinity)}
       className={cn(
-        "fixed left-4 top-1/2 z-20 hidden -translate-y-1/2 flex-col gap-2 rounded-2xl border border-border bg-surface/90 px-2.5 py-3 backdrop-blur-md md:flex",
-        "shadow-lg shadow-black/5"
+        "fixed left-4 top-1/2 z-20 hidden -translate-y-1/2 flex-col gap-2 rounded-2xl border border-cyan-200/20 bg-[#070e1b]/95 px-2.5 py-3 shadow-[0_18px_40px_rgba(2,8,24,0.45)] backdrop-blur-md md:flex",
       )}
       aria-label="Quick actions & recent"
     >
@@ -91,7 +114,7 @@ export function DashboardFloatingDock({ recentItems = [] }: DashboardFloatingDoc
 
       {recent.length > 0 && (
         <>
-          <div className="my-1 h-px w-8 shrink-0 bg-border" aria-hidden />
+          <div className="my-1 h-px w-8 shrink-0 bg-cyan-200/20" aria-hidden />
           {recent.map((r) => (
             <Link key={r.href + r.title} href={r.href}>
               <DockIcon
@@ -141,16 +164,40 @@ function DockIcon({
 
   const effectiveDistance = useTransform(
     [distance, isActiveMotion],
-    (vals: number[]) => (vals[1]! > 0.5 ? 0 : vals[0]!)
+    (vals: number[]) => (vals[1]! > 0.5 ? 0 : vals[0]!),
   ) as MotionValue<number>;
 
-  const sizeTransform = useTransform(effectiveDistance, [-120, 0, 120], [40, 56, 40]);
-  const iconSizeTransform = useTransform(effectiveDistance, [-120, 0, 120], [20, 28, 20]);
+  const sizeTransform = useTransform(
+    effectiveDistance,
+    [-120, 0, 120],
+    [40, 56, 40],
+  );
+  const iconSizeTransform = useTransform(
+    effectiveDistance,
+    [-120, 0, 120],
+    [20, 28, 20],
+  );
 
-  const width = useSpring(sizeTransform, { mass: 0.1, stiffness: 150, damping: 12 });
-  const height = useSpring(sizeTransform, { mass: 0.1, stiffness: 150, damping: 12 });
-  const widthIcon = useSpring(iconSizeTransform, { mass: 0.1, stiffness: 150, damping: 12 });
-  const heightIcon = useSpring(iconSizeTransform, { mass: 0.1, stiffness: 150, damping: 12 });
+  const width = useSpring(sizeTransform, {
+    mass: 0.1,
+    stiffness: 150,
+    damping: 12,
+  });
+  const height = useSpring(sizeTransform, {
+    mass: 0.1,
+    stiffness: 150,
+    damping: 12,
+  });
+  const widthIcon = useSpring(iconSizeTransform, {
+    mass: 0.1,
+    stiffness: 150,
+    damping: 12,
+  });
+  const heightIcon = useSpring(iconSizeTransform, {
+    mass: 0.1,
+    stiffness: 150,
+    damping: 12,
+  });
 
   const [hovered, setHovered] = useState(false);
 
@@ -163,8 +210,8 @@ function DockIcon({
       className={cn(
         "relative flex aspect-square items-center justify-center rounded-xl border transition-colors",
         isActive
-          ? "border-accent/50 bg-accent/10 text-accent"
-          : "border-border bg-surface-elevated text-muted hover:border-accent/40 hover:text-foreground"
+          ? "border-cyan-400/45 bg-cyan-400/15 text-cyan-100"
+          : "border-cyan-200/15 bg-[#0b1628] text-cyan-100/55 hover:border-cyan-300/35 hover:text-cyan-100",
       )}
     >
       <AnimatePresence>
@@ -173,13 +220,16 @@ function DockIcon({
             initial={{ opacity: 0, x: 8 }}
             animate={{ opacity: 1, x: 12 }}
             exit={{ opacity: 0, x: 8 }}
-            className="absolute left-full z-10 whitespace-nowrap rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-foreground shadow-lg"
+            className="absolute left-full z-10 whitespace-nowrap rounded-md border border-cyan-200/20 bg-[#08101f] px-2.5 py-1.5 text-xs font-medium text-cyan-50 shadow-lg"
           >
             {title}
           </motion.span>
         )}
       </AnimatePresence>
-      <motion.span style={{ width: widthIcon, height: heightIcon }} className="flex items-center justify-center">
+      <motion.span
+        style={{ width: widthIcon, height: heightIcon }}
+        className="flex items-center justify-center"
+      >
         {icon}
       </motion.span>
     </motion.div>
@@ -205,12 +255,32 @@ function DockIconButton({
     return val - bounds.y - bounds.height / 2;
   });
   const sizeTransform = useTransform(distance, [-120, 0, 120], [40, 56, 40]);
-  const iconSizeTransform = useTransform(distance, [-120, 0, 120], [20, 28, 20]);
+  const iconSizeTransform = useTransform(
+    distance,
+    [-120, 0, 120],
+    [20, 28, 20],
+  );
 
-  const width = useSpring(sizeTransform, { mass: 0.1, stiffness: 150, damping: 12 });
-  const height = useSpring(sizeTransform, { mass: 0.1, stiffness: 150, damping: 12 });
-  const widthIcon = useSpring(iconSizeTransform, { mass: 0.1, stiffness: 150, damping: 12 });
-  const heightIcon = useSpring(iconSizeTransform, { mass: 0.1, stiffness: 150, damping: 12 });
+  const width = useSpring(sizeTransform, {
+    mass: 0.1,
+    stiffness: 150,
+    damping: 12,
+  });
+  const height = useSpring(sizeTransform, {
+    mass: 0.1,
+    stiffness: 150,
+    damping: 12,
+  });
+  const widthIcon = useSpring(iconSizeTransform, {
+    mass: 0.1,
+    stiffness: 150,
+    damping: 12,
+  });
+  const heightIcon = useSpring(iconSizeTransform, {
+    mass: 0.1,
+    stiffness: 150,
+    damping: 12,
+  });
 
   const [hovered, setHovered] = useState(false);
 
@@ -229,8 +299,8 @@ function DockIconButton({
         className={cn(
           "relative flex aspect-square items-center justify-center rounded-xl border transition-colors",
           variant === "danger"
-            ? "border-border bg-surface-elevated text-muted hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
-            : "border-border bg-surface-elevated text-muted hover:border-accent/40 hover:text-foreground"
+            ? "border-cyan-200/15 bg-[#0b1628] text-cyan-100/55 hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
+            : "border-cyan-200/15 bg-[#0b1628] text-cyan-100/55 hover:border-cyan-300/35 hover:text-cyan-100",
         )}
       >
         <AnimatePresence>
@@ -239,13 +309,16 @@ function DockIconButton({
               initial={{ opacity: 0, x: 8 }}
               animate={{ opacity: 1, x: 12 }}
               exit={{ opacity: 0, x: 8 }}
-              className="absolute left-full z-10 whitespace-nowrap rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-foreground shadow-lg"
+              className="absolute left-full z-10 whitespace-nowrap rounded-md border border-cyan-200/20 bg-[#08101f] px-2.5 py-1.5 text-xs font-medium text-cyan-50 shadow-lg"
             >
               {title}
             </motion.span>
           )}
         </AnimatePresence>
-        <motion.span style={{ width: widthIcon, height: heightIcon }} className="flex items-center justify-center">
+        <motion.span
+          style={{ width: widthIcon, height: heightIcon }}
+          className="flex items-center justify-center"
+        >
           {icon}
         </motion.span>
       </motion.div>

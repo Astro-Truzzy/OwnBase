@@ -36,7 +36,7 @@ export function UploadedProjectsList({ projects }: { projects: ProjectRow[] }) {
 
   if (projects.length === 0) {
     return (
-      <p className="mt-4 text-sm text-muted">
+      <p className="mt-4 text-sm text-cyan-100/60">
         No uploads yet. Use the form above to upload a project zip.
       </p>
     );
@@ -47,18 +47,22 @@ export function UploadedProjectsList({ projects }: { projects: ProjectRow[] }) {
       {projects.map((p) => (
         <li
           key={p.id}
-          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-background/50 px-3 py-2 text-sm"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-cyan-200/15 bg-[#050b16]/65 px-3 py-2 text-sm"
         >
           <div className="flex items-center gap-2 min-w-0">
-            <IconFolder className="h-4 w-4 text-muted shrink-0" aria-hidden />
-            <span className="font-medium text-foreground truncate">{p.name}</span>
-            <span className="text-muted">{formatSize(p.file_size)}</span>
-            <span className="text-muted">{formatDate(p.created_at)}</span>
+            <IconFolder
+              className="h-4 w-4 shrink-0 text-cyan-300/80"
+              aria-hidden
+            />
+            <span className="truncate font-medium text-cyan-50">{p.name}</span>
+            <span className="text-cyan-100/55">{formatSize(p.file_size)}</span>
+            <span className="text-cyan-100/55">{formatDate(p.created_at)}</span>
           </div>
           <button
             type="button"
             onClick={async () => {
-              if (!confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
+              if (!confirm(`Delete "${p.name}"? This cannot be undone.`))
+                return;
               const ok = await deleteUploadedProjectAction(p.id);
               if (ok) router.refresh();
             }}

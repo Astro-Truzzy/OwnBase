@@ -8,7 +8,7 @@ import type { FetchedFile } from "../github/fetch-repo-content";
 import OpenAI from "openai";
 
 const MODEL = "gpt-4o-mini";
-const MAX_OUTPUT_TOKENS = 1024;
+const MAX_OUTPUT_TOKENS = 2048;
 
 function buildContext(files: FetchedFile[], rootListing: string[]): string {
   const fileSections = files.map(
@@ -29,13 +29,19 @@ Given repository file contents and root folder listing, produce an executive sum
   "paymentIntegrations": ["any payment processors, subscriptions, or billing (e.g. Stripe, PayPal). Empty array if none found."],
   "authentication": ["how users sign in or are identified, in simple terms (e.g. email/password, Google, SSO). Empty if unclear."],
   "externalServices": ["third-party APIs, databases, cloud services mentioned or implied"],
-  "riskIndicators": ["simple risk notes: e.g. 'No README', 'Many external dependencies', 'Payment handling present'"]
+  "riskIndicators": ["simple risk notes: e.g. 'No README', 'Many external dependencies', 'Payment handling present'"],
+  "techStackOverview": "One short paragraph naming the primary languages, frameworks, and runtime you infer from manifests and source (e.g. Next.js + TypeScript + Postgres). If unclear, say what is missing.",
+  "localSetup": "Plain text, 5 to 10 sentences with numbered steps where helpful: how to clone this repository, install dependencies, which env vars are typically needed (name the integration, never invent secret values), how to run the dev server, and how to run tests. Base only on files you saw; if something is undocumented, say so explicitly.",
+  "operationalFlows": ["3 to 6 short bullets describing main user journeys or system flows (e.g. sign-up, checkout, background job)."],
+  "handoffNextSteps": ["6 to 10 actionable bullets for an engineer or owner taking over: access, secrets rotation, deployment, monitoring, docs to update, stakeholders to notify."]
 }
 
 Rules:
 - Use simple business language. No jargon like "middleware", "endpoints", "schema" unless you briefly explain.
 - Infer from file names, README, and dependency lists. If something is unclear, say so in summary or omit from lists.
-- riskIndicators: basic logic only (missing docs, many deps, payment code, etc.). Do not perform security scanning.`;
+- riskIndicators: basic logic only (missing docs, many deps, payment code, etc.). Do not perform security scanning.
+- localSetup, operationalFlows, handoffNextSteps, and techStackOverview must be specific to THIS repository, not generic SaaS advice.
+- Never include secret values, API keys, tokens, or .env contents.`;
 
 export interface GenerateSummaryInput {
   fullName: string;
@@ -88,12 +94,18 @@ export async function generateExecutiveSummary(
   }
 }
 
-function normalizeSummary(raw: unknown): ExecutiveSummary {
+/** Coerce stored JSON (any shape) into a complete ExecutiveSummary for UI / PDF. */
+export function normalizeSummary(raw: unknown): ExecutiveSummary {
   const o = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
   const arr = (v: unknown): string[] =>
     Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
   const str = (v: unknown): string =>
     typeof v === "string" ? v : "Unable to generate summary.";
+  const optStr = (v: unknown): string | undefined => {
+    if (typeof v !== "string") return undefined;
+    const t = v.trim();
+    return t.length > 0 ? t : undefined;
+  };
   return {
     summary: str(o.summary),
     keyComponents: arr(o.keyComponents),
@@ -101,6 +113,10 @@ function normalizeSummary(raw: unknown): ExecutiveSummary {
     authentication: arr(o.authentication),
     externalServices: arr(o.externalServices),
     riskIndicators: arr(o.riskIndicators),
+    techStackOverview: optStr(o.techStackOverview),
+    localSetup: optStr(o.localSetup),
+    operationalFlows: arr(o.operationalFlows),
+    handoffNextSteps: arr(o.handoffNextSteps),
   };
 }
 
@@ -112,5 +128,9 @@ function fallbackSummary(fullName: string): ExecutiveSummary {
     authentication: [],
     externalServices: [],
     riskIndicators: ["Summary generation failed or was skipped."],
+    techStackOverview: undefined,
+    localSetup: undefined,
+    operationalFlows: [],
+    handoffNextSteps: [],
   };
 }

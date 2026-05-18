@@ -94,7 +94,10 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
     const redirectUrl = buildRedirectUrl();
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: redirectUrl },
+      options: {
+        redirectTo: redirectUrl,
+        queryParams: { prompt: "select_account" },
+      },
     });
     if (err) {
       setMessage({
@@ -110,11 +113,12 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
   async function signInWithGitHub() {
     const supabase = createClient();
     const redirectUrl = buildRedirectUrl();
-    const { error: err } = await supabase.auth.signInWithOAuth({
+    const { data, error: err } = await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
         redirectTo: redirectUrl,
         scopes: "repo",
+        skipBrowserRedirect: true,
       },
     });
     if (err) {
@@ -126,6 +130,7 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
       });
       return;
     }
+    if (data?.url) window.location.assign(data.url);
   }
 
   async function signInWithGitLab() {
@@ -136,6 +141,7 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
       options: {
         redirectTo: redirectUrl,
         scopes: "read_api read_repository",
+        queryParams: { prompt: "login" },
       },
     });
     if (err) {

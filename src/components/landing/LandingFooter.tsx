@@ -11,7 +11,6 @@ const PRODUCT_LINKS = [
 const COMPANY_LINKS = [
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
-  // { label: "Blog", href: "#" },
 ] as const;
 
 const LEGAL_LINKS = [
@@ -28,7 +27,7 @@ function FooterColumn({
 }) {
   return (
     <div>
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted">
+      <h3 className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/60">
         {title}
       </h3>
       <ul className="mt-4 space-y-3" role="list">
@@ -52,16 +51,25 @@ export function LandingFooter() {
 
   return (
     <footer
-      className="relative mt-20 border-t border-border bg-surface/30"
+      className="relative mt-20 border-t border-border bg-surface/25"
       role="contentinfo"
     >
       {/* Subtle grid */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.03]"
+        className="pointer-events-none absolute inset-0 opacity-[0.025]"
         style={{
           backgroundImage: `linear-gradient(to right, var(--border) 1px, transparent 1px),
             linear-gradient(to bottom, var(--border) 1px, transparent 1px)`,
           backgroundSize: "32px 32px",
+        }}
+        aria-hidden
+      />
+      {/* Top accent gradient line */}
+      <div
+        className="absolute inset-x-0 top-0 h-px"
+        style={{
+          background:
+            "linear-gradient(90deg, transparent, rgba(34,211,238,0.35) 30%, rgba(167,139,250,0.3) 70%, transparent)",
         }}
         aria-hidden
       />
@@ -72,16 +80,13 @@ export function LandingFooter() {
           <div
             className="sm:col-span-2 lg:col-span-2"
             data-aos="fade-up"
-            data-aos-duration="550"
+            data-aos-duration="500"
           >
             <Link
               href="/"
-              className="inline-flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background rounded-md"
+              className="inline-flex items-center text-base font-semibold tracking-tight text-foreground hover:opacity-85 transition-opacity focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background rounded-md"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 text-accent">
-                <Logo className="h-5 w-5" />
-              </span>
-              Ownbase
+              <Logo variant="full" className="max-h-8 sm:max-h-9" />
             </Link>
             <p className="mt-4 max-w-xs text-sm text-muted leading-relaxed">
               Your software. Your base. Own and control your code, access, and
@@ -90,7 +95,7 @@ export function LandingFooter() {
             <div className="mt-6">
               <Link
                 href="/signup"
-                className="inline-flex items-center justify-center rounded-lg bg-accent text-white px-5 py-2.5 text-sm font-medium hover:bg-accent-hover transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
+                className="inline-flex items-center justify-center rounded-lg bg-accent text-background px-5 py-2.5 text-sm font-semibold hover:bg-accent-hover transition-all hover:shadow-[0_0_20px_rgba(34,211,238,0.25)] focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
               >
                 Get started
               </Link>
@@ -98,17 +103,17 @@ export function LandingFooter() {
           </div>
 
           {/* Product */}
-          <div data-aos="fade-up" data-aos-duration="550" data-aos-delay="50">
+          <div data-aos="fade-up" data-aos-duration="500" data-aos-delay="50">
             <FooterColumn title="Product" links={PRODUCT_LINKS} />
           </div>
 
           {/* Company */}
-          <div data-aos="fade-up" data-aos-duration="550" data-aos-delay="100">
+          <div data-aos="fade-up" data-aos-duration="500" data-aos-delay="100">
             <FooterColumn title="Company" links={COMPANY_LINKS} />
           </div>
 
           {/* Legal */}
-          <div data-aos="fade-up" data-aos-duration="550" data-aos-delay="150">
+          <div data-aos="fade-up" data-aos-duration="500" data-aos-delay="150">
             <FooterColumn title="Legal" links={LEGAL_LINKS} />
           </div>
         </div>
@@ -117,18 +122,18 @@ export function LandingFooter() {
         <div
           className="mt-12 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4"
           data-aos="fade-up"
-          data-aos-duration="550"
+          data-aos-duration="500"
           data-aos-delay="100"
         >
-          <p className="text-sm text-muted">
+          <p className="font-mono text-xs text-muted-foreground/60">
             © {year} Ownbase. Your Software. Your Base.
           </p>
-          <div className="flex items-center gap-6 text-sm">
+          <div className="flex items-center gap-6">
             {LEGAL_LINKS.map(({ label, href }) => (
               <Link
                 key={label}
                 href={href}
-                className="text-muted hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background rounded px-1"
+                className="text-xs text-muted hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background rounded px-1"
               >
                 {label}
               </Link>

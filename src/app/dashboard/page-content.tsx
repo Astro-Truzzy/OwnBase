@@ -1,5 +1,6 @@
 import { createClient } from "../../lib/supabase/server";
 import { fetchUserProjects } from "../../lib/gitlab/fetch-projects";
+import { fetchRepoCollaborators } from "../../lib/github/fetch-collaborators";
 import { fetchUserRepos } from "../../lib/github/fetch-repos";
 import { getUsageSnapshot } from "../../lib/usage-stats";
 import {
@@ -26,6 +27,18 @@ function formatRelativeTime(iso: string): string {
   return `${days} days ago`;
 }
 
+function formatCompactRelativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "unknown";
+  const diffMs = Date.now() - then;
+  const mins = Math.floor(diffMs / (1000 * 60));
+  if (mins < 60) return `${Math.max(mins, 1)}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
 function calcHealthScore(updatedAt: string): number {
   const then = new Date(updatedAt).getTime();
   if (Number.isNaN(then)) return 78;
@@ -46,6 +59,56 @@ function repoUnit(name: string): string {
   return "Platform";
 }
 
+function repoDetailHref(fullName: string): string {
+  const [owner, ...rest] = fullName.split("/");
+  const name = rest.join("/") || fullName;
+  return `/dashboard/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`;
+}
+
+function collaboratorAccessFromPermissions(
+  permissions:
+    | {
+        pull: boolean;
+        push: boolean;
+        admin: boolean;
+        triage?: boolean;
+        maintain?: boolean;
+      }
+    | undefined,
+): "Admin" | "Write" | "Read" {
+  if (!permissions) return "Read";
+  if (permissions.admin || permissions.maintain) return "Admin";
+  if (permissions.push) return "Write";
+  return "Read";
+}
+
+const MAX_TRACKED_REPOS_FOR_COLLAB_FETCH = 6;
+const COLLABORATOR_FETCH_TIMEOUT_MS = 2500;
+
+async function fetchRepoCollaboratorsWithTimeout(
+  owner: string,
+  name: string,
+  providerToken: string,
+): Promise<Awaited<ReturnType<typeof fetchRepoCollaborators>>> {
+  const timeoutPromise = new Promise<
+    Awaited<ReturnType<typeof fetchRepoCollaborators>>
+  >((resolve) => {
+    setTimeout(
+      () =>
+        resolve({
+          collaborators: [],
+          error: "Collaborator request timed out",
+        }),
+      COLLABORATOR_FETCH_TIMEOUT_MS,
+    );
+  });
+
+  return Promise.race([
+    fetchRepoCollaborators(owner, name, providerToken),
+    timeoutPromise,
+  ]);
+}
+
 export default async function DashboardPageContent() {
   const supabase = await createClient();
   const {
@@ -61,7 +124,9 @@ export default async function DashboardPageContent() {
     user != null
       ? await supabase
           .from("profiles")
-          .select("onboarding_checklist_dismissed_at")
+          .select(
+            "onboarding_checklist_dismissed_at, first_name, last_name, plan",
+          )
           .eq("user_id", user.id)
           .maybeSingle()
       : { data: null };
@@ -80,6 +145,19 @@ export default async function DashboardPageContent() {
   const allOnboardingDone = trackedDone && uploadDone && summaryDone;
   const onboardingDismissed =
     profileExtras?.onboarding_checklist_dismissed_at != null;
+  const viewerDisplayName =
+    [profileExtras?.first_name, profileExtras?.last_name]
+      .filter(
+        (part): part is string => typeof part === "string" && part.length > 0,
+      )
+      .join(" ")
+      .trim() ||
+    user?.email?.split("@")[0] ||
+    "there";
+  const viewerPlan =
+    typeof profileExtras?.plan === "string" && profileExtras.plan.length > 0
+      ? profileExtras.plan
+      : null;
 
   const onboardingSteps: OnboardingStep[] = [
     {
@@ -130,14 +208,51 @@ export default async function DashboardPageContent() {
             .select("full_name, action_type, details, created_at")
             .eq("user_id", user.id)
             .order("created_at", { ascending: false })
-            .limit(10)
+            .limit(100)
         ).data ?? [])
+      : [];
+  const trackedGithubRows =
+    user != null
+      ? ((
+          await supabase
+            .from("tracked_repos")
+            .select("full_name, repo_name")
+            .eq("user_id", user.id)
+            .neq("repo_owner", "gitlab")
+            .order("added_at", { ascending: false })
+            .limit(MAX_TRACKED_REPOS_FOR_COLLAB_FETCH)
+        ).data ?? [])
+      : [];
+
+  const collaboratorsByRepo =
+    providerToken && trackedGithubRows.length > 0
+      ? await Promise.allSettled(
+          trackedGithubRows.map(async (repoRow) => {
+            const [owner, ...nameParts] = repoRow.full_name.split("/");
+            const name = nameParts.join("/") || repoRow.repo_name;
+            const { collaborators } = await fetchRepoCollaboratorsWithTimeout(
+              owner,
+              name,
+              providerToken,
+            );
+            return {
+              repoName: repoRow.repo_name,
+              collaborators,
+            };
+          }),
+        ).then((results) =>
+          results.flatMap((result) =>
+            result.status === "fulfilled" ? [result.value] : [],
+          ),
+        )
       : [];
 
   const repositories: DashboardRepoView[] =
     provider === "gitlab"
       ? gitlabProjects.map((project) => ({
           id: `gitlab-${project.id}`,
+          fullName: `gitlab/${project.path_with_namespace}`,
+          detailHref: repoDetailHref(`gitlab/${project.path_with_namespace}`),
           name: project.name,
           unit: repoUnit(project.name),
           tech: `GitLab • ${project.visibility === "private" ? "Private" : "Public"}`,
@@ -165,6 +280,8 @@ export default async function DashboardPageContent() {
         }))
       : githubRepos.map((repo) => ({
           id: `github-${repo.id}`,
+          fullName: repo.full_name,
+          detailHref: repoDetailHref(repo.full_name),
           name: repo.name,
           unit: repoUnit(repo.name),
           tech: `GitHub • ${repo.private ? "Private" : "Public"}`,
@@ -221,57 +338,131 @@ export default async function DashboardPageContent() {
       };
     });
 
-  const team: DashboardTeamView[] = [
+  const teamByUser = new Map<
+    string,
     {
-      name: "John Doe",
-      role: "Senior Engineer",
-      domains: ["Payment", "Core"],
-      access: "Admin",
-      avatar: "JD",
-      status: "active",
-    },
-    {
-      name: "Sarah Park",
-      role: "Staff Engineer",
-      domains: ["Auth", "Security"],
-      access: "Admin",
-      avatar: "SP",
-      status: "active",
-    },
-    {
-      name: "Amy Liu",
-      role: "Full Stack Dev",
-      domains: ["Portal", "API"],
-      access: "Write",
-      avatar: "AL",
-      status: "active",
-    },
-    {
-      name: "Mike Chen",
-      role: "Backend Engineer",
-      domains: ["Analytics"],
-      access: "Write",
-      avatar: "MC",
-      status: "warning",
-    },
-  ];
+      name: string;
+      role: string;
+      domains: Set<string>;
+      access: "Admin" | "Write" | "Read";
+      status: "active" | "warning";
+      lastSeenAt: string;
+    }
+  >();
 
-  const onboarding: DashboardOnboardingView[] = [
-    {
-      name: "David Kim",
-      role: "Backend Engineer",
-      startDate: "3 days ago",
-      progress: 35,
-      mentor: "John Doe",
-    },
-    {
-      name: "Lisa Wong",
-      role: "DevOps Engineer",
-      startDate: "1 week ago",
-      progress: 68,
-      mentor: "Sarah Park",
-    },
-  ];
+  for (const repo of collaboratorsByRepo) {
+    const domain = repoUnit(repo.repoName);
+    for (const collab of repo.collaborators) {
+      const current = teamByUser.get(collab.login);
+      const access = collaboratorAccessFromPermissions(collab.permissions);
+      if (current) {
+        current.domains.add(domain);
+        if (current.access !== "Admin" && access === "Admin") {
+          current.access = "Admin";
+        } else if (current.access === "Read" && access === "Write") {
+          current.access = "Write";
+        }
+      } else {
+        teamByUser.set(collab.login, {
+          name: collab.login,
+          role: "Repository collaborator",
+          domains: new Set([domain]),
+          access,
+          status: "active",
+          lastSeenAt: new Date(0).toISOString(),
+        });
+      }
+    }
+  }
+
+  for (const row of recentActivityRows) {
+    const details = row.details as Record<string, unknown> | null;
+    const username =
+      typeof details?.username === "string"
+        ? details.username
+        : typeof details?.actor === "string"
+          ? details.actor
+          : "System";
+    const repoName =
+      row.full_name.split("/").slice(1).join("/") || row.full_name;
+    const domain = repoUnit(repoName);
+    const current = teamByUser.get(username);
+    const permission =
+      typeof details?.permission === "string" ? details.permission : null;
+    const access: "Admin" | "Write" | "Read" =
+      permission === "admin"
+        ? "Admin"
+        : permission === "pull"
+          ? "Read"
+          : "Write";
+    const nextStatus: "active" | "warning" =
+      row.action_type === "collaborator_removed" ? "warning" : "active";
+
+    if (current) {
+      current.domains.add(domain);
+      if (current.access !== "Admin" && access === "Admin")
+        current.access = "Admin";
+      if (current.access === "Read" && access === "Write")
+        current.access = "Write";
+      if (nextStatus === "warning") current.status = "warning";
+      if (new Date(row.created_at) > new Date(current.lastSeenAt)) {
+        current.lastSeenAt = row.created_at;
+      }
+    } else {
+      teamByUser.set(username, {
+        name: username,
+        role: username === "System" ? "System" : "Repository collaborator",
+        domains: new Set([domain]),
+        access,
+        status: nextStatus,
+        lastSeenAt: row.created_at,
+      });
+    }
+  }
+
+  const team: DashboardTeamView[] = Array.from(teamByUser.values())
+    .sort(
+      (a, b) =>
+        new Date(b.lastSeenAt).getTime() - new Date(a.lastSeenAt).getTime(),
+    )
+    .slice(0, 8)
+    .map((member) => ({
+      name: member.name,
+      role: member.role,
+      domains: Array.from(member.domains).slice(0, 3),
+      access: member.access,
+      avatar:
+        member.name
+          .split(/[\s_-]+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((p) => p[0]?.toUpperCase() ?? "")
+          .join("")
+          .slice(0, 2) || "??",
+      status: member.status,
+    }));
+
+  const onboarding: DashboardOnboardingView[] = recentActivityRows
+    .filter((row) => row.action_type === "collaborator_added")
+    .slice(0, 5)
+    .map((row) => {
+      const details = row.details as Record<string, unknown> | null;
+      const username =
+        typeof details?.username === "string"
+          ? details.username
+          : "New collaborator";
+      const permission =
+        typeof details?.permission === "string" ? details.permission : "push";
+      const progress =
+        permission === "admin" ? 90 : permission === "pull" ? 45 : 65;
+      return {
+        name: username,
+        role: "Repository collaborator",
+        startDate: formatCompactRelativeTime(row.created_at),
+        progress,
+        mentor: "Repository owner",
+      };
+    });
 
   const avgHealth =
     repositories.length > 0
@@ -296,6 +487,10 @@ export default async function DashboardPageContent() {
         activities={activities}
         team={team}
         onboarding={onboarding}
+        viewer={{
+          displayName: viewerDisplayName,
+          plan: viewerPlan,
+        }}
         summary={{
           healthScore: avgHealth,
           totalSystems: repositories.length,

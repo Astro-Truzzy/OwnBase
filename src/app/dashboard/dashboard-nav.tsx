@@ -1,9 +1,8 @@
 "use client";
 
-import { createClient } from "../../lib/supabase/client";
-import { useRouter } from "next/navigation";
-import { IconLogout } from "@tabler/icons-react";
 import type { User } from "@supabase/supabase-js";
+import { IconLogout } from "@tabler/icons-react";
+import { navigateToServerSignOut } from "@/lib/auth/hard-sign-out";
 
 interface ProfileSnapshot {
   first_name: string | null;
@@ -36,13 +35,8 @@ function getInitials(user: User, profile?: ProfileSnapshot | null): string {
 }
 
 export function DashboardNav({ user, profile }: DashboardNavProps) {
-  const router = useRouter();
-
-  async function signOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.refresh();
-    router.push("/");
+  function signOut() {
+    navigateToServerSignOut();
   }
 
   const displayLabel =

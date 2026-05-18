@@ -3,34 +3,38 @@ import { createClient } from "../../../../../lib/supabase/server";
 import { fetchRepo } from "../../../../../lib/github/fetch-repos";
 import { fetchRepoCollaborators } from "../../../../../lib/github/fetch-collaborators";
 import { fetchRepoTree } from "../../../../../lib/github/fetch-repo-tree";
+import { fetchGithubRepoFileActivity } from "../../../../../lib/github/fetch-repo-commit-activity";
+import { fetchGitlabRepoFileActivity } from "../../../../../lib/gitlab/fetch-repo-commit-activity";
 import { fetchProjectByPath } from "../../../../../lib/gitlab/fetch-projects";
+import { getGitHubAccessToken } from "../../../../../lib/supabase/github-token";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { ActivityLogRow } from "../../../../../lib/db/types";
 
 const FolderStructureSection = dynamic(
-  () => import("./folder-structure-section").then((m) => m.FolderStructureSection),
-  { ssr: true }
+  () =>
+    import("./folder-structure-section").then((m) => m.FolderStructureSection),
+  { ssr: true },
 );
 const SummarySection = dynamic(
   () => import("./summary-section").then((m) => m.SummarySection),
-  { ssr: true }
+  { ssr: true },
 );
 const TrackSection = dynamic(
   () => import("./track-section").then((m) => m.TrackSection),
-  { ssr: true }
+  { ssr: true },
 );
 const AccessSection = dynamic(
   () => import("./access-section").then((m) => m.AccessSection),
-  { ssr: true }
+  { ssr: true },
 );
 const ActivitySection = dynamic(
   () => import("./activity-section").then((m) => m.ActivitySection),
-  { ssr: true }
+  { ssr: true },
 );
 const ProtectionSection = dynamic(
   () => import("./protection-section").then((m) => m.ProtectionSection),
-  { ssr: true }
+  { ssr: true },
 );
 
 interface PageProps {
@@ -53,7 +57,9 @@ export default async function RepoDetailPage({ params }: PageProps) {
 
   if (!user) notFound();
 
-  const providerToken = session?.provider_token ?? null;
+  const githubToken =
+    user != null ? await getGitHubAccessToken(supabase, user) : null;
+  const providerToken = session?.provider_token ?? githubToken;
 
   if (isGitLab) {
     const gitlabProject =
@@ -77,25 +83,33 @@ export default async function RepoDetailPage({ params }: PageProps) {
       .limit(30);
     const activityEntries = (activityData ?? []) as ActivityLogRow[];
 
+    const { events: fileEvents, error: fileActivityError } =
+      providerToken != null
+        ? await fetchGitlabRepoFileActivity(pathWithNamespace, providerToken, {
+            maxCommits: 18,
+          })
+        : { events: [], error: "Connect GitLab to load commit activity." };
+
     const displayName = gitlabProject?.name ?? pathWithNamespace;
-    const webUrl = gitlabProject?.web_url ?? `https://gitlab.com/${pathWithNamespace}`;
+    const webUrl =
+      gitlabProject?.web_url ?? `https://gitlab.com/${pathWithNamespace}`;
 
     return (
       <div className="space-y-8 sm:space-y-10">
         <div>
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background rounded-lg px-2 py-1 -ml-2"
+            className="-ml-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-cyan-100/70 transition-colors hover:text-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
           >
             ← Back to dashboard
           </Link>
-          <div className="mt-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+              <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
                 {displayName}
               </h1>
               {gitlabProject?.description && (
-                <p className="mt-1.5 text-muted leading-relaxed">
+                <p className="mt-1.5 leading-relaxed text-cyan-100/65">
                   {gitlabProject.description}
                 </p>
               )}
@@ -103,14 +117,16 @@ export default async function RepoDetailPage({ params }: PageProps) {
                 href={webUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-3 inline-block text-sm text-muted hover:text-foreground transition-colors"
+                className="mt-3 inline-block text-sm text-cyan-200/90 transition-colors hover:text-cyan-100"
               >
                 Open on GitLab →
               </a>
             </div>
             <span
-              className="shrink-0 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted w-fit"
-              title={gitlabProject?.visibility === "private" ? "Private" : "Public"}
+              className="w-fit shrink-0 rounded-md border border-cyan-200/20 bg-[#050b16]/70 px-3 py-1.5 text-xs font-medium text-cyan-100/80"
+              title={
+                gitlabProject?.visibility === "private" ? "Private" : "Public"
+              }
             >
               {gitlabProject?.visibility === "private" ? "Private" : "Public"}
             </span>
@@ -119,16 +135,16 @@ export default async function RepoDetailPage({ params }: PageProps) {
 
         <TrackSection owner={owner} name={name} isTracked={isTracked} />
 
-        <section className="rounded-xl border border-border bg-surface p-6 sm:p-8">
-          <h2 className="text-lg font-medium text-foreground">Access</h2>
-          <p className="mt-1 text-sm text-muted">
+        <section className="dash-panel p-6 sm:p-8">
+          <h2 className="text-lg font-medium text-cyan-50">Access</h2>
+          <p className="mt-1 text-sm text-cyan-100/65">
             Manage members and permissions in GitLab.
           </p>
           <a
             href={`${webUrl}/-/project_members`}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-4 inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-elevated transition-colors"
+            className="mt-4 inline-flex items-center gap-2 rounded-lg border border-cyan-200/20 bg-[#050b16]/80 px-4 py-2 text-sm font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-[#0f1a2e]"
           >
             Manage on GitLab →
           </a>
@@ -137,7 +153,9 @@ export default async function RepoDetailPage({ params }: PageProps) {
         <ActivitySection
           owner={owner}
           name={name}
-          entries={activityEntries}
+          fileEvents={fileEvents}
+          auditEntries={activityEntries}
+          fileActivityError={fileActivityError}
         />
 
         <ProtectionSection
@@ -149,8 +167,8 @@ export default async function RepoDetailPage({ params }: PageProps) {
     );
   }
 
-  const { repo, error: repoError } = providerToken
-    ? await fetchRepo(owner, name, providerToken)
+  const { repo, error: repoError } = githubToken
+    ? await fetchRepo(owner, name, githubToken)
     : { repo: null, error: "GitHub not connected." };
 
   if (!repo || repoError) notFound();
@@ -165,14 +183,21 @@ export default async function RepoDetailPage({ params }: PageProps) {
   const summary = existingSummary?.summary_json ?? null;
   const summaryUpdatedAt = existingSummary?.updated_at ?? null;
 
-  const { collaborators, error: collaboratorsError } = providerToken
-    ? await fetchRepoCollaborators(owner, name, providerToken)
+  const { collaborators, error: collaboratorsError } = githubToken
+    ? await fetchRepoCollaborators(owner, name, githubToken)
     : { collaborators: [], error: null };
 
   const defaultBranch = repo.default_branch ?? "main";
-  const treeResult = providerToken
-    ? await fetchRepoTree(owner, name, defaultBranch, providerToken)
+  const treeResult = githubToken
+    ? await fetchRepoTree(owner, name, defaultBranch, githubToken)
     : { totalFolders: 0, byCategory: [], error: "GitHub not connected." };
+
+  const { events: fileEvents, error: fileActivityError } = githubToken
+    ? await fetchGithubRepoFileActivity(owner, name, githubToken, {
+        maxCommits: 18,
+        branch: defaultBranch,
+      })
+    : { events: [], error: "Connect GitHub to load commit activity." };
 
   const { data: trackedRow } = await supabase
     .from("tracked_repos")
@@ -197,17 +222,17 @@ export default async function RepoDetailPage({ params }: PageProps) {
       <div>
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background rounded-lg px-2 py-1 -ml-2"
+          className="-ml-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-cyan-100/70 transition-colors hover:text-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
         >
           ← Back to dashboard
         </Link>
-        <div className="mt-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+            <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
               {repo.name}
             </h1>
             {repo.description && (
-              <p className="mt-1.5 text-muted leading-relaxed">
+              <p className="mt-1.5 leading-relaxed text-cyan-100/65">
                 {repo.description}
               </p>
             )}
@@ -215,13 +240,13 @@ export default async function RepoDetailPage({ params }: PageProps) {
               href={repo.html_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-3 inline-block text-sm text-muted hover:text-foreground transition-colors"
+              className="mt-3 inline-block text-sm text-cyan-200/90 transition-colors hover:text-cyan-100"
             >
               Open on GitHub →
             </a>
           </div>
           <span
-            className="shrink-0 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted w-fit"
+            className="w-fit shrink-0 rounded-md border border-cyan-200/20 bg-[#050b16]/70 px-3 py-1.5 text-xs font-medium text-cyan-100/80"
             title={repo.private ? "Private" : "Public"}
           >
             {repo.private ? "Private" : "Public"}
@@ -256,7 +281,9 @@ export default async function RepoDetailPage({ params }: PageProps) {
       <ActivitySection
         owner={owner}
         name={name}
-        entries={activityEntries}
+        fileEvents={fileEvents}
+        auditEntries={activityEntries}
+        fileActivityError={fileActivityError}
       />
 
       <ProtectionSection

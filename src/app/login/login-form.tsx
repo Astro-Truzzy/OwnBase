@@ -3,20 +3,38 @@
 import { createClient } from "../../lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface LoginFormProps {
   redirectTo?: string;
   error?: string;
+  signedOut?: boolean;
 }
 
-export function LoginForm({ redirectTo, error }: LoginFormProps) {
+export function LoginForm({ redirectTo, error, signedOut }: LoginFormProps) {
   const router = useRouter();
   const next = redirectTo ?? "/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<{ type: "error"; text: string } | null>(null);
   const [isPending, setIsPending] = useState(false);
+
+  useEffect(() => {
+    if (!signedOut) return;
+    try {
+      for (const store of [localStorage, sessionStorage]) {
+        const keys: string[] = [];
+        for (let i = 0; i < store.length; i++) {
+          const k = store.key(i);
+          if (k && (k.startsWith("sb-") || k.toLowerCase().includes("supabase-auth")))
+            keys.push(k);
+        }
+        keys.forEach((k) => store.removeItem(k));
+      }
+    } catch {
+      /* ignore quota / private mode */
+    }
+  }, [signedOut]);
 
   async function handleEmailSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -43,7 +61,10 @@ export function LoginForm({ redirectTo, error }: LoginFormProps) {
     const redirectUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: redirectUrl },
+      options: {
+        redirectTo: redirectUrl,
+        queryParams: { prompt: "select_account" },
+      },
     });
     if (err) {
       setMessage({
@@ -60,11 +81,12 @@ export function LoginForm({ redirectTo, error }: LoginFormProps) {
     setMessage(null);
     const supabase = createClient();
     const redirectUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
-    const { error: err } = await supabase.auth.signInWithOAuth({
+    const { data, error: err } = await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
         redirectTo: redirectUrl,
         scopes: "repo",
+        skipBrowserRedirect: true,
       },
     });
     if (err) {
@@ -75,6 +97,9 @@ export function LoginForm({ redirectTo, error }: LoginFormProps) {
           : err.message,
       });
       return;
+    }
+    if (data?.url) {
+      window.location.assign(data.url);
     }
   }
 
@@ -87,6 +112,7 @@ export function LoginForm({ redirectTo, error }: LoginFormProps) {
       options: {
         redirectTo: redirectUrl,
         scopes: "read_api read_repository",
+        queryParams: { prompt: "login" },
       },
     });
     if (err) {
@@ -105,6 +131,11 @@ export function LoginForm({ redirectTo, error }: LoginFormProps) {
 
   return (
     <div className="space-y-4">
+      {signedOut && (
+        <p className="text-sm text-center rounded-lg border border-border bg-surface px-3 py-2 text-foreground">
+          You&apos;ve been signed out. Sign in again to continue.
+        </p>
+      )}
       {error === "auth" && (
         <p
           className="text-sm text-center rounded-lg border p-3"
@@ -146,6 +177,20 @@ export function LoginForm({ redirectTo, error }: LoginFormProps) {
           <GitHubIcon className="h-5 w-5 shrink-0" />
           Continue with GitHub
         </button>
+        {signedOut ? (
+          <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+            To pick a different GitHub account or see the GitHub sign-in screen,{" "}
+            <a
+              href="https://github.com/logout"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-foreground underline underline-offset-2 hover:no-underline"
+            >
+              sign out of GitHub in your browser
+            </a>{" "}
+            first (opens a new tab), then use the button above.
+          </p>
+        ) : null}
         <button
           type="button"
           onClick={signInWithGitLab}

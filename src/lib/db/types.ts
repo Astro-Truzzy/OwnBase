@@ -15,6 +15,17 @@ export interface ExecutiveSummary {
   externalServices: string[];
   /** Basic risk indicators (e.g. "No README", "Many external APIs") */
   riskIndicators: string[];
+  /**
+   * How to run the project locally: clone, install, env, dev server, tests.
+   * Plain text; no secret values. Filled by AI from README / manifests when possible.
+   */
+  localSetup?: string;
+  /** Main user or system flows (short bullets). */
+  operationalFlows?: string[];
+  /** Concrete actions for the person receiving the handoff. */
+  handoffNextSteps?: string[];
+  /** One short paragraph naming stack inferred from repo (languages, major libs). */
+  techStackOverview?: string;
 }
 
 export interface RepoSummaryRow {
@@ -70,6 +81,7 @@ export interface ProfileRow {
   paystack_subscription_code: string | null;
   subscription_ends_at: string | null;
   onboarding_checklist_dismissed_at?: string | null;
+  avatar_storage_path?: string | null;
   created_at: string;
   updated_at: string;
 }

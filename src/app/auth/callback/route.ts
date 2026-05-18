@@ -1,4 +1,5 @@
 import { createClient } from "../../../lib/supabase/server";
+import { persistGitHubTokens } from "../../../lib/supabase/github-token";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -11,8 +12,22 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const {
         data: { user },
       } = await supabase.auth.getUser();
+      if (
+        user &&
+        session?.provider_token &&
+        ((user.app_metadata?.provider as string) ?? "github") === "github"
+      ) {
+        await persistGitHubTokens(
+          user.id,
+          session.provider_token,
+          session.provider_refresh_token,
+        );
+      }
       if (user) {
         const fullName =
           (user.user_metadata?.full_name as string) ?? (user.user_metadata?.name as string) ?? "";

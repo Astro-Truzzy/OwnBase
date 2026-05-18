@@ -39,27 +39,27 @@ function Meter({
 }) {
   const ratio =
     max == null || max <= 0 ? null : Math.min(100, (used / max) * 100);
-  const tone =
+  const toneClass =
     ratio == null
-      ? "bg-accent"
+      ? ""
       : ratio >= 100
         ? "bg-red-500"
         : ratio >= 80
           ? "bg-amber-500"
-          : "bg-emerald-500";
+          : "bg-linear-to-r from-cyan-400 to-violet-400";
 
   return (
     <div className="min-w-0 flex-1">
-      <div className="mb-1 flex items-center justify-between gap-2 text-xs text-muted">
-        <span className="truncate font-medium text-foreground">{label}</span>
-        <span className="shrink-0 tabular-nums">
+      <div className="mb-1 flex items-center justify-between gap-2 text-xs text-cyan-100/65">
+        <span className="truncate font-medium text-cyan-50">{label}</span>
+        <span className="shrink-0 tabular-nums text-cyan-100/85">
           {max == null ? `${used} (unlimited)` : `${used} / ${max}`}
         </span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-border">
+      <div className="h-2 overflow-hidden rounded-full bg-border/80">
         {ratio != null && (
           <div
-            className={`h-full rounded-full transition-all ${tone}`}
+            className={`h-full rounded-full transition-all ${toneClass}`}
             style={{ width: `${Math.min(100, ratio)}%` }}
           />
         )}
@@ -102,13 +102,13 @@ export function DashboardActivation({
           <div className="mt-3 flex flex-wrap gap-3">
             <Link
               href="/dashboard/billing"
-              className="font-medium text-accent underline underline-offset-2 hover:no-underline"
+              className="font-medium text-cyan-300 underline underline-offset-2 hover:text-cyan-200 hover:no-underline"
             >
               Billing
             </Link>
             <Link
               href="/pricing"
-              className="font-medium text-accent underline underline-offset-2 hover:no-underline"
+              className="font-medium text-cyan-300 underline underline-offset-2 hover:text-cyan-200 hover:no-underline"
             >
               View plans
             </Link>
@@ -116,10 +116,10 @@ export function DashboardActivation({
         </div>
       )}
 
-      <div className="rounded-lg border border-border bg-surface/80 p-4 sm:p-5">
+      <div className="rounded-xl border border-cyan-200/20 bg-[#08101f]/90 p-4 shadow-[0_18px_40px_rgba(2,8,24,0.3)] backdrop-blur-sm sm:p-5">
         <div className="mb-3 flex items-center gap-2">
-          <IconChartBar className="h-4 w-4 text-accent" aria-hidden />
-          <h2 className="text-sm font-semibold text-foreground">
+          <IconChartBar className="h-4 w-4 text-cyan-300/90" aria-hidden />
+          <h2 className="text-sm font-semibold text-white">
             Plan usage ({usage.plan})
           </h2>
         </div>
@@ -143,13 +143,11 @@ export function DashboardActivation({
       </div>
 
       {showChecklist && (
-        <div className="rounded-lg border border-border bg-surface/80 p-4 sm:p-5">
+        <div className="rounded-xl border border-cyan-200/20 bg-[#08101f]/90 p-4 shadow-[0_18px_40px_rgba(2,8,24,0.3)] backdrop-blur-sm sm:p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-sm font-semibold text-foreground">
-                Get started
-              </h2>
-              <p className="mt-1 text-xs text-muted">
+              <h2 className="text-sm font-semibold text-white">Get started</h2>
+              <p className="mt-1 text-xs text-cyan-100/60">
                 Complete these steps to get value from Ownbase quickly.
               </p>
             </div>
@@ -161,7 +159,7 @@ export function DashboardActivation({
                 })
               }
               disabled={pending}
-              className="shrink-0 rounded-md p-1 text-muted hover:bg-border/50 hover:text-foreground disabled:opacity-50"
+              className="shrink-0 rounded-md p-1 text-cyan-100/50 hover:bg-white/5 hover:text-cyan-100 disabled:opacity-50"
               aria-label="Dismiss checklist"
             >
               <IconX className="h-4 w-4" />
@@ -172,17 +170,17 @@ export function DashboardActivation({
               <li key={step.id}>
                 <Link
                   href={step.href}
-                  className={`flex gap-3 rounded-md border p-3 transition-colors ${
+                  className={`flex gap-3 rounded-lg border p-3 transition-colors ${
                     step.done
-                      ? "border-border/60 bg-background/40"
-                      : "border-accent/30 bg-accent/5 hover:bg-accent/10"
+                      ? "border-cyan-200/15 bg-white/5 hover:bg-white/[0.07]"
+                      : "border-cyan-200/25 bg-cyan-400/5 hover:bg-cyan-400/10"
                   }`}
                 >
                   <span
                     className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs ${
                       step.done
-                        ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300"
-                        : "border-border text-muted"
+                        ? "border-cyan-400/45 bg-cyan-400/15 text-cyan-200"
+                        : "border-white/20 text-cyan-100/45"
                     }`}
                   >
                     {step.done ? (
@@ -192,19 +190,19 @@ export function DashboardActivation({
                     )}
                   </span>
                   <span className="min-w-0">
-                    <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <span className="flex items-center gap-2 text-sm font-medium text-cyan-50">
                       {step.id === "track" && (
-                        <IconFolder className="h-4 w-4 shrink-0 text-accent" />
+                        <IconFolder className="h-4 w-4 shrink-0 text-cyan-300/90" />
                       )}
                       {step.id === "upload" && (
-                        <IconUpload className="h-4 w-4 shrink-0 text-accent" />
+                        <IconUpload className="h-4 w-4 shrink-0 text-cyan-300/90" />
                       )}
                       {step.id === "summary" && (
-                        <IconSparkles className="h-4 w-4 shrink-0 text-accent" />
+                        <IconSparkles className="h-4 w-4 shrink-0 text-cyan-300/90" />
                       )}
                       {step.title}
                     </span>
-                    <span className="mt-0.5 block text-xs text-muted">
+                    <span className="mt-0.5 block text-xs text-cyan-100/60">
                       {step.description}
                     </span>
                   </span>

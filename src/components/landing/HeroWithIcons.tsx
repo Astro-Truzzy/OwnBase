@@ -1,58 +1,81 @@
 "use client";
 
 import {
-  IconFolder,
+  IconBrandGithub,
+  IconBrandGitlab,
   IconKey,
-  IconLock,
-  IconShield,
+  IconShieldCheck,
 } from "@tabler/icons-react";
 import { motion, useInView } from "motion/react";
 import { useRef } from "react";
 import { HeroIllustration } from "./HeroIllustration";
 
-const HERO_ICONS = [
-  { icon: IconLock, label: "Lock" },
-  { icon: IconShield, label: "Shield" },
-  { icon: IconFolder, label: "Repository" },
-  { icon: IconKey, label: "Access" },
+const BADGES = [
+  { icon: IconBrandGithub, label: "GitHub", color: "text-foreground/70" },
+  { icon: IconBrandGitlab, label: "GitLab", color: "text-orange-400/80" },
+  { icon: IconKey, label: "Access Control", color: "text-accent" },
+  {
+    icon: IconShieldCheck,
+    label: "Secure Vault",
+    color: "text-accent-emerald",
+  },
 ] as const;
 
-const STAGGER = 0.08;
+const STAGGER = 0.06;
 
 export function HeroWithIcons() {
-  const iconsRef = useRef<HTMLDivElement>(null);
-  const isInView = useInView(iconsRef, { once: true, amount: 0.3 });
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, amount: 0.3 });
 
   return (
-    <div className="flex flex-col items-center gap-8 w-full max-w-xl lg:max-w-2xl">
-      <div className="w-full">
-        <HeroIllustration />
-      </div>
-      <div
-        ref={iconsRef}
-        className="flex flex-wrap justify-center gap-6 sm:gap-8"
+    <div className="flex flex-col gap-5 w-full max-w-xl lg:max-w-2xl" ref={ref}>
+      {/* Illustration card */}
+      <motion.div
+        className="relative w-full overflow-hidden rounded-2xl border border-border bg-surface/60 shadow-2xl shadow-black/25 backdrop-blur-sm dark:border-border/90 dark:bg-surface/50 dark:shadow-[0_24px_60px_-12px_rgba(0,0,0,0.65),0_0_48px_-8px_rgba(34,211,238,0.12)] dark:ring-1 dark:ring-accent/20"
+        initial={{ opacity: 0, y: 16 }}
+        animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
       >
-        {HERO_ICONS.map(({ icon: Icon, label }, index) => (
+        {/* Gradient top accent line */}
+        <div
+          className="absolute inset-x-0 top-0 h-px"
+          style={{
+            background:
+              "linear-gradient(90deg, transparent, rgba(34,211,238,0.6) 40%, rgba(167,139,250,0.5) 70%, transparent)",
+          }}
+          aria-hidden
+        />
+        {/* Ambient inner glow */}
+        <div
+          className="pointer-events-none absolute inset-0 z-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 50% at 60% 0%, rgba(34,211,238,0.05) 0%, transparent 70%)",
+          }}
+          aria-hidden
+        />
+        <div className="relative z-10 p-2">
+          <HeroIllustration />
+        </div>
+      </motion.div>
+
+      {/* Feature badges */}
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+        {BADGES.map(({ icon: Icon, label, color }, i) => (
           <motion.div
             key={label}
-            className="flex flex-col items-center gap-2"
-            initial={{ opacity: 0, y: 12 }}
-            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/70 px-3 py-1.5 text-xs font-medium text-muted backdrop-blur-sm transition-colors hover:border-accent/45 hover:text-foreground dark:border-border/70 dark:bg-surface/80 dark:text-muted-foreground dark:hover:text-zinc-200"
+            initial={{ opacity: 0, y: 8 }}
+            animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
             transition={{
-              duration: 0.4,
-              delay: index * STAGGER,
+              duration: 0.35,
+              delay: 0.3 + i * STAGGER,
               ease: "easeOut",
             }}
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.04 }}
           >
-            <motion.div
-              className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-lg border border-border bg-surface/80 text-accent [&_svg]:h-7 [&_svg]:w-7 sm:[&_svg]:h-8 sm:[&_svg]:w-8"
-              whileHover={{ scale: 1.1, rotate: 5 }}
-              transition={{ type: "spring", stiffness: 400, damping: 15 }}
-            >
-              <Icon />
-            </motion.div>
-            <span className="text-sm font-medium text-muted">{label}</span>
+            <Icon className={`h-3.5 w-3.5 ${color}`} />
+            {label}
           </motion.div>
         ))}
       </div>

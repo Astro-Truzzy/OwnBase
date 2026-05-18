@@ -20,7 +20,10 @@ interface AccessSectionProps {
 const GITHUB_ACCESS_URL = (owner: string, repo: string) =>
   `https://github.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/settings/access`;
 
-const PERMISSION_OPTIONS: { label: string; value: "pull" | "push" | "admin" }[] = [
+const PERMISSION_OPTIONS: {
+  label: string;
+  value: "pull" | "push" | "admin";
+}[] = [
   { label: "View only", value: "pull" },
   { label: "Can edit", value: "push" },
   { label: "Full access", value: "admin" },
@@ -33,8 +36,13 @@ export function AccessSection({
   error,
 }: AccessSectionProps) {
   const [username, setUsername] = useState("");
-  const [permission, setPermission] = useState<"pull" | "push" | "admin">("push");
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [permission, setPermission] = useState<"pull" | "push" | "admin">(
+    "push",
+  );
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const [removingLogin, setRemovingLogin] = useState<string | null>(null);
   const [isAddPending, startAddTransition] = useTransition();
 
@@ -49,57 +57,84 @@ export function AccessSection({
       return;
     }
     startAddTransition(async () => {
-      const result = await addCollaboratorAction(owner, name, value, permission);
+      const result = await addCollaboratorAction(
+        owner,
+        name,
+        value,
+        permission,
+      );
       if (result.success) {
         setMessage({ type: "success", text: `Access granted to ${value}.` });
         setUsername("");
       } else {
-        setMessage({ type: "error", text: result.error ?? "Could not add collaborator." });
+        setMessage({
+          type: "error",
+          text: result.error ?? "Could not add collaborator.",
+        });
       }
     });
   };
 
   const handleRemove = (login: string) => {
-    if (!confirm(`Remove ${login} from this repository? They will lose access.`)) return;
+    if (
+      !confirm(`Remove ${login} from this repository? They will lose access.`)
+    )
+      return;
     clearMessage();
     setRemovingLogin(login);
-    removeCollaboratorAction(owner, name, login).then((result: ManageAccessResult) => {
-      setRemovingLogin(null);
-      if (result.success) {
-        setMessage({ type: "success", text: `${login}’s access has been removed.` });
-      } else {
-        setMessage({ type: "error", text: result.error ?? "Could not remove access." });
-      }
-    });
+    removeCollaboratorAction(owner, name, login).then(
+      (result: ManageAccessResult) => {
+        setRemovingLogin(null);
+        if (result.success) {
+          setMessage({
+            type: "success",
+            text: `${login}’s access has been removed.`,
+          });
+        } else {
+          setMessage({
+            type: "error",
+            text: result.error ?? "Could not remove access.",
+          });
+        }
+      },
+    );
   };
 
   const manageUrl = GITHUB_ACCESS_URL(owner, name);
 
   return (
-    <section className="rounded-xl border border-border bg-surface p-6 sm:p-8">
+    <section
+      id="access"
+      className="dash-panel scroll-mt-[calc(64px+0.75rem)] p-6 sm:scroll-mt-[calc(56px+0.75rem)] sm:p-8"
+    >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-medium text-foreground">
-          Who has access
-        </h2>
+        <h2 className="text-lg font-medium text-cyan-50">Who has access</h2>
         <a
           href={manageUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors w-fit focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background rounded px-1 -ml-1"
+          className="-ml-1 inline-flex w-fit items-center gap-1.5 rounded px-1 text-sm text-cyan-100/65 transition-colors hover:text-cyan-100 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
         >
           <IconExternalLink className="h-4 w-4" aria-hidden />
           Advanced: manage on GitHub
         </a>
       </div>
 
-      <p className="mt-1 text-sm text-muted">
-        Control who has access. Grant new collaborators or revoke access in one click—no need to leave this page.
+      <p className="mt-1 text-sm text-cyan-100/65">
+        Control who has access. Grant new collaborators or revoke access in one
+        click—no need to leave this page.
       </p>
 
       {/* In-app invite form */}
-      <form onSubmit={handleInvite} className="mt-6 flex flex-wrap items-end gap-3">
+      <form
+        onSubmit={handleInvite}
+        className="mt-6 flex flex-wrap items-end gap-3"
+      >
         <div className="flex-1 min-w-[180px]">
-          <label htmlFor="invite-username" className="block text-sm font-medium text-foreground mb-1">
+          <label
+            htmlFor="invite-username"
+            className="mb-1 block text-sm font-medium text-cyan-100"
+          >
             GitHub username
           </label>
           <input
@@ -109,20 +144,25 @@ export function AccessSection({
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             onFocus={clearMessage}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
+            className="dash-input w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
             disabled={isAddPending}
             autoComplete="username"
           />
         </div>
         <div className="w-full sm:w-[140px]">
-          <label htmlFor="invite-permission" className="block text-sm font-medium text-foreground mb-1">
+          <label
+            htmlFor="invite-permission"
+            className="mb-1 block text-sm font-medium text-cyan-100"
+          >
             Access level
           </label>
           <select
             id="invite-permission"
             value={permission}
-            onChange={(e) => setPermission(e.target.value as "pull" | "push" | "admin")}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
+            onChange={(e) =>
+              setPermission(e.target.value as "pull" | "push" | "admin")
+            }
+            className="dash-input w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
             disabled={isAddPending}
           >
             {PERMISSION_OPTIONS.map((opt) => (
@@ -135,7 +175,7 @@ export function AccessSection({
         <button
           type="submit"
           disabled={isAddPending}
-          className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-medium text-foreground hover:bg-surface-elevated transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
+          className="inline-flex items-center gap-2 rounded-lg border border-cyan-200/20 bg-[#050b16]/85 px-4 py-2.5 text-sm font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-[#0f1a2e] disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
         >
           <IconUserPlus className="h-4 w-4" aria-hidden />
           {isAddPending ? "Adding…" : "Grant access"}
@@ -151,13 +191,12 @@ export function AccessSection({
         </p>
       )}
 
-      {error && (
-        <p className="mt-4 text-sm text-muted">{error}</p>
-      )}
+      {error && <p className="mt-4 text-sm text-cyan-100/65">{error}</p>}
 
       {!error && collaborators.length === 0 && (
-        <p className="mt-4 text-sm text-muted leading-relaxed">
-          No collaborators yet. Use the form above to grant access by GitHub username.
+        <p className="mt-4 text-sm leading-relaxed text-cyan-100/60">
+          No collaborators yet. Use the form above to grant access by GitHub
+          username.
         </p>
       )}
 
@@ -165,7 +204,7 @@ export function AccessSection({
         <div className="mt-6 overflow-x-auto -mx-1 sm:mx-0">
           <table className="w-full min-w-[320px] text-sm">
             <thead>
-              <tr className="border-b border-border text-left text-muted">
+              <tr className="border-b border-cyan-200/15 text-left text-cyan-100/60">
                 <th className="pb-3 font-medium">Person</th>
                 <th className="pb-3 font-medium">Access level</th>
                 <th className="pb-3 font-medium w-24 text-right">Actions</th>
@@ -175,7 +214,7 @@ export function AccessSection({
               {collaborators.map((collab) => (
                 <tr
                   key={collab.id}
-                  className="border-b border-border last:border-0"
+                  className="border-b border-cyan-200/12 last:border-0"
                 >
                   <td className="py-3">
                     <a
@@ -189,12 +228,12 @@ export function AccessSection({
                         alt=""
                         className="h-8 w-8 rounded-full"
                       />
-                      <span className="font-medium text-foreground">
+                      <span className="font-medium text-cyan-50">
                         {collab.login}
                       </span>
                     </a>
                   </td>
-                  <td className="py-3 text-muted">
+                  <td className="py-3 text-cyan-100/65">
                     {getAccessLevelLabel(collab)}
                   </td>
                   <td className="py-3 text-right">
@@ -207,7 +246,9 @@ export function AccessSection({
                       title="Revoke access in one click"
                     >
                       <IconTrash className="h-3.5 w-3.5" aria-hidden />
-                      {removingLogin === collab.login ? "Revoking…" : "Revoke access"}
+                      {removingLogin === collab.login
+                        ? "Revoking…"
+                        : "Revoke access"}
                     </button>
                   </td>
                 </tr>

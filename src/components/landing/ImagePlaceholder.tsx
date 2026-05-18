@@ -17,7 +17,9 @@ export function ImagePlaceholder({
       style={{ aspectRatio }}
       aria-hidden
     >
-      <span className="text-sm font-medium text-muted/70">{label}</span>
+      <span className="text-sm font-medium text-muted-foreground/70">
+        {label}
+      </span>
     </div>
   );
 }

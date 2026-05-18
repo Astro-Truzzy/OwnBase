@@ -7,8 +7,10 @@ import { useActiveSection } from "@/hooks/useActiveSection";
 import {
   IconAlertTriangle,
   IconHome2,
+  IconLayoutDashboard,
   IconLockCheck,
   IconRocket,
+  IconCoins,
   IconRoute,
   IconShieldCheck,
   IconSparkles,
@@ -20,7 +22,9 @@ const SECTION_IDS = [
   "the-solution",
   "how-it-works",
   "features",
+  "live-dashboard",
   "trust",
+  "pricing",
   "final-cta",
 ];
 
@@ -51,9 +55,19 @@ const DOCK_ITEMS = [
     icon: <IconSparkles className="h-full w-full text-muted" />,
   },
   {
+    title: "Dashboard",
+    href: "#live-dashboard",
+    icon: <IconLayoutDashboard className="h-full w-full text-muted" />,
+  },
+  {
     title: "Trust",
     href: "#trust",
     icon: <IconLockCheck className="h-full w-full text-muted" />,
+  },
+  {
+    title: "Pricing",
+    href: "#pricing",
+    icon: <IconCoins className="h-full w-full text-muted" />,
   },
   {
     title: "Get started",
@@ -69,25 +83,34 @@ export function LandingNav() {
   return (
     <>
       {/* Mobile: compact top bar */}
-      <header className="fixed left-0 right-0 top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/90 px-4 backdrop-blur-md lg:hidden">
-        <Link href="/" className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10 text-accent">
-            <Logo className="h-4 w-4" />
-          </span>
-          Ownbase
-        </Link>
+      <header className="fixed left-0 right-0 top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/85 px-4 backdrop-blur-md lg:hidden">
         <Link
-          href="/login"
-          className="text-sm font-medium text-muted transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
+          href="/"
+          className="flex items-center text-base font-semibold tracking-tight text-foreground"
         >
-          Sign in
+          <Logo variant="full" className="max-h-7 max-w-44 sm:max-h-8" />
         </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/login"
+            className="text-sm font-medium text-muted transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
+          >
+            Sign in
+          </Link>
+          <Link
+            href="/signup"
+            className="rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-background transition-colors hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
+          >
+            Get started
+          </Link>
+        </div>
       </header>
 
+      {/* Desktop: floating dock */}
       <FloatingDock
         items={[...DOCK_ITEMS]}
         activeHref={activeHref}
-        desktopClassName="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 border border-border bg-surface/70 backdrop-blur-md shadow-lg shadow-black/10 dark:shadow-black/30"
+        desktopClassName="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 border border-border/80 bg-surface/75 backdrop-blur-md shadow-xl shadow-black/20"
         mobileClassName="fixed bottom-5 right-5 z-40"
       />
     </>

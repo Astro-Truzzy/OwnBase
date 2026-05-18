@@ -25,7 +25,11 @@ function formatIso(iso: string): string {
   }
 }
 
-export function ProtectionSection({ owner, name, activityEntries }: ProtectionSectionProps) {
+export function ProtectionSection({
+  owner,
+  name,
+  activityEntries,
+}: ProtectionSectionProps) {
   const [exporting, setExporting] = useState(false);
 
   const handleExport = () => {
@@ -36,7 +40,9 @@ export function ProtectionSection({ owner, name, activityEntries }: ProtectionSe
       label: ACTION_LABELS[e.action_type] ?? e.action_type,
       details: e.details,
     }));
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -47,24 +53,26 @@ export function ProtectionSection({ owner, name, activityEntries }: ProtectionSe
   };
 
   return (
-    <section className="rounded-xl border border-border bg-surface p-6 sm:p-8">
+    <section className="dash-panel p-6 sm:p-8">
       <div className="flex items-center gap-3">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
           <IconShield className="h-5 w-5" aria-hidden />
         </div>
-        <h2 className="text-lg font-medium text-foreground">
+        <h2 className="text-lg font-medium text-cyan-50">
           Protect your digital assets
         </h2>
       </div>
-      <p className="mt-2 text-sm text-muted">
-        Keep a record of access and organization changes. Export the audit log for compliance or long-term archiving. Your code stays on GitHub; we help you track who has access and what changed.
+      <p className="mt-2 text-sm text-cyan-100/65">
+        Keep a record of access and organization changes. Export the audit log
+        for compliance or long-term archiving. Your code stays on GitHub; we
+        help you track who has access and what changed.
       </p>
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <button
           type="button"
           onClick={handleExport}
           disabled={exporting || activityEntries.length === 0}
-          className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-elevated transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
+          className="inline-flex items-center gap-2 rounded-lg border border-cyan-200/20 bg-[#050b16]/85 px-4 py-2 text-sm font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-[#0f1a2e] disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
         >
           <IconDownload className="h-4 w-4" aria-hidden />
           {exporting ? "Exporting…" : "Export audit log (JSON)"}

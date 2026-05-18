@@ -4,116 +4,119 @@ import { LandingNav } from "../components/landing/LandingNav";
 import { HeroWithIcons } from "../components/landing/HeroWithIcons";
 import { LandingSections } from "../components/landing/LandingSections";
 import { LandingFooter } from "../components/landing/LandingFooter";
-import { GridBackground } from "@/components/ui/gridbackground";
-import { ParallaxHeroImages } from "@/components/ui/parallax-hero-images";
-
-const HERO_PARALLAX_IMAGES = [
-  "/Images/3528471-01.jpg",
-  "/Images/Business hero section.png",
-  "/Images/dashboard-concept-illustration_114360-4351.avif",
-  "/Images/small-business-corporation-management-small-and-medium-sized-enterprises-business.jpg",
-  "/Images/github logo.png",
-  "/Images/istockphoto-1315918172-612x612.jpg",
-  "/Images/Programmer-Illustration.jpg",
-  "/Images/Free-Business-Website-Illustration-JPEG-1.jpg",
-];
+import { HeroBands } from "../components/landing/HeroBands";
+import { ProductShowcase } from "../components/landing/ProductShowcase";
+import {
+  IconArrowRight,
+  IconBrandGithub,
+  IconBrandGitlab,
+  IconShieldLock,
+} from "@tabler/icons-react";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen max-w-full bg-background flex flex-col">
+    <div className="relative min-h-screen max-w-full bg-background flex flex-col">
+      <HeroBands />
+
       <LandingNav />
 
       <main className="flex-1 pt-14 lg:pt-0">
-        {/* Section 1 — Hero */}
-        <section
-          id="top"
-          className="relative min-h-screen border-b border-border overflow-hidden"
-          aria-label="Hero"
-        >
-          {/* Grid pattern (bottom layer) */}
-          <GridBackground
-            className="absolute inset-0 z-0 min-h-0 [--grid-line-color:var(--muted)]"
-            showVignette={false}
-          />
-          {/* Ambient glow orbs (subtle motion) */}
-          <div
-            className="pointer-events-none absolute -left-24 top-1/4 z-0 h-64 w-64 rounded-full bg-accent/15 blur-3xl hero-orb-float"
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute -right-24 bottom-1/4 z-0 h-72 w-72 rounded-full bg-accent/10 blur-3xl hero-orb-float [animation-delay:1.5s]"
-            aria-hidden
-          />
-          {/* Parallax images */}
-          <ParallaxHeroImages
-            images={HERO_PARALLAX_IMAGES}
-            className="z-0"
-            imageClassName="ring-border/50 object-cover opacity-90"
-          />
-          {/* Dark overlay for text contrast */}
-          <div
-            className="absolute inset-0 z-1 bg-black/80"
-            aria-hidden
-          />
-          <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-24 lg:py-28">
+        {/* Hero */}
+        <section id="top" className="relative min-h-screen" aria-label="Hero">
+          <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 py-20 sm:py-28 lg:py-32">
             <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 lg:items-center">
+              {/* Copy */}
               <div className="order-2 lg:order-1">
-                <div className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-background/60 px-3 py-1.5 text-xs font-medium text-accent backdrop-blur-sm">
-                  <span className="status-dot" aria-hidden />
-                  AI-powered code visibility for business owners
+                {/* Eyebrow — neutral product label (avoid dev/AI cliché: mono, neon, pulse) */}
+                <div className="inline-flex items-center gap-2 border border-border/90 bg-muted/50 px-3.5 py-1.5 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur-sm dark:bg-muted/35 dark:border-border">
+                  {/* <span
+                    className="h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/30 dark:bg-foreground/45"
+                    aria-hidden
+                  /> */}
+                  <span className="tracking-[-0.01em]">
+                    Code visibility for business owners
+                  </span>
                 </div>
-                <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
-                  <EncryptedText
-                    text="Your Code. Your Business. Your Control."
-                    encryptedClassName="text-muted"
-                    revealedClassName="text-foreground"
-                    revealDelayMs={55}
-                  />
+
+                {/* Headline */}
+                <h1 className="mt-5 text-[2.6rem] font-semibold tracking-tight sm:text-5xl lg:text-[3.4rem] leading-[1.08]">
+                  <span className="block text-foreground">
+                    <EncryptedText
+                      text="Your Code."
+                      encryptedClassName="text-muted-foreground/55 dark:text-muted-foreground/50"
+                      revealedClassName="text-foreground"
+                      revealDelayMs={48}
+                    />
+                  </span>
+                  <span className="block gradient-text">Your Business.</span>
+                  <span className="block text-foreground">
+                    <EncryptedText
+                      text="Your Control."
+                      encryptedClassName="text-muted-foreground/55 dark:text-muted-foreground/50"
+                      revealedClassName="text-foreground"
+                      revealDelayMs={52}
+                    />
+                  </span>
                 </h1>
-                <p className="mt-4 text-lg text-muted leading-relaxed">
+
+                <p className="mt-5 text-base text-muted leading-relaxed max-w-lg">
                   Ownbase ensures your company always owns and controls the
                   source code of your website, apps, and digital products — even
                   when external developers build them.
                 </p>
-                <p className="mt-4 text-sm text-muted/90 leading-relaxed">
-                  Connect your repository or upload your project — GitHub, GitLab, or direct upload.
-                  Your code is stored in an environment owned by your business.
+                <p className="mt-3 text-sm text-muted-foreground/90 dark:text-zinc-400 leading-relaxed max-w-lg">
+                  Connect via GitHub, GitLab, or direct upload. Your code lives
+                  in an environment owned by your business, not your
+                  contractors.
                 </p>
-                <div className="mt-8 flex flex-wrap gap-4">
+
+                {/* CTAs */}
+                <div className="mt-8 flex flex-wrap gap-3">
                   <Link
                     href="/signup"
-                    className="inline-flex items-center justify-center rounded-lg bg-accent text-white px-6 py-3 text-sm font-medium hover:bg-accent-hover transition-all focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background hover:shadow-lg hover:shadow-accent/20"
+                    className="inline-flex items-center gap-2 rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground hover:bg-accent-hover transition-all focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background hover:shadow-[0_0_28px_rgba(34,211,238,0.35)] dark:shadow-[0_0_32px_rgba(34,211,238,0.42)] dark:hover:bg-accent-hover"
                   >
                     Start Securing Your Code
+                    <IconArrowRight className="h-4 w-4" />
                   </Link>
                   <a
                     href="#how-it-works"
-                    className="inline-flex items-center justify-center rounded-lg border border-border bg-transparent px-6 py-3 text-sm font-medium text-foreground hover:bg-surface transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
+                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface/60 px-6 py-3 text-sm font-medium text-foreground hover:bg-surface hover:border-accent/35 transition-all focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background backdrop-blur-sm dark:border-accent/35 dark:bg-surface-elevated/70 dark:text-zinc-100 dark:hover:border-accent/55 dark:hover:bg-surface"
                   >
                     See How It Works
                   </a>
                 </div>
-                <div className="mt-5 flex flex-wrap items-center gap-5 text-xs text-muted">
-                  <span className="inline-flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-accent/80" aria-hidden />
-                    No platform lock-in
+
+                {/* Trust bullets */}
+                <div className="mt-6 flex flex-wrap items-center gap-5 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <IconBrandGithub className="h-3.5 w-3.5 text-accent dark:text-accent" />
+                    <IconBrandGitlab className="h-3.5 w-3.5 text-orange-400/85 dark:text-orange-400/90 -ml-0.5" />
+                    GitHub &amp; GitLab
                   </span>
-                  <span className="inline-flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-accent/80" aria-hidden />
+                  <span className="inline-flex items-center gap-1.5">
+                    <IconShieldLock className="h-3.5 w-3.5 text-accent dark:text-accent" />
                     One-click access control
                   </span>
-                  <span className="inline-flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-accent/80" aria-hidden />
-                    Full activity trail
+                  <span className="inline-flex items-center gap-1.5">
+                    <span
+                      className="h-1.5 w-1.5 rounded-full bg-accent-emerald/70 dark:bg-emerald-400/90 shadow-[0_0_10px_rgba(52,211,153,0.45)]"
+                      aria-hidden
+                    />
+                    No platform lock-in
                   </span>
                 </div>
               </div>
+
+              {/* Illustration */}
               <div className="order-1 lg:order-2 flex justify-center lg:justify-end">
                 <HeroWithIcons />
               </div>
             </div>
           </div>
         </section>
+
+        <ProductShowcase />
 
         <LandingSections />
       </main>

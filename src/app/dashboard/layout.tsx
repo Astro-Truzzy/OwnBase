@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { IconBell, IconCalendar, IconChevronRight } from "@tabler/icons-react";
+import { Suspense } from "react";
 import { Logo } from "@/components/Logo";
 import { createClient } from "../../lib/supabase/server";
+import { DashboardSearchProvider } from "./dashboard-search-context";
 import { DashboardSideRail } from "./dashboard-side-rail";
+import { DashboardTopBar } from "./dashboard-top-bar";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -28,7 +30,7 @@ export default async function DashboardLayout({
   let { data: profileRow } = await supabase
     .from("profiles")
     .select(
-      "first_name, last_name, business_name, trial_ends_at, plan, subscription_ends_at",
+      "first_name, last_name, business_name, avatar_storage_path, trial_ends_at, plan, subscription_ends_at",
     )
     .eq("user_id", user.id)
     .maybeSingle();
@@ -69,7 +71,7 @@ export default async function DashboardLayout({
     const { data: created } = await supabase
       .from("profiles")
       .select(
-        "first_name, last_name, business_name, trial_ends_at, plan, subscription_ends_at",
+        "first_name, last_name, business_name, avatar_storage_path, trial_ends_at, plan, subscription_ends_at",
       )
       .eq("user_id", user.id)
       .single();
@@ -100,8 +102,19 @@ export default async function DashboardLayout({
     ).toUpperCase() ||
     (user.email?.slice(0, 2).toUpperCase() ?? "OB");
 
+  let avatarSignedUrl: string | null = null;
+  const avatarPath = profileRow?.avatar_storage_path as string | null | undefined;
+  if (avatarPath) {
+    const { data: signed } = await supabase.storage
+      .from("avatars")
+      .createSignedUrl(avatarPath, 3600);
+    avatarSignedUrl = signed?.signedUrl ?? null;
+  }
+
+  /* `dark` class scopes Tailwind `dark:*` and `.dark .dash-panel` so the shell stays
+     correct even when the global theme toggle is set to light. */
   return (
-    <div className="h-screen overflow-hidden bg-background text-foreground">
+    <div className="dark h-screen overflow-hidden bg-background text-foreground">
       {trialExpired && (
         <div className="border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-center text-xs text-amber-200">
           Your free trial has ended.{" "}
@@ -115,82 +128,55 @@ export default async function DashboardLayout({
         </div>
       )}
 
-      <div className="flex h-full">
-        <aside className="hidden h-full w-64 shrink-0 border-r border-border bg-surface/70 md:flex md:flex-col">
-          <div className="border-b border-border p-6">
-            <Link href="/dashboard" className="flex items-center gap-3">
-              <span className="flex h-8 w-8 items-center justify-center rounded-sm bg-foreground text-background">
-                <Logo className="h-4 w-4" />
-              </span>
-              <span className="text-xl font-medium tracking-tight">
-                Ownbase
-              </span>
-            </Link>
-          </div>
-
-          <DashboardSideRail />
-
-          <div className="border-t border-border p-4">
-            <div className="flex items-center gap-3 rounded-md border border-border bg-background/60 p-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-sm bg-surface-elevated text-xs font-semibold text-foreground">
-                {initials}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-foreground">
-                  {displayName}
-                </p>
-                <p className="truncate text-xs text-muted">
-                  {profileRow?.plan === "pro" ? "Pro plan" : "Administrator"}
-                </p>
-              </div>
-              <IconChevronRight className="h-4 w-4 text-muted" aria-hidden />
+      <Suspense fallback={null}>
+        <DashboardSearchProvider>
+          <div className="flex h-full">
+            <aside className="hidden h-full w-60 shrink-0 flex-col border-r border-border bg-[#0c121c] md:flex lg:w-64">
+            <div className="border-b border-border/80 px-5 py-5">
+              <Link href="/dashboard" className="flex items-center gap-3">
+                <Logo className="h-8 w-8" />
+                <span className="text-lg font-semibold tracking-tight text-foreground">
+                  Ownbase
+                </span>
+              </Link>
             </div>
-          </div>
-        </aside>
 
-        <main className="relative flex h-full flex-1 flex-col overflow-hidden bg-background">
-          <header className="z-20 flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/90 px-6 backdrop-blur-sm sm:px-8">
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-semibold text-foreground">
-                Executive Dashboard
-              </h1>
-              <span className="rounded-sm border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-300">
-                Live
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 rounded-sm border border-border bg-surface-elevated px-3 py-1.5 text-sm text-muted">
-                <IconCalendar className="h-4 w-4" />
-                Last 30 days
+            <DashboardSideRail />
+          </aside>
+
+          <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-background">
+            <Suspense fallback={null}>
+              <DashboardTopBar
+                displayName={displayName}
+                initials={initials}
+                email={user.email ?? null}
+                plan={profileRow?.plan ?? null}
+                avatarUrl={avatarSignedUrl}
+              />
+            </Suspense>
+
+            <div className="app-scrollbar dash-page relative flex-1 overflow-y-auto bg-[#070b12] px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+              <div className="dash-ambient z-0" aria-hidden />
+              <div
+                className="pointer-events-none absolute inset-0 z-10 opacity-[0.025]"
+                style={{
+                  backgroundImage:
+                    "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")",
+                }}
+                aria-hidden
+              />
+              <div
+                className="pointer-events-none absolute inset-0 z-1 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-size-[48px_48px] opacity-[0.055]"
+                aria-hidden
+              />
+              <div className="relative z-2 min-w-0 w-full max-w-full">
+                {children}
               </div>
-              <button
-                type="button"
-                className="relative rounded-sm p-2 text-muted transition-colors hover:text-foreground"
-                aria-label="Notifications"
-              >
-                <IconBell className="h-5 w-5" />
-                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-accent" />
-              </button>
             </div>
-          </header>
-
-          <div className="relative flex-1 overflow-y-auto px-6 py-6 sm:px-8">
-            <div
-              className="pointer-events-none fixed inset-0 z-10 opacity-[0.03]"
-              style={{
-                backgroundImage:
-                  "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")",
-              }}
-              aria-hidden
-            />
-            <div
-              className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-size-[48px_48px] opacity-[0.04]"
-              aria-hidden
-            />
-            <div className="relative">{children}</div>
+          </main>
           </div>
-        </main>
-      </div>
+        </DashboardSearchProvider>
+      </Suspense>
     </div>
   );
 }

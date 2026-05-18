@@ -3,7 +3,6 @@ import { createClient } from "@supabase/supabase-js";
 /**
  * Server-only Supabase client with service role key.
  * Bypasses RLS — use only in trusted server code (e.g. webhooks, cron).
- * Set SUPABASE_SERVICE_ROLE_KEY in env.
  */
 export function createAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -19,3 +18,6 @@ export function createAdminClient() {
     },
   });
 }
+
+/** Alias used by GitHub token persistence helpers. */
+export const createServiceClient = createAdminClient;

@@ -1,18 +1,40 @@
-import Link from "next/link";
-import { createClient } from "../../../lib/supabase/server";
 import { redirect } from "next/navigation";
+import { fetchRepoCollaborators } from "../../../lib/github/fetch-collaborators";
 import {
-  IconBuilding,
-  IconFolder,
-  IconPlus,
-  IconUpload,
-  IconArrowRight,
-} from "@tabler/icons-react";
+  buildPortfolioRiskSnapshot,
+  normalizeSummary,
+} from "../../../lib/dashboard/org-risk-assessment";
+import { createClient } from "../../../lib/supabase/server";
+import { isReportDeliveryPreferencesTableMissing } from "../../../lib/report-delivery-preferences-schema";
+import { OrganizationHashScroll } from "./organization-hash-scroll";
+import { OrganizationPageClient } from "./organization-page-client";
+import type { ReportScheduleInitial } from "./organization-report-types";
 
-function repoDetailHref(fullName: string): string {
-  const [owner, ...rest] = fullName.split("/");
-  const name = rest.join("/") || fullName;
-  return `/dashboard/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`;
+const MAX_GITHUB_COLLAB_FETCH = 22;
+const COLLAB_FETCH_TIMEOUT_MS = 2500;
+
+async function fetchRepoCollaboratorsWithTimeout(
+  owner: string,
+  name: string,
+  providerToken: string,
+): Promise<Awaited<ReturnType<typeof fetchRepoCollaborators>>> {
+  const timeoutPromise = new Promise<
+    Awaited<ReturnType<typeof fetchRepoCollaborators>>
+  >((resolve) => {
+    setTimeout(
+      () =>
+        resolve({
+          collaborators: [],
+          error: "Collaborator request timed out",
+        }),
+      COLLAB_FETCH_TIMEOUT_MS,
+    );
+  });
+
+  return Promise.race([
+    fetchRepoCollaborators(owner, name, providerToken),
+    timeoutPromise,
+  ]);
 }
 
 export default async function OrganizationPage() {
@@ -23,6 +45,13 @@ export default async function OrganizationPage() {
 
   if (!user) redirect("/login");
 
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const provider = (user?.app_metadata?.provider as string) ?? "github";
+  const providerToken = session?.provider_token ?? null;
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("business_name")
@@ -31,115 +60,140 @@ export default async function OrganizationPage() {
 
   const businessName = profile?.business_name?.trim() ?? null;
 
-  const { data: trackedRepos } = await supabase
-    .from("tracked_repos")
-    .select("full_name, repo_owner, repo_name, added_at")
-    .eq("user_id", user.id)
-    .order("added_at", { ascending: false });
+  const [{ data: trackedRepos }, { data: summaryRows }, { data: auditRows }] =
+    await Promise.all([
+      supabase
+        .from("tracked_repos")
+        .select("full_name, repo_owner, repo_name, added_at")
+        .eq("user_id", user.id)
+        .order("added_at", { ascending: false }),
+      supabase
+        .from("repo_summaries")
+        .select("full_name, summary_json")
+        .eq("user_id", user.id),
+      supabase
+        .from("activity_log")
+        .select("id, full_name, action_type, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(120),
+    ]);
 
-  const repos = trackedRepos ?? [];
+  const tracked = trackedRepos ?? [];
+
+  const summariesByRepo = new Map<
+    string,
+    NonNullable<ReturnType<typeof normalizeSummary>>
+  >();
+  for (const row of summaryRows ?? []) {
+    const parsed = normalizeSummary(row.summary_json);
+    if (parsed && row.full_name) summariesByRepo.set(row.full_name, parsed);
+  }
+
+  const collaboratorCounts = new Map<
+    string,
+    {
+      count: number | null;
+      error?: string;
+      custodyAssessmentSkipped?: boolean;
+    }
+  >();
+
+  const trackedGithubLimited = tracked
+    .filter((row) => row.repo_owner !== "gitlab")
+    .slice(0, MAX_GITHUB_COLLAB_FETCH);
+
+  for (const row of tracked) {
+    if (row.repo_owner === "gitlab") {
+      collaboratorCounts.set(row.full_name, {
+        count: null,
+        custodyAssessmentSkipped: true,
+        error: "Verify member roster in GitLab — not fetched via Ownbase.",
+      });
+    }
+  }
+
+  if (provider !== "gitlab" && providerToken) {
+    await Promise.allSettled(
+      trackedGithubLimited.map(async (row) => {
+        const owner = row.repo_owner;
+        const name = row.repo_name;
+        const { collaborators, error } = await fetchRepoCollaboratorsWithTimeout(
+          owner,
+          name,
+          providerToken,
+        );
+        if (error && collaborators.length === 0) {
+          collaboratorCounts.set(row.full_name, {
+            count: null,
+            error,
+          });
+        } else {
+          collaboratorCounts.set(row.full_name, {
+            count: collaborators.length,
+          });
+        }
+      }),
+    );
+  }
+
+  const snapshot = buildPortfolioRiskSnapshot({
+    trackedFullNames: tracked.map((r) => r.full_name),
+    summariesByRepo,
+    collaboratorCounts,
+    recentAuditRows: auditRows ?? [],
+  });
+
+  const githubTrackedForCustody = tracked.filter(
+    (r) => r.repo_owner !== "gitlab",
+  ).length;
+
+  const custodyFetchNote =
+    provider !== "gitlab" &&
+    providerToken &&
+    githubTrackedForCustody > MAX_GITHUB_COLLAB_FETCH
+      ? `Collaborator counts load from GitHub for the ${MAX_GITHUB_COLLAB_FETCH} most recently added repositories. Add summaries for full diligence on every repo.`
+      : null;
+
+  const { data: reportPrefRow, error: reportPrefError } = await supabase
+    .from("report_delivery_preferences")
+    .select("enabled, cadence, destination_email, last_sent_at")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (
+    reportPrefError &&
+    !isReportDeliveryPreferencesTableMissing(reportPrefError)
+  ) {
+    console.error("report_delivery_preferences", reportPrefError.message);
+  }
+
+  const reportScheduleInitial: ReportScheduleInitial = reportPrefRow
+    ? {
+        enabled: Boolean(reportPrefRow.enabled),
+        cadence:
+          reportPrefRow.cadence === "monthly" ? "monthly" : "weekly",
+        destination_email: String(reportPrefRow.destination_email ?? ""),
+        last_sent_at: reportPrefRow.last_sent_at ?? null,
+      }
+    : {
+        enabled: false,
+        cadence: "weekly",
+        destination_email: user.email ?? "",
+        last_sent_at: null,
+      };
 
   return (
-    <div className="space-y-10 sm:space-y-12">
-      <div>
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background rounded-lg px-2 py-1 -ml-2"
-        >
-          ← Back to dashboard
-        </Link>
-        <div className="mt-6 flex items-start gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
-            <IconBuilding className="h-7 w-7" aria-hidden />
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-              Your organization
-            </h1>
-            {businessName && (
-              <p className="mt-1 text-lg text-foreground/90">{businessName}</p>
-            )}
-            <p className="mt-2 text-sm text-muted max-w-2xl">
-              Your organization is where you keep repositories and projects under your control.
-              Create it by adding repos from GitHub or GitLab, or by uploading a project.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Create / set up organization */}
-      <section className="rounded-xl border border-border bg-surface p-6 sm:p-8">
-        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-          <IconPlus className="h-5 w-5 text-accent" aria-hidden />
-          Create or set up your organization
-        </h2>
-        <p className="mt-2 text-sm text-muted leading-relaxed">
-          You don’t need a separate account — your organization is built from the repos and projects you add.
-          Choose one of the options below to add your first (or next) repo.
-        </p>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <Link
-            href="/dashboard"
-            className="group flex items-center gap-4 rounded-xl border border-border bg-background/50 p-5 transition-colors hover:border-accent/40 hover:bg-surface focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
-              <IconFolder className="h-5 w-5" aria-hidden />
-            </div>
-            <div className="min-w-0 flex-1">
-              <span className="font-medium text-foreground block">Add repos from GitHub or GitLab</span>
-              <span className="text-sm text-muted block mt-0.5">
-                Go to the dashboard, open a repo, then click &quot;Add to my organization&quot;.
-              </span>
-            </div>
-            <IconArrowRight className="h-5 w-5 text-muted shrink-0 group-hover:text-accent transition-colors" aria-hidden />
-          </Link>
-          <Link
-            href="/dashboard/upload"
-            className="group flex items-center gap-4 rounded-xl border border-border bg-background/50 p-5 transition-colors hover:border-accent/40 hover:bg-surface focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
-              <IconUpload className="h-5 w-5" aria-hidden />
-            </div>
-            <div className="min-w-0 flex-1">
-              <span className="font-medium text-foreground block">Upload a project</span>
-              <span className="text-sm text-muted block mt-0.5">
-                Upload a zip of your project. It’s stored in your environment and appears in your organization.
-              </span>
-            </div>
-            <IconArrowRight className="h-5 w-5 text-muted shrink-0 group-hover:text-accent transition-colors" aria-hidden />
-          </Link>
-        </div>
-      </section>
-
-      {/* Repos in organization */}
-      <section className="rounded-xl border border-border bg-surface p-6 sm:p-8">
-        <h2 className="text-lg font-semibold text-foreground">
-          Repos in your organization
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          Repositories and projects you’ve added. Click one to manage access, view activity, or export the audit log.
-        </p>
-        {repos.length === 0 ? (
-          <p className="mt-6 text-sm text-muted">
-            No repos yet. Use the options above to add repos from the dashboard or upload a project.
-          </p>
-        ) : (
-          <ul className="mt-6 space-y-2" role="list">
-            {repos.map((row) => (
-              <li key={row.full_name}>
-                <Link
-                  href={repoDetailHref(row.full_name)}
-                  className="inline-flex items-center gap-2 rounded-lg border border-border bg-background/50 px-4 py-3 text-sm text-foreground hover:bg-surface-elevated hover:border-accent/30 transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background w-full sm:w-auto"
-                >
-                  <IconFolder className="h-4 w-4 text-muted shrink-0" aria-hidden />
-                  <span className="font-medium">{row.full_name}</span>
-                  <IconArrowRight className="h-4 w-4 text-muted shrink-0 ml-auto" aria-hidden />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
+    <>
+      <OrganizationHashScroll />
+      <OrganizationPageClient
+        snapshot={snapshot}
+        custodyFetchNote={custodyFetchNote}
+        tracked={tracked}
+        businessName={businessName}
+        viewerEmail={user.email ?? null}
+        reportScheduleInitial={reportScheduleInitial}
+      />
+    </>
   );
 }

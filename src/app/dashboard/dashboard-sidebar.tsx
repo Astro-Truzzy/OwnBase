@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { createClient } from "../../lib/supabase/client";
+import { usePathname } from "next/navigation";
+import { navigateToServerSignOut } from "@/lib/auth/hard-sign-out";
 import {
   IconLayoutDashboard,
   IconUpload,
   IconLogout,
-  IconBuilding,
 } from "@tabler/icons-react";
+import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
@@ -18,13 +18,9 @@ const ITEMS = [
 
 export function DashboardSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
 
-  async function signOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.refresh();
-    router.push("/");
+  function signOut() {
+    navigateToServerSignOut();
   }
 
   return (
@@ -38,7 +34,7 @@ export function DashboardSidebar() {
         className="mb-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent transition-colors hover:bg-accent/20 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
         aria-label="Ownbase Dashboard"
       >
-        <IconBuilding className="h-5 w-5" aria-hidden />
+        <Logo className="h-5 w-5" />
       </Link>
 
       <div className="h-px w-8 shrink-0 bg-border" role="separator" />

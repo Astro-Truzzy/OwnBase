@@ -1,7 +1,11 @@
-import { createClient } from "@/lib/supabase/server";
+import { normalizeSummary } from "@/lib/ai/generate-summary";
+import { parseTrackedRepoFullName } from "@/lib/dashboard/parse-tracked-repo";
+import { fetchRepo } from "@/lib/github/fetch-repos";
+import { fetchProjectByPath } from "@/lib/gitlab/fetch-projects";
 import { buildHandoffBriefPdf } from "@/lib/handoff-brief-pdf";
+import { createClient } from "@/lib/supabase/server";
+import { getGitHubAccessToken } from "@/lib/supabase/github-token";
 import { NextResponse } from "next/server";
-import type { ExecutiveSummary } from "@/lib/db/types";
 
 export const dynamic = "force-dynamic";
 
@@ -40,19 +44,42 @@ export async function GET(
     );
   }
 
-  const summary = row.summary_json as ExecutiveSummary;
-  if (!summary?.summary) {
+  const summary = normalizeSummary(row.summary_json);
+  if (!summary.summary?.trim()) {
     return NextResponse.json(
       { error: "Summary data is invalid." },
       { status: 400 }
     );
   }
 
+  let repoDescription: string | null = null;
+  const dbFullName = row.full_name ?? fullName;
+  const parsed = parseTrackedRepoFullName(dbFullName);
+  if (parsed?.provider === "github") {
+    const token = await getGitHubAccessToken(supabase, user);
+    if (token) {
+      const { repo } = await fetchRepo(parsed.owner, parsed.repo, token);
+      repoDescription = repo?.description?.trim() || null;
+    }
+  } else if (parsed?.provider === "gitlab") {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const token = session?.provider_token?.trim() || null;
+    if (token) {
+      const { project } = await fetchProjectByPath(
+        parsed.pathWithNamespace,
+        token,
+      );
+      repoDescription = project?.description?.trim() || null;
+    }
+  }
+
   try {
     const pdfBytes = await buildHandoffBriefPdf({
-      fullName: row.full_name ?? fullName,
+      fullName: dbFullName,
       summary,
-      repoDescription: null,
+      repoDescription,
     });
     const filename = `handoff-brief-${owner}-${name}.pdf`.replace(/[^a-zA-Z0-9._-]/g, "_");
     return new NextResponse(Buffer.from(pdfBytes), {

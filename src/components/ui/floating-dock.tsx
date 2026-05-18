@@ -31,8 +31,16 @@ export const FloatingDock = ({
 }) => {
   return (
     <>
-      <FloatingDockDesktop items={items} activeHref={activeHref} className={desktopClassName} />
-      <FloatingDockMobile items={items} activeHref={activeHref} className={mobileClassName} />
+      <FloatingDockDesktop
+        items={items}
+        activeHref={activeHref}
+        className={desktopClassName}
+      />
+      <FloatingDockMobile
+        items={items}
+        activeHref={activeHref}
+        className={mobileClassName}
+      />
     </>
   );
 };
@@ -56,30 +64,30 @@ const FloatingDockMobile = ({
             className="absolute inset-x-0 bottom-full mb-2 flex flex-col gap-2"
           >
             {items.map((item, idx) => (
-                <motion.div
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                exit={{
+                  opacity: 0,
+                  y: 10,
+                  transition: {
+                    delay: idx * 0.05,
+                  },
+                }}
+                transition={{ delay: (items.length - 1 - idx) * 0.05 }}
+              >
+                <a
+                  href={item.href}
                   key={item.title}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  exit={{
-                    opacity: 0,
-                    y: 10,
-                    transition: {
-                      delay: idx * 0.05,
-                    },
-                  }}
-                  transition={{ delay: (items.length - 1 - idx) * 0.05 }}
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface transition-colors hover:bg-surface-elevated"
                 >
-                  <a
-                    href={item.href}
-                    key={item.title}
-                    className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface transition-colors hover:bg-surface-elevated"
-                  >
-                    <div className="h-4 w-4">{item.icon}</div>
-                  </a>
-                </motion.div>
+                  <div className="h-4 w-4">{item.icon}</div>
+                </a>
+              </motion.div>
             ))}
           </motion.div>
         )}
@@ -153,13 +161,25 @@ function IconContainer({
   }, [isActive, isActiveMotion]);
   const effectiveDistance = useTransform(
     [distance, isActiveMotion],
-    (vals: number[]) => (vals[1]! > 0.5 ? 0 : vals[0]!)
+    (vals: number[]) => (vals[1]! > 0.5 ? 0 : vals[0]!),
   ) as MotionValue<number>;
 
-  let widthTransform = useTransform(effectiveDistance, [-150, 0, 150], [40, 80, 40]);
-  let heightTransform = useTransform(effectiveDistance, [-150, 0, 150], [40, 80, 40]);
+  let widthTransform = useTransform(
+    effectiveDistance,
+    [-150, 0, 150],
+    [40, 80, 40],
+  );
+  let heightTransform = useTransform(
+    effectiveDistance,
+    [-150, 0, 150],
+    [40, 80, 40],
+  );
 
-  let widthTransformIcon = useTransform(effectiveDistance, [-150, 0, 150], [20, 40, 20]);
+  let widthTransformIcon = useTransform(
+    effectiveDistance,
+    [-150, 0, 150],
+    [20, 40, 20],
+  );
   let heightTransformIcon = useTransform(
     effectiveDistance,
     [-150, 0, 150],
@@ -197,7 +217,7 @@ function IconContainer({
         style={{ width, height }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className="relative flex aspect-square items-center justify-center rounded-full border border-border bg-surface-elevated transition-colors hover:border-accent/50"
+        className={`relative flex aspect-square items-center justify-center rounded-full border transition-colors ${isActive ? "border-accent/60 bg-accent/10 shadow-[0_0_16px_-4px_rgba(34,211,238,0.4)]" : "border-border bg-surface-elevated hover:border-accent/40"}`}
       >
         <AnimatePresence>
           {hovered && (
