@@ -71,6 +71,33 @@ Resend docs: [Send with Supabase SMTP](https://resend.com/docs/send-with-supabas
 - Mail comes from your domain instead of Supabase’s default.
 - All sign-up, reset, and magic-link emails can go to any user email.
 
+## Email OTP at signup
+
+Ownbase shows a **6-digit code** step after email/password signup. Users enter the code from the confirmation email on `/signup` (no separate page).
+
+### Supabase settings
+
+1. **Authentication → Providers → Email**
+   - Enable **Email** provider
+   - Turn on **Confirm email** (users must verify before a full session)
+
+2. **Authentication → Email Templates → Confirm signup**
+   - Paste `confirm-signup.html` (must include `{{ .Token }}` for the OTP)
+   - Subject: `Confirm your Ownbase account`
+
+3. **Custom SMTP (Resend)** must be configured so confirmation emails are delivered.
+
+4. **Authentication → URL Configuration**
+   - Keep `/auth/callback` in redirect URLs (still used if the user clicks the link in the email instead of the code).
+
+### Flow
+
+1. User submits signup form → Supabase sends email with 6-digit code  
+2. App shows “Verify your email” with OTP input  
+3. `verifyOtp({ email, token, type: 'signup' })` → session → redirect to dashboard  
+
+Users can still confirm via the **link** in the email if they prefer.
+
 ## Preview locally
 
 Supabase does not preview templates in-repo. After pasting HTML:

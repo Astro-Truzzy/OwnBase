@@ -1,4 +1,5 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { decryptToken, encryptToken } from "@/lib/security/token-encryption";
 import { createServiceClient } from "./admin";
 
 /**
@@ -23,7 +24,7 @@ export async function getGitHubAccessToken(
     token = await loadStoredGitHubToken(user.id);
   }
 
-  if (!token) {
+  if (!token && process.env.NODE_ENV === "development") {
     token = process.env.GITHUB_TOKEN?.trim() || null;
   }
 
@@ -38,7 +39,9 @@ async function loadStoredGitHubToken(userId: string): Promise<string | null> {
       .select("access_token")
       .eq("user_id", userId)
       .maybeSingle();
-    return data?.access_token?.trim() || null;
+    const stored = data?.access_token?.trim();
+    if (!stored) return null;
+    return decryptToken(stored);
   } catch {
     return null;
   }
@@ -54,8 +57,8 @@ export async function persistGitHubTokens(
     await admin.from("user_github_tokens").upsert(
       {
         user_id: userId,
-        access_token: accessToken,
-        refresh_token: refreshToken ?? null,
+        access_token: encryptToken(accessToken),
+        refresh_token: refreshToken ? encryptToken(refreshToken) : null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id" },

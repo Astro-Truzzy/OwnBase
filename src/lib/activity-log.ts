@@ -1,5 +1,5 @@
 import type { ActivityActionType } from "./db/types";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createServiceClient } from "./supabase/admin";
 
 export interface LogActivityParams {
   userId: string;
@@ -14,9 +14,9 @@ export interface LogActivityParams {
  * Append an activity log entry. Used for audit trail and "who touched what."
  */
 export async function logActivity(
-  supabase: SupabaseClient,
   params: LogActivityParams
 ): Promise<{ error: Error | null }> {
+  const supabase = createServiceClient();
   const { error } = await supabase.from("activity_log").insert({
     user_id: params.userId,
     repo_owner: params.repoOwner,

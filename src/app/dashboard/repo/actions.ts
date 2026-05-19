@@ -9,7 +9,9 @@ import {
   removeRepoCollaborator,
   type GitHubCollaboratorPermission,
 } from "../../../lib/github/manage-collaborators";
+import { requireTrackedRepo } from "@/lib/dashboard/require-tracked-repo";
 import { logActivity } from "../../../lib/activity-log";
+import { getGitHubAccessToken } from "@/lib/supabase/github-token";
 import type { ExecutiveSummary } from "../../../lib/db/types";
 import type { ActivityLogRow } from "../../../lib/db/types";
 import {
@@ -138,7 +140,7 @@ export async function generateRepoSummary(
     };
   }
 
-  await logActivity(supabase, {
+  await logActivity({
     userId: user.id,
     repoOwner: fullName.split("/")[0] ?? "",
     repoName: fullName.split("/").slice(1).join("/") || fullName,
@@ -185,7 +187,14 @@ export async function addCollaboratorAction(
     return { success: false, error: access.error };
   }
 
-  const providerToken = session?.provider_token ?? null;
+  const fullName = `${owner}/${repo}`;
+  const tracked = await requireTrackedRepo(supabase, user.id, fullName);
+  if (!tracked.ok) {
+    return { success: false, error: tracked.error };
+  }
+
+  const githubToken = await getGitHubAccessToken(supabase, user);
+  const providerToken = session?.provider_token ?? githubToken;
   if (!providerToken) {
     return {
       success: false,
@@ -202,7 +211,7 @@ export async function addCollaboratorAction(
   );
 
   if (result.success) {
-    await logActivity(supabase, {
+    await logActivity({
       userId: user.id,
       repoOwner: owner,
       repoName: repo,
@@ -244,7 +253,14 @@ export async function removeCollaboratorAction(
     return { success: false, error: access.error };
   }
 
-  const providerToken = session?.provider_token ?? null;
+  const fullName = `${owner}/${repo}`;
+  const tracked = await requireTrackedRepo(supabase, user.id, fullName);
+  if (!tracked.ok) {
+    return { success: false, error: tracked.error };
+  }
+
+  const githubToken = await getGitHubAccessToken(supabase, user);
+  const providerToken = session?.provider_token ?? githubToken;
   if (!providerToken) {
     return {
       success: false,
@@ -260,7 +276,7 @@ export async function removeCollaboratorAction(
   );
 
   if (result.success) {
-    await logActivity(supabase, {
+    await logActivity({
       userId: user.id,
       repoOwner: owner,
       repoName: repo,
@@ -339,7 +355,7 @@ export async function addTrackedRepoAction(
 
   if (error) return { success: false, error: error.message };
 
-  await logActivity(supabase, {
+  await logActivity({
     userId: user.id,
     repoOwner: owner,
     repoName: name,
@@ -372,7 +388,7 @@ export async function removeTrackedRepoAction(
 
   if (error) return { success: false, error: error.message };
 
-  await logActivity(supabase, {
+  await logActivity({
     userId: user.id,
     repoOwner: owner,
     repoName: name,

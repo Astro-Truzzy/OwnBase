@@ -3,11 +3,9 @@ import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * Route-handler sign-out: must attach cookie updates to the redirect Response.
- * Using `cookies()` from `next/headers` here often fails to clear session cookies
- * on the outgoing redirect, so users stay "logged in" and OAuth can jump straight
- * back to the app.
+ * POST only — GET is rejected to prevent third-party sites from logging users out.
  */
-export async function GET(request: NextRequest) {
+async function performSignOut(request: NextRequest) {
   const url = request.nextUrl.clone();
   url.pathname = "/login";
   url.searchParams.delete("redirectTo");
@@ -44,5 +42,17 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  return GET(request);
+  return performSignOut(request);
+}
+
+export async function GET() {
+  return NextResponse.json(
+    {
+      error: "Method not allowed. Sign out using POST from the app.",
+    },
+    {
+      status: 405,
+      headers: { Allow: "POST" },
+    },
+  );
 }

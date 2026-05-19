@@ -27,8 +27,12 @@ interface SignupFormProps {
 export function SignupForm({ redirectTo, error }: SignupFormProps) {
   const router = useRouter();
   const next = sanitizeAuthRedirect(redirectTo ?? DEFAULT_POST_AUTH_PATH);
+  const [step, setStep] = useState<"register" | "verify">("register");
+  const [pendingEmail, setPendingEmail] = useState("");
+  const [otp, setOtp] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -79,9 +83,12 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
     }
 
     if (signUpData.user && !signUpData.session) {
+      setPendingEmail(email);
+      setStep("verify");
+      setOtp("");
       setMessage({
         type: "success",
-        text: "Check your email to confirm your account, then sign in.",
+        text: "We sent a 6-digit code to your email. Enter it below to verify your account.",
       });
       setIsPending(false);
       return;
@@ -89,6 +96,61 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
 
     router.refresh();
     router.push(next);
+  }
+
+  async function handleVerifyOtp(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setMessage(null);
+    const code = otp.replace(/\D/g, "").trim();
+    if (code.length < 6) {
+      setMessage({ type: "error", text: "Enter the 6-digit code from your email." });
+      return;
+    }
+
+    setIsPending(true);
+    const supabase = createClient();
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email: pendingEmail,
+      token: code,
+      type: "signup",
+    });
+
+    if (verifyError) {
+      setMessage({
+        type: "error",
+        text: verifyError.message.includes("expired")
+          ? "That code has expired. Request a new code below."
+          : verifyError.message,
+      });
+      setIsPending(false);
+      return;
+    }
+
+    router.refresh();
+    router.push(next);
+  }
+
+  async function handleResendCode() {
+    if (!pendingEmail || isResending) return;
+    setMessage(null);
+    setIsResending(true);
+    const supabase = createClient();
+    const { error: resendError } = await supabase.auth.resend({
+      type: "signup",
+      email: pendingEmail,
+      options: {
+        emailRedirectTo: getAuthCallbackUrl(next),
+      },
+    });
+    setIsResending(false);
+    if (resendError) {
+      setMessage({ type: "error", text: resendError.message });
+      return;
+    }
+    setMessage({
+      type: "success",
+      text: "A new code has been sent. Check your inbox (and spam folder).",
+    });
   }
 
   async function signInWithGoogle() {
@@ -155,6 +217,79 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
   }
 
   const labelClass = "block text-sm font-medium text-foreground mb-1";
+
+  if (step === "verify") {
+    return (
+      <div className="space-y-6">
+        {message && (
+          <p
+            className={`text-sm text-center rounded-lg border p-3 ${
+              message.type === "error"
+                ? "border-[var(--error-border)] bg-[var(--error-bg)] text-[var(--error-text)]"
+                : "border-border bg-surface text-foreground"
+            }`}
+          >
+            {message.text}
+          </p>
+        )}
+        <div className="text-center space-y-1">
+          <p className="text-sm font-medium text-foreground">Verify your email</p>
+          <p className="text-sm text-muted-foreground">
+            Code sent to <span className="text-foreground">{pendingEmail}</span>
+          </p>
+        </div>
+        <form onSubmit={handleVerifyOtp} className="space-y-4">
+          <div>
+            <label htmlFor="otp" className={labelClass}>
+              6-digit code <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="otp"
+              name="otp"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              required
+              maxLength={6}
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              className={`${authInputClassName} text-center text-lg tracking-[0.35em] font-mono`}
+              placeholder="000000"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isPending}
+            className="w-full rounded-lg bg-accent text-white px-4 py-3 text-sm font-medium hover:bg-accent-hover transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50"
+          >
+            {isPending ? "Verifying…" : "Verify and continue"}
+          </button>
+        </form>
+        <p className="text-center text-sm text-muted-foreground">
+          Didn&apos;t get it?{" "}
+          <button
+            type="button"
+            onClick={() => void handleResendCode()}
+            disabled={isResending}
+            className="font-medium text-foreground underline hover:no-underline disabled:opacity-50"
+          >
+            {isResending ? "Sending…" : "Resend code"}
+          </button>
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setStep("register");
+            setMessage(null);
+            setOtp("");
+          }}
+          className="w-full text-sm text-muted-foreground hover:text-foreground"
+        >
+          ← Back to signup
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

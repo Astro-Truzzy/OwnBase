@@ -1,10 +1,5 @@
--- Temporary test migration:
--- Put current existing users on Pro with an active subscription window.
--- Remove/revert before production rollout if this should not affect all users.
+-- DISABLED (security): previously granted all users Pro for testing.
+-- Do not run in production. If an older copy of this migration already ran,
+-- audit profiles.plan and subscription_ends_at manually.
 
-update public.profiles
-set
-  plan = 'pro',
-  subscription_ends_at = now() + interval '5 years',
-  updated_at = now()
-where true;
+select 1;

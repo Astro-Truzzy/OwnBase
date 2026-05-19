@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Logo } from "@/components/Logo";
+import { ensureTrialForNewAccount } from "@/lib/profiles/ensure-trial";
 import { createClient } from "../../lib/supabase/server";
 import { DashboardSearchProvider } from "./dashboard-search-context";
 import { DashboardSideRail } from "./dashboard-side-rail";
@@ -52,9 +53,6 @@ export default async function DashboardLayout({
       lastName ??
       (parts.length > 1 ? parts.slice(1).join(" ") : parts[0]) ??
       null;
-    const trialEndsAt = new Date(
-      Date.now() + 30 * 24 * 60 * 60 * 1000,
-    ).toISOString();
     await supabase.from("profiles").upsert(
       {
         user_id: user.id,
@@ -63,11 +61,10 @@ export default async function DashboardLayout({
         business_name: (meta.business_name as string)?.trim() || null,
         business_sector: (meta.business_sector as string)?.trim() || null,
         updated_at: new Date().toISOString(),
-        trial_ends_at: trialEndsAt,
-        plan: "trial",
       },
       { onConflict: "user_id" },
     );
+    await ensureTrialForNewAccount(user.id, user.created_at);
     const { data: created } = await supabase
       .from("profiles")
       .select(

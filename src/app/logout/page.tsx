@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
+import { SignOutRedirect } from "./sign-out-redirect";
 
-/** Legacy URL used by older sign-out buttons — real sign-out happens in `/auth/sign-out`. */
+/** Legacy URL — signs out via POST to `/auth/sign-out`. */
 export default function LogoutPage() {
-  redirect("/auth/sign-out");
+  return <SignOutRedirect />;
 }

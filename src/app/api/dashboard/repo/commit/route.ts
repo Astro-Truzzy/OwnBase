@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireTrackedRepo } from "@/lib/dashboard/require-tracked-repo";
 import { fetchGithubCommitDetail } from "@/lib/github/fetch-commit-detail";
 import { fetchGitlabCommitDetail } from "@/lib/gitlab/fetch-commit-detail";
 import { createClient } from "@/lib/supabase/server";
@@ -24,6 +25,12 @@ export async function GET(request: Request) {
       { error: "owner, name, and sha are required." },
       { status: 400 },
     );
+  }
+
+  const fullName = owner === "gitlab" ? `gitlab/${decodeURIComponent(name)}` : `${owner}/${name}`;
+  const tracked = await requireTrackedRepo(supabase, user.id, fullName);
+  if (!tracked.ok) {
+    return NextResponse.json({ error: tracked.error }, { status: 403 });
   }
 
   const {

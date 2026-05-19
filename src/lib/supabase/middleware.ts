@@ -1,9 +1,22 @@
 import { sanitizeAuthRedirect } from "@/lib/auth/redirects";
+import {
+  applyAiRateLimit,
+  applyAuthRateLimit,
+  isAiRateLimitPath,
+  isAuthRateLimitPath,
+} from "@/lib/security/rate-limit";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { computeAccessStatus } from "../subscription-access";
 
 export async function updateSession(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  if (isAuthRateLimitPath(pathname)) {
+    const limited = await applyAuthRateLimit(request);
+    if (!limited.ok) return limited.response;
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -29,9 +42,14 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isDashboard = request.nextUrl.pathname.startsWith("/dashboard");
-  const isAuthCallback = request.nextUrl.pathname.startsWith("/auth/callback");
-  const isBillingPage = request.nextUrl.pathname.startsWith("/dashboard/billing");
+  if (isAiRateLimitPath(pathname)) {
+    const limited = await applyAiRateLimit(request, user?.id ?? null);
+    if (!limited.ok) return limited.response;
+  }
+
+  const isDashboard = pathname.startsWith("/dashboard");
+  const isAuthCallback = pathname.startsWith("/auth/callback");
+  const isBillingPage = pathname.startsWith("/dashboard/billing");
 
   if (isDashboard && !user && !isAuthCallback) {
     const url = request.nextUrl.clone();
@@ -40,7 +58,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && (request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/signup")) {
+  if (user && (pathname === "/login" || pathname === "/signup")) {
     const url = request.nextUrl.clone();
     url.pathname = sanitizeAuthRedirect(request.nextUrl.searchParams.get("redirectTo"));
     url.search = "";

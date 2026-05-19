@@ -34,8 +34,8 @@ export function sanitizeAuthRedirect(path: string | null | undefined): string {
  */
 export function getSiteOrigin(): string {
   if (typeof window !== "undefined") {
-    const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
-    return fromEnv || window.location.origin;
+    // Always use the page origin for OAuth so local dev works when NEXT_PUBLIC_APP_URL is production.
+    return window.location.origin;
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
