@@ -1,6 +1,7 @@
 import { IconSettings } from "@tabler/icons-react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { DeleteAccountSection } from "./delete-account-section";
 import { UserSettingsForm } from "./user-settings-form";
 
 export const metadata = {
@@ -56,6 +57,10 @@ export default async function UserSettingsPage() {
         initialBusinessName={profile?.business_name ?? ""}
         initialBusinessSector={profile?.business_sector ?? ""}
         avatarPreviewUrl={avatarPreviewUrl}
+      />
+
+      <DeleteAccountSection
+        confirmPhrase={user.email ?? user.id}
       />
     </div>
   );

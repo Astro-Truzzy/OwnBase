@@ -1,5 +1,6 @@
 "use server";
 
+import { deleteUserAccount } from "@/lib/account/delete-user-account";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
@@ -139,4 +140,19 @@ export async function removeProfileAvatarAction(): Promise<
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/settings");
   return { ok: true };
+}
+
+export async function deleteAccountAction(): Promise<
+  { ok: true } | { ok: false; error: string }
+> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, error: "You must be signed in." };
+  }
+
+  return deleteUserAccount(user.id);
 }

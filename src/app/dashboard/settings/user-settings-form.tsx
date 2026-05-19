@@ -237,15 +237,6 @@ export function UserSettingsForm({
         </form>
       </section>
 
-      <section className="dash-panel border-dashed border-cyan-200/20 p-6 sm:p-8">
-        <h2 className="text-lg font-semibold text-cyan-50/90">
-          Additional settings
-        </h2>
-        <p className="mt-2 text-sm text-cyan-100/55">
-          Preferences such as notifications, security, and integrations will
-          appear here in a future update.
-        </p>
-      </section>
     </div>
   );
 }
