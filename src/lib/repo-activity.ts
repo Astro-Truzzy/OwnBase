@@ -44,8 +44,6 @@ export type RepoAuditActivityEvent = {
   details: Record<string, unknown>;
 };
 
-export type RepoActivityItem = RepoFileActivityEvent | RepoAuditActivityEvent;
-
 export type RepoActivityTimelineItem = RepoCommitGroup | RepoAuditActivityEvent;
 
 const AUDIT_LABELS: Record<string, string> = {
@@ -58,23 +56,6 @@ const AUDIT_LABELS: Record<string, string> = {
 
 export function auditActivityLabel(actionType: string): string {
   return AUDIT_LABELS[actionType] ?? actionType.replace(/_/g, " ");
-}
-
-export function mergeRepoActivityTimeline(
-  fileEvents: RepoFileActivityEvent[],
-  auditEntries: ActivityLogRow[],
-): RepoActivityItem[] {
-  const auditItems: RepoAuditActivityEvent[] = auditEntries.map((entry) => ({
-    kind: "audit",
-    id: entry.id,
-    actionType: entry.action_type,
-    timestamp: entry.created_at,
-    details: (entry.details as Record<string, unknown>) ?? {},
-  }));
-
-  return [...fileEvents, ...auditItems].sort(
-    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-  );
 }
 
 export function groupFileEventsByCommit(

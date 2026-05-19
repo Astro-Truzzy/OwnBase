@@ -81,6 +81,7 @@ export async function uploadProjectAction(
   }
 
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
   revalidatePath("/dashboard/upload");
   return { success: true };
 }
@@ -113,6 +114,7 @@ export async function deleteUploadedProjectAction(
 
   if (deleteError) return false;
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
   revalidatePath("/dashboard/upload");
   return true;
 }

@@ -40,12 +40,9 @@ import {
 import { motion, useInView } from "motion/react";
 import { useHtmlDark } from "@/hooks/useHtmlDark";
 import { Tabs } from "@/components/ui/tabs";
-// Side-effect import so landingIcons is defined if any cached code still references it
-import { landingIcons } from "./landingIcons";
 import { BentoFeatures } from "./BentoFeatures";
 import { PricingPlans } from "./PricingPlans";
 import { PlatformSection, FeatureCardsSection } from "./PlatformSection";
-void landingIcons;
 
 /* ─── Shared sub-components ─── */
 

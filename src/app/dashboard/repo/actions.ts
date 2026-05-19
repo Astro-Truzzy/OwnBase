@@ -364,6 +364,7 @@ export async function addTrackedRepoAction(
   });
   revalidatePath(`/dashboard/repo/${owner}/${name}`);
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
   return { success: true };
 }
 
@@ -397,6 +398,7 @@ export async function removeTrackedRepoAction(
   });
   revalidatePath(`/dashboard/repo/${owner}/${name}`);
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
   return { success: true };
 }
 

@@ -22,7 +22,7 @@ Branded HTML templates live in `docs/supabase-email-templates/`. Paste them into
 - Logo from your deployed app (`public/LOGO/Icon-brandname.png`)
 - Personalized greeting when `first_name` exists in signup metadata
 - Primary CTA button plus plain link fallback
-- Optional **6-digit code** (`{{ .Token }}`) for clients that break link prefetching
+- **6-digit OTP** (`{{ .Token }}`) — set **Email OTP length** to `6` under Authentication → Providers → Email
 
 ## Custom SMTP (required for real users)
 
@@ -73,13 +73,14 @@ Resend docs: [Send with Supabase SMTP](https://resend.com/docs/send-with-supabas
 
 ## Email OTP at signup
 
-Ownbase shows a **6-digit code** step after email/password signup. Users enter the code from the confirmation email on `/signup` (no separate page).
+Ownbase shows a **6-digit verification code** step after email/password signup. Users enter the code from the confirmation email on `/signup` (no separate page).
 
 ### Supabase settings
 
 1. **Authentication → Providers → Email**
    - Enable **Email** provider
    - Turn on **Confirm email** (users must verify before a full session)
+   - Set **Email OTP length** to **6** (must match `EMAIL_OTP_LENGTH` in `src/lib/auth/email-otp.ts`)
 
 2. **Authentication → Email Templates → Confirm signup**
    - Paste `confirm-signup.html` (must include `{{ .Token }}` for the OTP)
@@ -92,7 +93,7 @@ Ownbase shows a **6-digit code** step after email/password signup. Users enter t
 
 ### Flow
 
-1. User submits signup form → Supabase sends email with 6-digit code  
+1. User submits signup form → Supabase sends email with a 6-digit OTP (`{{ .Token }}`)  
 2. App shows “Verify your email” with OTP input  
 3. `verifyOtp({ email, token, type: 'signup' })` → session → redirect to dashboard  
 

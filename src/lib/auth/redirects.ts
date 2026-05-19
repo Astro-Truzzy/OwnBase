@@ -57,32 +57,3 @@ export function getAuthCallbackUrl(next?: string | null): string {
 export function getPasswordResetCallbackUrl(): string {
   return getAuthCallbackUrl(PASSWORD_RESET_PATH);
 }
-
-export function loginPath(options?: {
-  redirectTo?: string | null;
-  error?: string;
-  signedOut?: boolean;
-}): string {
-  const params = new URLSearchParams();
-  if (options?.redirectTo) {
-    params.set("redirectTo", sanitizeAuthRedirect(options.redirectTo));
-  }
-  if (options?.error) params.set("error", options.error);
-  if (options?.signedOut) params.set("signedOut", "1");
-  const q = params.toString();
-  return q ? `/login?${q}` : "/login";
-}
-
-/** Redirect URLs to add under Supabase → Authentication → URL Configuration. */
-export function getSupabaseRedirectAllowlist(): string[] {
-  const origins = new Set<string>([
-    "http://localhost:3000",
-    getSiteOrigin(),
-  ]);
-
-  const list: string[] = [];
-  for (const origin of origins) {
-    list.push(`${origin}/auth/callback`);
-  }
-  return list;
-}

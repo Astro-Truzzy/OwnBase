@@ -173,7 +173,7 @@ export function DashboardNotifications() {
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={panelTransition}
             style={{ transformOrigin: "top right" }}
-            className="absolute right-0 top-full z-50 mt-2 w-[min(100vw-1.5rem,22rem)] rounded-xl border border-cyan-200/20 bg-[#070e1b]/98 shadow-[0_24px_60px_rgba(2,8,24,0.55)] backdrop-blur-md"
+            className="z-50 rounded-xl border border-cyan-200/20 bg-[#070e1b]/98 shadow-[0_24px_60px_rgba(2,8,24,0.55)] backdrop-blur-md max-md:fixed max-md:inset-x-4 max-md:top-32 max-md:mt-0 max-md:w-auto md:absolute md:right-0 md:top-full md:mt-2 md:w-[min(22rem,calc(100vw-1.5rem))]"
           >
             <div className="flex items-center justify-between gap-2 border-b border-cyan-200/15 px-3 py-2.5">
               <p className="text-sm font-semibold text-cyan-50">

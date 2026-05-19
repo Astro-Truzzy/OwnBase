@@ -50,6 +50,25 @@ export async function updateSession(request: NextRequest) {
   const isDashboard = pathname.startsWith("/dashboard");
   const isAuthCallback = pathname.startsWith("/auth/callback");
   const isBillingPage = pathname.startsWith("/dashboard/billing");
+  const isHome = pathname === "/";
+
+  const oauthErrorCode =
+    request.nextUrl.searchParams.get("error_code") ??
+    request.nextUrl.searchParams.get("error");
+
+  if (isHome && oauthErrorCode) {
+    const url = request.nextUrl.clone();
+    if (user) {
+      url.pathname = "/dashboard";
+      url.searchParams.set("connect_error", oauthErrorCode);
+    } else {
+      url.pathname = "/login";
+      url.search = "";
+      url.searchParams.set("connect_error", oauthErrorCode);
+      url.searchParams.set("redirectTo", "/dashboard");
+    }
+    return NextResponse.redirect(url);
+  }
 
   if (isDashboard && !user && !isAuthCallback) {
     const url = request.nextUrl.clone();

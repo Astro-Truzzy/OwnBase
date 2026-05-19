@@ -88,8 +88,3 @@ export function decryptToken(stored: string): string {
 
   return decrypted;
 }
-
-/** True when stored value uses the encrypted envelope format. */
-export function isEncryptedToken(stored: string): boolean {
-  return stored.trim().startsWith(PREFIX);
-}

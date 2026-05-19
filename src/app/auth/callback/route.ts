@@ -1,7 +1,9 @@
+import { buildConnectErrorRedirectPath } from "@/lib/auth/connect-errors";
 import { sanitizeAuthRedirect } from "@/lib/auth/redirects";
 import { ensureTrialForNewAccount } from "@/lib/profiles/ensure-trial";
 import { persistGitHubTokens } from "@/lib/supabase/github-token";
 import { createServerClient } from "@supabase/ssr";
+import { revalidatePath } from "next/cache";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
@@ -12,9 +14,36 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const code = searchParams.get("code");
   const next = sanitizeAuthRedirect(searchParams.get("next"));
+  const oauthErrorCode =
+    searchParams.get("error_code") ?? searchParams.get("error");
 
   const successUrl = new URL(next, request.nextUrl.origin);
   const errorUrl = new URL("/login?error=auth", request.nextUrl.origin);
+
+  const readSupabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll() {
+          /* read-only client for error handling */
+        },
+      },
+    },
+  );
+
+  if (oauthErrorCode) {
+    const {
+      data: { user: existingUser },
+    } = await readSupabase.auth.getUser();
+    const path = buildConnectErrorRedirectPath(oauthErrorCode, {
+      signedIn: Boolean(existingUser),
+    });
+    return NextResponse.redirect(new URL(path, request.nextUrl.origin));
+  }
 
   if (!code) {
     return NextResponse.redirect(errorUrl);
@@ -57,9 +86,12 @@ export async function GET(request: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
+  const hasGitHubIdentity = user.identities?.some((i) => i.provider === "github");
+  const primaryProvider = (user.app_metadata?.provider as string) ?? "github";
+
   if (
     session?.provider_token &&
-    ((user.app_metadata?.provider as string) ?? "github") === "github"
+    (primaryProvider === "github" || hasGitHubIdentity)
   ) {
     await persistGitHubTokens(
       user.id,
@@ -88,6 +120,8 @@ export async function GET(request: NextRequest) {
   );
 
   await ensureTrialForNewAccount(user.id, user.created_at);
+
+  revalidatePath("/dashboard", "layout");
 
   return response;
 }

@@ -563,6 +563,24 @@ body {
   box-shadow: 0 0 0 2px rgb(34 211 238 / 0.35);
 }
 
+/* Dashboard overview — to-do list (always stacked rows) */
+.dashboard-todo-list {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100%;
+}
+
+.dashboard-todo-list .dashboard-todo-row {
+  display: block !important;
+  width: 100% !important;
+}
+
+.dashboard-todo-link {
+  display: flex !important;
+  width: 100% !important;
+  box-sizing: border-box;
+}
+
 /* Auth forms (login, signup, password reset) */
 .auth-input::placeholder {
   color: var(--muted-foreground);

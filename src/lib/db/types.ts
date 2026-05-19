@@ -81,6 +81,7 @@ export interface ProfileRow {
   paystack_subscription_code: string | null;
   subscription_ends_at: string | null;
   onboarding_checklist_dismissed_at?: string | null;
+  dashboard_walkthrough_completed_at?: string | null;
   avatar_storage_path?: string | null;
   created_at: string;
   updated_at: string;

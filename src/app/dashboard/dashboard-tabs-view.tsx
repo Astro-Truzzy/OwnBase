@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   IconAlertCircle,
@@ -27,14 +28,21 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import Link from "next/link";
+import { DashboardTodoPanel } from "./dashboard-todo-panel";
 import { SystemHealthTrendChart } from "./system-health-trend-chart";
 import {
   filterSearchableRepos,
   type SearchableRepo,
 } from "@/lib/dashboard/searchable-repos";
 import { useDashboardSearch } from "./dashboard-search-context";
+import {
+  DASHBOARD_TAB_CHANGED,
+  readDashboardTabHash,
+  setDashboardTabHash,
+  type DashboardTabKey,
+} from "./dashboard-tab-hash";
 
-type TabKey = "dashboard" | "portfolio" | "operations";
+type TabKey = DashboardTabKey;
 
 export interface DashboardRepoView {
   id: string;
@@ -72,8 +80,14 @@ export interface DashboardOnboardingView {
   name: string;
   role: string;
   startDate: string;
-  progress: number;
-  mentor: string;
+  repo: string;
+}
+
+export interface DashboardTodoView {
+  id: string;
+  title: string;
+  desc: string;
+  href: string;
 }
 
 interface DashboardTabsViewProps {
@@ -86,20 +100,19 @@ interface DashboardTabsViewProps {
     plan: string | null;
   };
   summary: {
-    healthScore: number;
+    healthScore: number | null;
     totalSystems: number;
     teamMembers: number;
-    docsCoverage: number;
+    docsCoverage: number | null;
   };
+  isNewWorkspace: boolean;
+  hasPortfolioData: boolean;
+  hasTrendData: boolean;
+  trendMonthLabels: string[];
+  todos: DashboardTodoView[];
   currentTrendValues: number[];
   previousQuarterValues: number[];
   industryAverageValues: number[];
-}
-
-function hashToTab(hash: string): TabKey {
-  if (hash === "portfolio") return "portfolio";
-  if (hash === "operations") return "operations";
-  return "dashboard";
 }
 
 function detailHrefFromRepo(fullName: string): string {
@@ -126,10 +139,16 @@ export function DashboardTabsView({
   onboarding,
   viewer,
   summary,
+  isNewWorkspace,
+  hasPortfolioData,
+  hasTrendData,
+  trendMonthLabels,
+  todos,
   currentTrendValues,
   previousQuarterValues,
   industryAverageValues,
 }: DashboardTabsViewProps) {
+  const pathname = usePathname();
   const [activeTab, setActiveTab] = useState<TabKey>("dashboard");
   const [filter, setFilter] = useState<
     "all" | "critical" | "finance" | "operations" | "security"
@@ -155,29 +174,29 @@ export function DashboardTabsView({
     const syncFromHash = () => {
       if (isSearchActive) {
         setActiveTab("portfolio");
-        if (window.location.hash.replace("#", "") !== "portfolio") {
-          window.location.hash = "portfolio";
-        }
+        setDashboardTabHash("portfolio");
         return;
       }
-      setActiveTab(hashToTab(window.location.hash.replace("#", "")));
+      setActiveTab(readDashboardTabHash());
     };
     syncFromHash();
     window.addEventListener("hashchange", syncFromHash);
-    return () => window.removeEventListener("hashchange", syncFromHash);
-  }, [isSearchActive]);
+    window.addEventListener(DASHBOARD_TAB_CHANGED, syncFromHash);
+    return () => {
+      window.removeEventListener("hashchange", syncFromHash);
+      window.removeEventListener(DASHBOARD_TAB_CHANGED, syncFromHash);
+    };
+  }, [isSearchActive, pathname]);
 
   useEffect(() => {
     if (!isSearchActive) return;
     setActiveTab("portfolio");
-    if (typeof window !== "undefined" && window.location.hash !== "#portfolio") {
-      window.location.hash = "portfolio";
-    }
+    setDashboardTabHash("portfolio");
   }, [isSearchActive]);
 
   function switchTab(tab: TabKey) {
     setActiveTab(tab);
-    window.location.hash = tab;
+    setDashboardTabHash(tab);
   }
 
   const filteredRepos = useMemo(() => {
@@ -310,6 +329,28 @@ export function DashboardTabsView({
       <IconBolt className="h-3.5 w-3.5" />
     );
 
+  const healthHint = isNewWorkspace
+    ? "Available after you track a repository"
+    : hasPortfolioData
+      ? "Average across connected repositories"
+      : "Track repositories to calculate";
+  const reposHint = isNewWorkspace
+    ? "Connect a provider, then add repos in Organization"
+    : hasPortfolioData
+      ? `${summary.totalSystems} tracked in Organization`
+      : "Track repos under Organization to populate";
+  const teamHint = isNewWorkspace
+    ? "Shows collaborators on tracked repositories"
+    : summary.teamMembers > 0
+      ? `${summary.teamMembers} across your portfolio`
+      : "Appears after collaborator data is available";
+  const docsHint = isNewWorkspace
+    ? "Run AI summaries on tracked repos to measure coverage"
+    : (summary.docsCoverage ?? 0) > 0
+      ? "Based on generated AI summaries"
+      : "Generate summaries to measure coverage";
+  const showTrendChart = hasTrendData && !isNewWorkspace;
+
   return (
     <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-[#0c121c]/85 p-5 shadow-[0_20px_50px_-24px_rgba(0,0,0,0.65)] sm:p-6 lg:p-8">
       <div
@@ -334,37 +375,43 @@ export function DashboardTabsView({
         </span>
       </div>
 
-      <div className="relative mb-6 flex flex-wrap items-center gap-2">
-        <PremiumSignalBadge
-          label="Portfolio health"
-          value={`${summary.healthScore}/100`}
-          tone="cyan"
-        />
-        <PremiumSignalBadge
-          label="Risk posture"
-          value={securityEventsCount > 0 ? "Elevated" : "Stable"}
-          tone={securityEventsCount > 0 ? "amber" : "violet"}
-        />
-        <PremiumSignalBadge
-          label="Repositories"
-          value={`${summary.totalSystems} connected`}
-          tone="violet"
-        />
-      </div>
+      {!isNewWorkspace && (
+        <div className="relative mb-6 flex flex-wrap items-center gap-2">
+          <PremiumSignalBadge
+            label="Portfolio health"
+            value={`${summary.healthScore ?? 0}/100`}
+            tone="cyan"
+          />
+          <PremiumSignalBadge
+            label="Risk posture"
+            value={securityEventsCount > 0 ? "Elevated" : "Stable"}
+            tone={securityEventsCount > 0 ? "amber" : "violet"}
+          />
+          <PremiumSignalBadge
+            label="Repositories"
+            value={`${summary.totalSystems} connected`}
+            tone="violet"
+          />
+        </div>
+      )}
 
-      <div className="relative mb-8 flex flex-wrap items-center gap-1 rounded-xl border border-border/60 bg-muted/25 p-1">
+      <div
+        data-tour="dashboard-tabs"
+        className="relative mb-8 flex flex-wrap items-center gap-1 rounded-xl border border-border/60 bg-muted/25 p-1"
+      >
         {(
           [
-            ["dashboard", "Overview"],
-            ["portfolio", "Repositories"],
-            ["operations", "Activity"],
+            ["dashboard", "Overview", "tab-overview"],
+            ["portfolio", "Repositories", "tab-portfolio"],
+            ["operations", "Activity", "tab-operations"],
           ] as const
-        ).map(([key, label]) => {
+        ).map(([key, label, tourId]) => {
           const active = activeTab === key;
           return (
             <button
               key={key}
               type="button"
+              data-tour={tourId}
               onClick={() => switchTab(key)}
               className={`relative flex-1 rounded-lg px-3 py-2 text-center text-sm font-medium transition sm:flex-none sm:px-5 ${
                 active
@@ -379,36 +426,42 @@ export function DashboardTabsView({
       </div>
 
       {activeTab === "dashboard" && (
-        <div className="space-y-8">
+        <div data-tour="overview-panel" className="space-y-8">
           <div className="stagger-grid grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard
               title="Portfolio Health"
-              value={`${summary.healthScore}`}
-              suffix="/100"
-              hint="+3 from last month"
+              value={summary.healthScore != null ? `${summary.healthScore}` : "—"}
+              suffix={summary.healthScore != null ? "/100" : ""}
+              hint={healthHint}
+              unavailable={isNewWorkspace}
             />
             <StatCard
               title="Active Repositories"
-              value={`${summary.totalSystems}`}
-              suffix="systems"
-              hint="3 critical business units"
+              value={isNewWorkspace ? "—" : `${summary.totalSystems}`}
+              suffix={isNewWorkspace ? "" : "systems"}
+              hint={reposHint}
+              unavailable={isNewWorkspace}
             />
             <StatCard
               title="Team Members"
-              value={`${summary.teamMembers}`}
-              suffix="contributors"
-              hint="1 access review pending"
+              value={isNewWorkspace ? "—" : `${summary.teamMembers}`}
+              suffix={isNewWorkspace ? "" : "contributors"}
+              hint={teamHint}
+              unavailable={isNewWorkspace}
             />
             <StatCard
               title="Documentation"
-              value={`${summary.docsCoverage}`}
-              suffix="% coverage"
-              hint="Auto-generated"
+              value={
+                summary.docsCoverage != null ? `${summary.docsCoverage}` : "—"
+              }
+              suffix={summary.docsCoverage != null ? "% coverage" : ""}
+              hint={docsHint}
+              unavailable={isNewWorkspace}
             />
           </div>
 
-          <div className="stagger-grid grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="stagger-item rounded-xl border border-border/60 bg-card/85 p-6 shadow-xl shadow-black/25 backdrop-blur-sm lg:col-span-2">
+          <div className="stagger-grid grid grid-cols-1 gap-6">
+            <div className="stagger-item rounded-xl border border-border/60 bg-card/85 p-6 shadow-xl shadow-black/25 backdrop-blur-sm">
               <div className="mb-6">
                 <h3 className="text-xl font-semibold tracking-tight text-foreground">
                   System Health Trend
@@ -418,39 +471,27 @@ export function DashboardTabsView({
                 </p>
               </div>
               <SystemHealthTrendChart
-                months={["Jan", "Feb", "Mar", "Apr", "May", "Jun"]}
+                months={trendMonthLabels}
                 currentValues={currentTrendValues}
                 previousQuarterValues={previousQuarterValues}
                 industryAverageValues={industryAverageValues}
+                empty={!showTrendChart}
+                emptyMessage={
+                  isNewWorkspace
+                    ? "Connect a provider and track your first repository to start building health trends from real activity."
+                    : hasPortfolioData
+                      ? "Monthly health trends appear once there is activity on your tracked repositories."
+                      : "Track repositories in Organization to start building health trends from your activity."
+                }
               />
             </div>
 
-            <div className="stagger-item rounded-xl border border-amber-400/20 bg-[#0e1728]/95 p-5 sm:p-6">
-              <div className="mb-4 flex items-center justify-between gap-2">
-                <h3 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
-                  To-dos
-                </h3>
-                <span className="rounded-full border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-200">
-                  3
-                </span>
-              </div>
-              <div className="grid gap-3 md:grid-cols-3">
-                <AlertCard
-                  title="Single contributor risk"
-                  desc="A critical repo may depend on one maintainer."
-                  icon={<IconAlertCircle className="h-4 w-4" />}
-                />
-                <AlertCard
-                  title="Stale dependencies"
-                  desc="Review libraries that have not shipped updates recently."
-                  icon={<IconClock className="h-4 w-4" />}
-                />
-                <AlertCard
-                  title="Access review"
-                  desc="Quarterly collaborator audit is due soon."
-                  icon={<IconShield className="h-4 w-4" />}
-                />
-              </div>
+            <div className="stagger-item min-w-0">
+              <DashboardTodoPanel
+                todos={todos}
+                isNewWorkspace={isNewWorkspace}
+                hasPortfolioData={hasPortfolioData}
+              />
             </div>
           </div>
 
@@ -608,7 +649,7 @@ export function DashboardTabsView({
       )}
 
       {activeTab === "portfolio" && (
-        <div className="space-y-8">
+        <div data-tour="portfolio-panel" className="space-y-8">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-3xl font-semibold tracking-tight text-foreground">
@@ -813,7 +854,7 @@ export function DashboardTabsView({
       )}
 
       {activeTab === "operations" && (
-        <div className="space-y-8">
+        <div data-tour="operations-panel" className="space-y-8">
           <div>
             <h2 className="text-3xl font-semibold tracking-tight text-foreground">
               Operations Center
@@ -1014,6 +1055,11 @@ export function DashboardTabsView({
                 </h3>
                 <IconChartBar className="h-4 w-4 text-muted" />
               </div>
+              {repositories.length === 0 ? (
+                <p className="rounded-sm border border-dashed border-border/50 bg-muted/30 p-6 text-center text-sm text-muted">
+                  Track repositories to map contributor spread and health risk.
+                </p>
+              ) : (
               <svg viewBox="0 0 320 190" className="h-64 w-full">
                 <line
                   x1="30"
@@ -1044,6 +1090,7 @@ export function DashboardTabsView({
                   );
                 })}
               </svg>
+              )}
             </div>
           </div>
 
@@ -1051,45 +1098,34 @@ export function DashboardTabsView({
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h3 className="text-xl font-semibold tracking-tight text-foreground">
-                  Developer Onboarding
+                  Recent access changes
                 </h3>
                 <p className="text-sm text-muted">
-                  New team members and their progress
+                  Collaborators added from your activity log
                 </p>
               </div>
               <Link
                 href="/dashboard/organization"
                 className="rounded-lg border border-border/60 bg-muted/60 px-4 py-2 text-sm text-foreground transition hover:border-primary/35 hover:bg-primary/10"
               >
-                + New Onboarding
+                View organization
               </Link>
             </div>
             <div className="space-y-3">
               {onboarding.length === 0 ? (
                 <p className="rounded-sm border border-border/50 bg-muted/50 p-4 text-sm text-muted">
-                  No onboarding workflows started yet.
+                  No collaborator additions logged yet.
                 </p>
               ) : (
                 onboarding.map((o) => (
                   <div
-                    key={o.name}
+                    key={`${o.name}-${o.repo}-${o.startDate}`}
                     className="rounded-sm border border-border/50 bg-muted/50 p-4"
                   >
-                    <div className="mb-2 flex items-center justify-between">
-                      <p className="text-sm font-medium text-foreground">
-                        {o.name}
-                      </p>
-                      <p className="text-sm text-muted">{o.progress}%</p>
-                    </div>
-                    <p className="mb-2 text-xs text-muted">
-                      {o.role} • Started {o.startDate} • Mentor: {o.mentor}
+                    <p className="text-sm font-medium text-foreground">{o.name}</p>
+                    <p className="mt-1 text-xs text-muted">
+                      {o.role} • {o.repo} • {o.startDate}
                     </p>
-                    <div className="h-2 rounded-full bg-border/80">
-                      <div
-                        className="h-full rounded-full bg-linear-to-r from-primary to-accent-violet"
-                        style={{ width: `${o.progress}%` }}
-                      />
-                    </div>
                   </div>
                 ))
               )}
@@ -1207,7 +1243,7 @@ export function DashboardTabsView({
           transform: translateY(-1px) scale(0.995);
         }
         .stagger-grid > .stagger-item,
-        .stagger-grid > *:not(.stagger-item) {
+        .stagger-grid > *:not(.stagger-item):not(.dashboard-todo-panel) {
           animation: riseIn 500ms ease both;
         }
         .stagger-grid > *:nth-child(1) {
@@ -1359,14 +1395,16 @@ function StatCard({
   value,
   suffix,
   hint,
+  unavailable = false,
 }: {
   title: string;
   value: string;
   suffix: string;
   hint: string;
+  unavailable?: boolean;
 }) {
   const numericValue = Number(value);
-  const canAnimate = Number.isFinite(numericValue);
+  const canAnimate = !unavailable && Number.isFinite(numericValue);
   const [displayValue, setDisplayValue] = useState(canAnimate ? 0 : Number.NaN);
 
   useEffect(() => {
@@ -1401,31 +1439,9 @@ function StatCard({
         <span className="text-3xl font-semibold tracking-tight text-foreground">
           {canAnimate ? displayValue : value}
         </span>
-        <span className="text-sm text-muted">{suffix}</span>
+        {suffix ? <span className="text-sm text-muted">{suffix}</span> : null}
       </div>
       <p className="mt-2 text-xs text-muted-foreground">{hint}</p>
-    </div>
-  );
-}
-
-function AlertCard({
-  title,
-  desc,
-  icon,
-}: {
-  title: string;
-  desc: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-lg border border-border/60 bg-muted/40 p-3 backdrop-blur-sm transition hover:border-primary/35">
-      <div className="flex items-start gap-2">
-        <span className="mt-0.5 text-amber-300">{icon}</span>
-        <div>
-          <p className="text-sm font-medium text-foreground">{title}</p>
-          <p className="text-xs text-muted">{desc}</p>
-        </div>
-      </div>
     </div>
   );
 }
@@ -1464,3 +1480,4 @@ function MetricBox({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+

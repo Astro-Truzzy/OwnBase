@@ -3,8 +3,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Logo } from "@/components/Logo";
+import { hasConnectedRepositorySource } from "@/lib/dashboard/has-connected-source";
 import { ensureTrialForNewAccount } from "@/lib/profiles/ensure-trial";
+import { getUsageSnapshot } from "@/lib/usage-stats";
 import { createClient } from "../../lib/supabase/server";
+import { DashboardRepoConnectGate } from "./dashboard-repo-connect-gate";
 import { DashboardSearchProvider } from "./dashboard-search-context";
 import { DashboardSideRail } from "./dashboard-side-rail";
 import { DashboardTopBar } from "./dashboard-top-bar";
@@ -31,7 +34,7 @@ export default async function DashboardLayout({
   let { data: profileRow } = await supabase
     .from("profiles")
     .select(
-      "first_name, last_name, business_name, avatar_storage_path, trial_ends_at, plan, subscription_ends_at",
+      "first_name, last_name, business_name, avatar_storage_path, trial_ends_at, plan, subscription_ends_at, dashboard_walkthrough_completed_at",
     )
     .eq("user_id", user.id)
     .maybeSingle();
@@ -68,7 +71,7 @@ export default async function DashboardLayout({
     const { data: created } = await supabase
       .from("profiles")
       .select(
-        "first_name, last_name, business_name, avatar_storage_path, trial_ends_at, plan, subscription_ends_at",
+        "first_name, last_name, business_name, avatar_storage_path, trial_ends_at, plan, subscription_ends_at, dashboard_walkthrough_completed_at",
       )
       .eq("user_id", user.id)
       .single();
@@ -99,6 +102,14 @@ export default async function DashboardLayout({
     ).toUpperCase() ||
     (user.email?.slice(0, 2).toUpperCase() ?? "OB");
 
+  const usage = await getUsageSnapshot(supabase, user.id);
+  const hasConnectedRepo = hasConnectedRepositorySource({
+    trackedRepos: usage.trackedRepos,
+    uploads: usage.uploads,
+  });
+  const walkthroughCompleted =
+    profileRow?.dashboard_walkthrough_completed_at != null;
+
   let avatarSignedUrl: string | null = null;
   const avatarPath = profileRow?.avatar_storage_path as string | null | undefined;
   if (avatarPath) {
@@ -125,6 +136,12 @@ export default async function DashboardLayout({
         </div>
       )}
 
+      <Suspense fallback={null}>
+        <DashboardRepoConnectGate
+          hasConnectedRepo={hasConnectedRepo}
+          walkthroughCompleted={walkthroughCompleted}
+        />
+      </Suspense>
       <Suspense fallback={null}>
         <DashboardSearchProvider>
           <div className="flex h-full">

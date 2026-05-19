@@ -9,6 +9,8 @@ interface SystemHealthTrendChartProps {
   currentValues: number[];
   previousQuarterValues: number[];
   industryAverageValues: number[];
+  empty?: boolean;
+  emptyMessage?: string;
 }
 
 const MIN_Y = 70;
@@ -33,6 +35,8 @@ export function SystemHealthTrendChart({
   currentValues,
   previousQuarterValues,
   industryAverageValues,
+  empty = false,
+  emptyMessage = "No trend data yet.",
 }: SystemHealthTrendChartProps) {
   const [compareTo, setCompareTo] = useState<CompareOption>("previous_quarter");
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -50,7 +54,12 @@ export function SystemHealthTrendChart({
       ? previousQuarterValues
       : industryAverageValues;
 
+  const canCompare = !empty && compareValues.length >= 2;
+
   const { currentPoints, comparePoints, areaPolygon } = useMemo(() => {
+    if (empty || currentValues.length === 0) {
+      return { currentPoints: "", comparePoints: "", areaPolygon: "" };
+    }
     const chartWidth = 360;
     const chartHeight = 180;
     const current = currentValues
@@ -72,27 +81,39 @@ export function SystemHealthTrendChart({
       comparePoints: compare,
       areaPolygon: polygon,
     };
-  }, [currentValues, compareValues]);
+  }, [currentValues, compareValues, empty]);
+
+  if (empty || currentValues.length === 0) {
+    return (
+      <div className="flex min-h-[12rem] flex-col items-center justify-center rounded-xl border border-dashed border-cyan-200/25 bg-[#070b14]/60 px-6 py-10 text-center">
+        <p className="max-w-md text-sm leading-relaxed text-cyan-100/70">
+          {emptyMessage}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-xl border border-cyan-200/20 bg-[#070b14]/80 p-4 shadow-[0_18px_45px_rgba(2,10,35,0.35)] backdrop-blur-sm">
-      <div className="mb-3 flex items-center justify-end gap-2">
-        <span className="text-xs uppercase tracking-wider text-cyan-100/70">
-          Compare to:
-        </span>
-        <label className="sr-only" htmlFor="compare-to">
-          Compare to
-        </label>
-        <select
-          id="compare-to"
-          value={compareTo}
-          onChange={(e) => setCompareTo(e.target.value as CompareOption)}
-          className="rounded-md border border-cyan-200/30 bg-[#090f1d] px-2 py-1 text-xs text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/60"
-        >
-          <option value="previous_quarter">Previous Quarter</option>
-          <option value="industry_average">Industry Average</option>
-        </select>
-      </div>
+      {canCompare && (
+        <div className="mb-3 flex items-center justify-end gap-2">
+          <span className="text-xs uppercase tracking-wider text-cyan-100/70">
+            Compare to:
+          </span>
+          <label className="sr-only" htmlFor="compare-to">
+            Compare to
+          </label>
+          <select
+            id="compare-to"
+            value={compareTo}
+            onChange={(e) => setCompareTo(e.target.value as CompareOption)}
+            className="rounded-md border border-cyan-200/30 bg-[#090f1d] px-2 py-1 text-xs text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/60"
+          >
+            <option value="previous_quarter">Previous Quarter</option>
+            <option value="industry_average">Industry Average</option>
+          </select>
+        </div>
+      )}
 
       <div className="flex gap-3">
         <div className="relative w-9 text-right text-[10px] text-cyan-100/50">
@@ -162,16 +183,18 @@ export function SystemHealthTrendChart({
               }}
             />
 
-            <polyline
-              points={comparePoints}
-              fill="none"
-              stroke="#6b7280"
-              strokeWidth="2"
-              strokeDasharray="5 5"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              className="opacity-80"
-            />
+            {canCompare && (
+              <polyline
+                points={comparePoints}
+                fill="none"
+                stroke="#6b7280"
+                strokeWidth="2"
+                strokeDasharray="5 5"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                className="opacity-80"
+              />
+            )}
 
             <polyline
               points={currentPoints}
@@ -209,7 +232,12 @@ export function SystemHealthTrendChart({
             })}
           </svg>
 
-          <div className="mt-2 grid grid-cols-6 text-center text-xs text-cyan-100/60">
+          <div
+            className="mt-2 grid text-center text-xs text-cyan-100/60"
+            style={{
+              gridTemplateColumns: `repeat(${Math.max(months.length, 1)}, minmax(0, 1fr))`,
+            }}
+          >
             {months.map((m) => (
               <span key={m}>{m}</span>
             ))}

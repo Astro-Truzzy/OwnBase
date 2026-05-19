@@ -6,9 +6,10 @@ import {
   getAuthCallbackUrl,
   sanitizeAuthRedirect,
 } from "@/lib/auth/redirects";
+import { EMAIL_OTP_LENGTH } from "@/lib/auth/email-otp";
 import { createClient } from "../../lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 const BUSINESS_SECTORS = [
   "Technology",
@@ -33,6 +34,9 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [verifyPhase, setVerifyPhase] = useState<"idle" | "verifying" | "redirecting">("idle");
+  const isVerifyingRef = useRef(false);
+  const verifyFormRef = useRef<HTMLFormElement>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -88,7 +92,7 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
       setOtp("");
       setMessage({
         type: "success",
-        text: "We sent a 6-digit code to your email. Enter it below to verify your account.",
+        text: `We sent a verification code to your email. Enter the ${EMAIL_OTP_LENGTH}-digit code below.`,
       });
       setIsPending(false);
       return;
@@ -100,34 +104,78 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
 
   async function handleVerifyOtp(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (isVerifyingRef.current) return;
+
     setMessage(null);
     const code = otp.replace(/\D/g, "").trim();
-    if (code.length < 6) {
-      setMessage({ type: "error", text: "Enter the 6-digit code from your email." });
-      return;
-    }
-
-    setIsPending(true);
-    const supabase = createClient();
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      email: pendingEmail,
-      token: code,
-      type: "signup",
-    });
-
-    if (verifyError) {
+    if (code.length !== EMAIL_OTP_LENGTH) {
       setMessage({
         type: "error",
-        text: verifyError.message.includes("expired")
-          ? "That code has expired. Request a new code below."
-          : verifyError.message,
+        text: `Enter the ${EMAIL_OTP_LENGTH}-digit code from your email.`,
       });
-      setIsPending(false);
       return;
     }
 
-    router.refresh();
-    router.push(next);
+    isVerifyingRef.current = true;
+    setIsPending(true);
+    setVerifyPhase("verifying");
+
+    const supabase = createClient();
+    let isRedirecting = false;
+
+    try {
+      const verifyResult = await Promise.race([
+        supabase.auth.verifyOtp({
+          email: pendingEmail,
+          token: code,
+          type: "signup",
+        }),
+        new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error("VERIFY_TIMEOUT")), 25_000);
+        }),
+      ]);
+
+      if (verifyResult.error) {
+        setMessage({
+          type: "error",
+          text: verifyResult.error.message.includes("expired")
+            ? "That code has expired. Request a new code below."
+            : verifyResult.error.message,
+        });
+        return;
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        setMessage({
+          type: "error",
+          text: "Code accepted, but we could not start your session. Try signing in with your email and password.",
+        });
+        return;
+      }
+
+      isRedirecting = true;
+      setVerifyPhase("redirecting");
+      setMessage({
+        type: "success",
+        text: "Email verified. Opening your dashboard…",
+      });
+      window.location.assign(next);
+    } catch (err) {
+      const isTimeout = err instanceof Error && err.message === "VERIFY_TIMEOUT";
+      setMessage({
+        type: "error",
+        text: isTimeout
+          ? "Verification is taking too long. Check your connection and try again."
+          : "Something went wrong. Please try again.",
+      });
+    } finally {
+      isVerifyingRef.current = false;
+      if (!isRedirecting) {
+        setIsPending(false);
+        setVerifyPhase("idle");
+      }
+    }
   }
 
   async function handleResendCode() {
@@ -238,10 +286,11 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
             Code sent to <span className="text-foreground">{pendingEmail}</span>
           </p>
         </div>
-        <form onSubmit={handleVerifyOtp} className="space-y-4">
+        <form ref={verifyFormRef} onSubmit={handleVerifyOtp} className="space-y-4">
           <div>
             <label htmlFor="otp" className={labelClass}>
-              6-digit code <span className="text-red-500">*</span>
+              {EMAIL_OTP_LENGTH}-digit verification code{" "}
+              <span className="text-red-500">*</span>
             </label>
             <input
               id="otp"
@@ -250,19 +299,30 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
               inputMode="numeric"
               autoComplete="one-time-code"
               required
-              maxLength={6}
+              maxLength={EMAIL_OTP_LENGTH}
               value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              className={`${authInputClassName} text-center text-lg tracking-[0.35em] font-mono`}
-              placeholder="000000"
+              pattern={`[0-9]{${EMAIL_OTP_LENGTH}}`}
+              onChange={(e) => {
+                setOtp(e.target.value.replace(/\D/g, "").slice(0, EMAIL_OTP_LENGTH));
+              }}
+              className={`${authInputClassName} text-center text-lg tracking-[0.35em] font-mono max-w-[12rem] mx-auto block`}
+              placeholder={"0".repeat(EMAIL_OTP_LENGTH)}
+              aria-describedby="otp-hint"
             />
+            <p id="otp-hint" className="mt-2 text-xs text-center text-muted-foreground">
+              Enter the {EMAIL_OTP_LENGTH}-digit code from your confirmation email.
+            </p>
           </div>
           <button
             type="submit"
             disabled={isPending}
             className="w-full rounded-lg bg-accent text-white px-4 py-3 text-sm font-medium hover:bg-accent-hover transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50"
           >
-            {isPending ? "Verifying…" : "Verify and continue"}
+            {verifyPhase === "redirecting"
+              ? "Opening dashboard…"
+              : isPending
+                ? "Verifying…"
+                : "Verify and continue"}
           </button>
         </form>
         <p className="text-center text-sm text-muted-foreground">

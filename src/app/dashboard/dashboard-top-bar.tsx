@@ -30,8 +30,7 @@ import { navigateToServerSignOut } from "@/lib/auth/hard-sign-out";
 import { DashboardNotifications } from "./dashboard-notifications";
 
 import { DashboardSearchInput } from "./dashboard-search-input";
-
-
+import { WALKTHROUGH_MOBILE_MENU_EVENT } from "./walkthrough-events";
 
 type DashboardTopBarProps = {
 
@@ -91,7 +90,15 @@ export function DashboardTopBar({
 
   }, [menuOpen]);
 
-
+  useEffect(() => {
+    function onWalkthroughMenu(event: Event) {
+      const open = (event as CustomEvent<{ open?: boolean }>).detail?.open;
+      setMenuOpen(Boolean(open));
+    }
+    window.addEventListener(WALKTHROUGH_MOBILE_MENU_EVENT, onWalkthroughMenu);
+    return () =>
+      window.removeEventListener(WALKTHROUGH_MOBILE_MENU_EVENT, onWalkthroughMenu);
+  }, []);
 
   function signOut() {
 
@@ -123,7 +130,10 @@ export function DashboardTopBar({
 
   return (
 
-    <header className="z-20 shrink-0 border-b border-border bg-[#0a101c]/95 backdrop-blur-md">
+    <header
+      data-tour="mobile-header"
+      className="z-20 shrink-0 border-b border-border bg-[#0a101c]/95 backdrop-blur-md"
+    >
 
       <div className="flex h-14 items-center gap-2 px-4 sm:h-16 sm:gap-3 sm:px-6">
 
@@ -147,12 +157,15 @@ export function DashboardTopBar({
 
         </div>
 
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <div
+          data-tour="mobile-top-actions"
+          className="flex shrink-0 items-center gap-2 sm:gap-3"
+        >
 
           <Link
 
             href="/dashboard/ai"
-
+            data-tour="mobile-ask-ai"
             className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium text-foreground/90 transition hover:border-primary/30 hover:bg-muted sm:text-sm"
 
           >
@@ -178,7 +191,7 @@ export function DashboardTopBar({
             <button
 
               type="button"
-
+              data-tour="mobile-menu-trigger"
               onClick={() => setMenuOpen((o) => !o)}
 
               aria-expanded={menuOpen}
@@ -216,7 +229,7 @@ export function DashboardTopBar({
               <div
 
                 role="menu"
-
+                data-tour="mobile-nav-menu"
                 className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-border bg-card py-1 shadow-xl shadow-black/40"
 
               >
@@ -347,7 +360,10 @@ export function DashboardTopBar({
 
 
 
-      <div className="border-t border-border/60 px-4 pb-3 pt-2 md:hidden">
+      <div
+        data-tour="mobile-search"
+        className="border-t border-border/60 px-4 pb-3 pt-2 md:hidden"
+      >
 
         <DashboardSearchInput />
 

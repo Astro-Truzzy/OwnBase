@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { AOSInit } from "@/components/AOSInit";
+import { OAuthErrorRecovery } from "@/components/auth/oauth-error-recovery";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import "./globals.css";
 
@@ -56,6 +57,7 @@ export default function RootLayout({
           {themeInitScript}
         </Script>
         <AOSInit />
+        <OAuthErrorRecovery />
         <ThemeToggle />
         {children}
       </body>
