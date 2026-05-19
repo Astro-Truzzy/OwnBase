@@ -29,6 +29,8 @@ type NavItem = {
   href: string;
   label: string;
   icon: ReactNode;
+  /** Unique id for active styling (multiple items can share the same dashboardTab). */
+  navId: string;
   match: string[];
   /** When set, selects a dashboard home tab via hash (Overview / Repositories / Activity). */
   dashboardTab?: DashboardTabKey;
@@ -49,6 +51,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
         href: "/dashboard#dashboard",
         label: "Dashboard",
         icon: <IconLayoutDashboard className="h-4 w-4" />,
+        navId: "dashboard",
         match: ["/dashboard"],
         dashboardTab: "dashboard",
       },
@@ -56,6 +59,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
         href: "/dashboard#portfolio",
         label: "Portfolio",
         icon: <IconBuilding className="h-4 w-4" />,
+        navId: "portfolio",
         match: ["/dashboard"],
         dashboardTab: "portfolio",
       },
@@ -63,6 +67,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
         href: "/dashboard#operations",
         label: "Operations",
         icon: <IconActivity className="h-4 w-4" />,
+        navId: "operations",
         match: ["/dashboard"],
         dashboardTab: "operations",
       },
@@ -75,12 +80,14 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
         href: "/dashboard/ai",
         label: "Ask AI",
         icon: <IconSparkles className="h-4 w-4" />,
+        navId: "ai",
         match: ["/dashboard/ai"],
       },
       {
         href: "/dashboard/organization#reports",
         label: "Reports",
         icon: <IconFileText className="h-4 w-4" />,
+        navId: "reports",
         match: ["/dashboard/organization"],
         hashRule: "__default__",
         defaultHashWhenPresent: "reports",
@@ -89,6 +96,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
         href: "/dashboard/devs#insights",
         label: "Insights",
         icon: <IconBulb className="h-4 w-4" />,
+        navId: "insights",
         match: ["/dashboard/devs"],
         hashRule: "__default__",
         defaultHashWhenPresent: "insights",
@@ -97,6 +105,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
         href: "/dashboard/organization#risk",
         label: "Risk Assessment",
         icon: <IconShield className="h-4 w-4" />,
+        navId: "risk",
         match: ["/dashboard/organization"],
         hashRule: "risk",
       },
@@ -109,6 +118,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
         href: "/dashboard/devs#team",
         label: "Team Access",
         icon: <IconUsers className="h-4 w-4" />,
+        navId: "team",
         match: ["/dashboard/devs"],
         hashRule: "team",
       },
@@ -116,6 +126,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
         href: "/dashboard#portfolio",
         label: "Repositories",
         icon: <IconGitBranch className="h-4 w-4" />,
+        navId: "repositories",
         match: ["/dashboard"],
         dashboardTab: "portfolio",
       },
@@ -123,21 +134,33 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
         href: "/dashboard/upload",
         label: "Uploads",
         icon: <IconUpload className="h-4 w-4" />,
+        navId: "uploads",
         match: ["/dashboard/upload"],
       },
       {
         href: "/dashboard/billing",
         label: "Billing",
         icon: <IconCreditCard className="h-4 w-4" />,
+        navId: "billing",
         match: ["/dashboard/billing"],
       },
     ],
   },
 ];
 
+/** Default sidebar highlight when several links share one dashboard tab hash. */
+const DEFAULT_TAB_NAV_ID: Record<DashboardTabKey, string> = {
+  dashboard: "dashboard",
+  portfolio: "repositories",
+  operations: "operations",
+};
+
 export function DashboardSideRail() {
   const pathname = usePathname();
   const [hash, setHash] = useState<DashboardTabKey>("dashboard");
+  const [activeNavIdByTab, setActiveNavIdByTab] = useState<
+    Partial<Record<DashboardTabKey, string>>
+  >({});
 
   useEffect(() => {
     const readHash = () => {
@@ -178,10 +201,16 @@ export function DashboardSideRail() {
   function handleDashboardTabClick(
     event: MouseEvent<HTMLAnchorElement>,
     tab: DashboardTabKey,
+    navId: string,
   ) {
     if (!isDashboardHomePath(pathname)) return;
     event.preventDefault();
+    setActiveNavIdByTab((prev) => ({ ...prev, [tab]: navId }));
     setDashboardTabHash(tab);
+  }
+
+  function highlightedNavIdForTab(tab: DashboardTabKey): string {
+    return activeNavIdByTab[tab] ?? DEFAULT_TAB_NAV_ID[tab];
   }
 
   return (
@@ -198,16 +227,21 @@ export function DashboardSideRail() {
             const onDashboardHome = isDashboardHomePath(pathname);
             const isActive =
               onDashboardHome && item.dashboardTab
-                ? hash === item.dashboardTab
+                ? hash === item.dashboardTab &&
+                  item.navId === highlightedNavIdForTab(item.dashboardTab)
                 : pathMatchesItem(item) && hashMatchesItem(item);
             return (
               <Link
-                key={`${group.title}-${item.label}`}
+                key={item.navId}
                 href={item.href}
                 onClick={
                   item.dashboardTab
                     ? (event) =>
-                        handleDashboardTabClick(event, item.dashboardTab!)
+                        handleDashboardTabClick(
+                          event,
+                          item.dashboardTab!,
+                          item.navId,
+                        )
                     : undefined
                 }
                 className={cn(
