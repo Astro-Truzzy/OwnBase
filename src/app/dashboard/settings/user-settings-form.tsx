@@ -102,12 +102,12 @@ export function UserSettingsForm({
       )}
 
       <section className="dash-panel p-6 sm:p-8">
-        <h2 className="text-lg font-semibold text-cyan-50">Profile photo</h2>
-        <p className="mt-1 text-sm text-cyan-100/65">
+        <h2 className="text-lg font-semibold text-foreground">Profile photo</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
           JPEG, PNG, WebP, or GIF. Maximum size 5 MB.
         </p>
         <div className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-start">
-          <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border border-cyan-200/20 bg-[#050b16]/80">
+          <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border dash-surface-inset">
             {avatarPreviewUrl ? (
               <img
                 src={avatarPreviewUrl}
@@ -116,7 +116,7 @@ export function UserSettingsForm({
               />
             ) : (
               <IconPhoto
-                className="h-10 w-10 text-cyan-200/35"
+                className="h-10 w-10 text-primary/35"
                 aria-hidden
               />
             )}
@@ -133,7 +133,7 @@ export function UserSettingsForm({
               type="button"
               disabled={isUploadingAvatar}
               onClick={() => fileRef.current?.click()}
-              className="inline-flex items-center justify-center rounded-lg border border-cyan-300/35 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-50 transition hover:bg-cyan-400/20 disabled:opacity-50"
+              className="inline-flex items-center justify-center rounded-lg border border-primary/35 bg-primary/10 px-4 py-2 text-sm font-medium text-foreground transition hover:bg-cyan-400/20 disabled:opacity-50"
             >
               {isUploadingAvatar ? "Uploading…" : "Upload from device"}
             </button>
@@ -142,7 +142,7 @@ export function UserSettingsForm({
                 type="button"
                 disabled={isRemovingAvatar}
                 onClick={() => void removeAvatar()}
-                className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-cyan-100/80 transition hover:bg-muted/40 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted/40 disabled:opacity-50"
               >
                 <IconTrash className="h-4 w-4" aria-hidden />
                 {isRemovingAvatar ? "Removing…" : "Remove photo"}
@@ -153,8 +153,8 @@ export function UserSettingsForm({
       </section>
 
       <section className="dash-panel p-6 sm:p-8">
-        <h2 className="text-lg font-semibold text-cyan-50">Your details</h2>
-        <p className="mt-1 text-sm text-cyan-100/65">
+        <h2 className="text-lg font-semibold text-foreground">Your details</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
           Name and organization information used across your workspace.
         </p>
         <form onSubmit={handleProfileSubmit} className="mt-6 space-y-4">
@@ -162,7 +162,7 @@ export function UserSettingsForm({
             <div>
               <label
                 htmlFor="settings-first-name"
-                className="mb-1 block text-sm font-medium text-cyan-100"
+                className="mb-1 block text-sm font-medium text-foreground"
               >
                 First name
               </label>
@@ -172,13 +172,13 @@ export function UserSettingsForm({
                 type="text"
                 defaultValue={initialFirstName}
                 autoComplete="given-name"
-                className="dash-input w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+                className="dash-input w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
               />
             </div>
             <div>
               <label
                 htmlFor="settings-last-name"
-                className="mb-1 block text-sm font-medium text-cyan-100"
+                className="mb-1 block text-sm font-medium text-foreground"
               >
                 Last name
               </label>
@@ -188,14 +188,14 @@ export function UserSettingsForm({
                 type="text"
                 defaultValue={initialLastName}
                 autoComplete="family-name"
-                className="dash-input w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+                className="dash-input w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
               />
             </div>
           </div>
           <div>
             <label
               htmlFor="settings-company"
-              className="mb-1 block text-sm font-medium text-cyan-100"
+              className="mb-1 block text-sm font-medium text-foreground"
             >
               Company
             </label>
@@ -206,13 +206,13 @@ export function UserSettingsForm({
               defaultValue={initialBusinessName}
               autoComplete="organization"
               placeholder="e.g. Acme Ltd"
-              className="dash-input w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+              className="dash-input w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
             />
           </div>
           <div>
             <label
               htmlFor="settings-sector"
-              className="mb-1 block text-sm font-medium text-cyan-100"
+              className="mb-1 block text-sm font-medium text-foreground"
             >
               Sector
             </label>
@@ -222,14 +222,14 @@ export function UserSettingsForm({
               type="text"
               defaultValue={initialBusinessSector}
               placeholder="e.g. Fintech, Healthcare, SaaS"
-              className="dash-input w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+              className="dash-input w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
             />
           </div>
           <div className="pt-2">
             <button
               type="submit"
               disabled={isSavingProfile}
-              className="inline-flex items-center justify-center rounded-lg border border-cyan-300/35 bg-cyan-400/15 px-5 py-2.5 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-400/25 disabled:opacity-50"
+              className="inline-flex items-center justify-center rounded-lg border border-primary/35 bg-primary/10 px-5 py-2.5 text-sm font-semibold text-foreground transition hover:bg-cyan-400/25 disabled:opacity-50"
             >
               {isSavingProfile ? "Saving…" : "Save details"}
             </button>

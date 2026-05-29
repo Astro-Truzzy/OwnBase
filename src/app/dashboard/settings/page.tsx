@@ -37,14 +37,14 @@ export default async function UserSettingsPage() {
     <div className="space-y-8">
       <div className="dash-panel dash-panel--lg p-6 sm:p-8">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-400/15 text-cyan-200">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
             <IconSettings className="h-6 w-6" aria-hidden />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
               User settings
             </h1>
-            <p className="mt-1 text-sm text-cyan-100/70 sm:text-base">
+            <p className="mt-1 text-sm text-muted-foreground sm:text-base">
               Manage your name, company, sector, and profile photo.
             </p>
           </div>

@@ -1,4 +1,5 @@
 import { buildConnectErrorRedirectPath } from "@/lib/auth/connect-errors";
+import { AUTH_NEXT_COOKIE, readAuthNextFromCookie } from "@/lib/auth/oauth-return";
 import { sanitizeAuthRedirect } from "@/lib/auth/redirects";
 import { ensureTrialForNewAccount } from "@/lib/profiles/ensure-trial";
 import { persistGitHubTokens } from "@/lib/supabase/github-token";
@@ -13,7 +14,9 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const code = searchParams.get("code");
-  const next = sanitizeAuthRedirect(searchParams.get("next"));
+  const next = sanitizeAuthRedirect(
+    searchParams.get("next") ?? readAuthNextFromCookie(request.headers.get("cookie")),
+  );
   const oauthErrorCode =
     searchParams.get("error_code") ?? searchParams.get("error");
 
@@ -122,6 +125,8 @@ export async function GET(request: NextRequest) {
   await ensureTrialForNewAccount(user.id, user.created_at);
 
   revalidatePath("/dashboard", "layout");
+
+  response.cookies.delete(AUTH_NEXT_COOKIE);
 
   return response;
 }

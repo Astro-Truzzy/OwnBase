@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { IconCheck, IconPlus } from "@tabler/icons-react";
+const LOGIN_DASHBOARD_REDIRECT = "/login?redirectTo=%2Fdashboard";
 
 type PricingPlansProps = {
   /** `page` uses an `<h1>`; `section` uses `<h2>` for the headline. */
@@ -31,12 +32,12 @@ export function PricingPlans({ variant = "page" }: PricingPlansProps) {
           </p>
           <div className="mt-6 flex items-baseline gap-1">
             <span className="text-4xl font-semibold tracking-tight text-foreground">
-              ₦9,999
+              ₦6,500
             </span>
             <span className="text-sm text-muted">per month</span>
           </div>
           <Link
-            href="/signup"
+            href={LOGIN_DASHBOARD_REDIRECT}
             className="mt-8 flex w-full items-center justify-center rounded-lg border border-border bg-background py-3 text-sm font-semibold text-foreground transition-colors hover:border-accent/40 hover:bg-accent/5 dark:bg-surface/50"
           >
             Get Started
@@ -76,12 +77,12 @@ export function PricingPlans({ variant = "page" }: PricingPlansProps) {
           </p>
           <div className="mt-6 flex items-baseline gap-1">
             <span className="text-4xl font-semibold tracking-tight text-foreground">
-              ₦24,999
+              ₦15,000
             </span>
             <span className="text-sm text-muted">per month</span>
           </div>
           <Link
-            href="/signup"
+            href={LOGIN_DASHBOARD_REDIRECT}
             className="mt-8 flex w-full items-center justify-center rounded-lg bg-accent py-3 text-sm font-semibold text-white transition-colors hover:bg-accent-hover"
           >
             Get Started

@@ -11,11 +11,22 @@ import type { AccessLevelLabel } from "@/lib/github/types";
 function accessChipClass(access: AccessLevelLabel): string {
   switch (access) {
     case "Full access":
-      return "border-amber-400/45 bg-amber-500/15 text-amber-100";
+      return "border-amber-500/40 bg-amber-500/12 text-amber-950 dark:border-amber-400/45 dark:bg-amber-500/15 dark:text-amber-100";
     case "Can edit":
-      return "border-cyan-300/35 bg-cyan-400/12 text-cyan-100";
+      return "border-primary/35 bg-primary/10 text-primary dark:bg-primary/15";
     default:
-      return "border-cyan-200/15 bg-black/35 text-cyan-100/75";
+      return "border-border bg-muted/50 text-muted-foreground";
+  }
+}
+
+function accessBadgeClass(access: AccessLevelLabel): string {
+  switch (access) {
+    case "Full access":
+      return "bg-amber-700/90 text-amber-50 dark:bg-black/30 dark:text-amber-100";
+    case "Can edit":
+      return "bg-primary/20 text-primary dark:bg-black/25 dark:text-foreground";
+    default:
+      return "bg-muted text-muted-foreground dark:bg-black/25 dark:text-muted-foreground";
   }
 }
 
@@ -29,12 +40,14 @@ function RepoAttachmentChip({
   return (
     <Link
       href={`${repoHref(attachment.fullName)}#access`}
-      className={`inline-flex max-w-full items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors hover:brightness-110 ${accessChipClass(attachment.access)}`}
+      className={`inline-flex max-w-full items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors hover:border-primary/40 hover:bg-muted/60 dark:hover:brightness-110 ${accessChipClass(attachment.access)}`}
       title={`${attachment.fullName} — ${attachment.access}`}
     >
       <IconFolder className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
       <span className="truncate">{attachment.fullName}</span>
-      <span className="shrink-0 rounded bg-black/25 px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide opacity-90">
+      <span
+        className={`shrink-0 rounded px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${accessBadgeClass(attachment.access)}`}
+      >
         {attachment.access === "Full access"
           ? "Full"
           : attachment.access === "Can edit"
@@ -66,14 +79,14 @@ export function DevsTeamOverview({
   return (
     <section className="dash-panel p-6 sm:p-8">
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-400/15 text-cyan-200">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
           <IconUsersGroup className="h-5 w-5" aria-hidden />
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-cyan-50">
+          <h2 className="text-lg font-semibold text-foreground">
             Organization roster
           </h2>
-          <p className="mt-1 text-sm text-cyan-100/65">
+          <p className="mt-1 text-sm text-muted-foreground">
             All developers across your tracked GitHub repos and the access they
             have on each — use this as a quick headcount before drilling into
             per-repo actions below.
@@ -104,12 +117,12 @@ export function DevsTeamOverview({
       </div>
 
       {!hasGithubData ? (
-        <p className="mt-6 text-sm text-cyan-100/65">
+        <p className="mt-6 text-sm text-muted-foreground">
           Sign in with GitHub to see an organization-wide map of developers and
           which repositories they are attached to.
         </p>
       ) : overview.length === 0 ? (
-        <p className="mt-6 text-sm text-cyan-100/65">
+        <p className="mt-6 text-sm text-muted-foreground">
           No collaborators returned for your tracked GitHub repos yet. Open a
           repo below to grant access.
         </p>
@@ -118,14 +131,14 @@ export function DevsTeamOverview({
           {overview.map((dev) => (
             <li
               key={dev.login}
-              className="rounded-xl border border-cyan-200/12 bg-[#050b16]/70 p-4 sm:p-5"
+              className="rounded-xl border border-border dash-surface-inset p-4 sm:p-5"
             >
               <div className="flex flex-col gap-4">
                 <div className="flex min-w-0 items-center gap-3">
                   <img
                     src={dev.avatar_url}
                     alt=""
-                    className="h-11 w-11 shrink-0 rounded-full border border-cyan-200/20 object-cover"
+                    className="h-11 w-11 shrink-0 rounded-full border border-border object-cover"
                     loading="lazy"
                   />
                   <div className="min-w-0 flex-1 overflow-hidden">
@@ -134,20 +147,20 @@ export function DevsTeamOverview({
                       target="_blank"
                       rel="noreferrer"
                       title={dev.login}
-                      className="block truncate font-semibold text-cyan-50 hover:underline"
+                      className="block truncate font-semibold text-foreground hover:underline"
                     >
                       {dev.login}
                     </a>
-                    <p className="mt-0.5 text-xs text-cyan-100/55">
-                      <span className="tabular-nums font-medium text-cyan-100/80">
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      <span className="tabular-nums font-medium text-muted-foreground">
                         {dev.repos.length}
                       </span>{" "}
                       repo{dev.repos.length === 1 ? "" : "s"}
                     </p>
                   </div>
                 </div>
-                <div className="min-w-0 w-full border-t border-cyan-200/10 pt-4">
-                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-cyan-100/45">
+                <div className="min-w-0 w-full border-t border-border pt-4">
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
                     Repositories & access
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -167,10 +180,10 @@ export function DevsTeamOverview({
       )}
 
       {hasGithubData && overview.length > 0 ? (
-        <p className="mt-5 text-[11px] text-cyan-100/45">
-          Highlighted chips show each repo this person is on. Amber = full
-          access, cyan = can edit, muted = view only. Per-repo rosters and
-          revoke actions are below.
+        <p className="mt-5 text-[11px] text-muted-foreground/70">
+          Chips show each repo and access level: amber = full access, teal =
+          can edit, gray = view only. Per-repo rosters and revoke actions are
+          below.
         </p>
       ) : null}
     </section>
@@ -187,14 +200,14 @@ function StatCard({
   hint: string;
 }) {
   return (
-    <div className="rounded-xl border border-cyan-200/15 bg-[#050b16]/85 p-4">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-cyan-200/75">
+    <div className="rounded-xl border border-border dash-surface-inset p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
         {label}
       </p>
-      <p className="mt-2 text-2xl font-semibold tabular-nums text-white">
+      <p className="mt-2 text-2xl font-semibold tabular-nums text-foreground">
         {value}
       </p>
-      <p className="mt-1 text-xs text-cyan-100/55">{hint}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
     </div>
   );
 }

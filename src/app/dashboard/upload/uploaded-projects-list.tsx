@@ -36,7 +36,7 @@ export function UploadedProjectsList({ projects }: { projects: ProjectRow[] }) {
 
   if (projects.length === 0) {
     return (
-      <p className="mt-4 text-sm text-cyan-100/60">
+      <p className="mt-4 text-sm text-muted-foreground">
         No uploads yet. Use the form above to upload a project zip.
       </p>
     );
@@ -47,16 +47,18 @@ export function UploadedProjectsList({ projects }: { projects: ProjectRow[] }) {
       {projects.map((p) => (
         <li
           key={p.id}
-          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-cyan-200/15 bg-[#050b16]/65 px-3 py-2 text-sm"
+          className="dash-surface-inset flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm"
         >
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex min-w-0 items-center gap-2">
             <IconFolder
-              className="h-4 w-4 shrink-0 text-cyan-300/80"
+              className="h-4 w-4 shrink-0 text-primary"
               aria-hidden
             />
-            <span className="truncate font-medium text-cyan-50">{p.name}</span>
-            <span className="text-cyan-100/55">{formatSize(p.file_size)}</span>
-            <span className="text-cyan-100/55">{formatDate(p.created_at)}</span>
+            <span className="truncate font-medium text-foreground">
+              {p.name}
+            </span>
+            <span className="text-muted-foreground">{formatSize(p.file_size)}</span>
+            <span className="text-muted-foreground">{formatDate(p.created_at)}</span>
           </div>
           <button
             type="button"
@@ -66,7 +68,7 @@ export function UploadedProjectsList({ projects }: { projects: ProjectRow[] }) {
               const ok = await deleteUploadedProjectAction(p.id);
               if (ok) router.refresh();
             }}
-            className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-500/10 dark:text-red-400"
             aria-label={`Delete ${p.name}`}
           >
             <IconTrash className="h-3.5 w-3.5" aria-hidden />

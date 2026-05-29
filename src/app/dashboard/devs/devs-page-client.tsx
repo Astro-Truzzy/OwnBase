@@ -81,18 +81,18 @@ export function DevsPageClient(props: {
   if (trackedEmpty) {
     return (
       <section className="dash-panel p-6 sm:p-8">
-        <p className="text-sm text-cyan-100/65">
+        <p className="text-sm text-muted-foreground">
           No repos in your organization yet. Add repos from the{" "}
           <Link
             href="/dashboard"
-            className="text-cyan-200 underline hover:no-underline"
+            className="text-primary underline hover:no-underline"
           >
             dashboard
           </Link>{" "}
           or your{" "}
           <Link
             href="/dashboard/organization"
-            className="text-cyan-200 underline hover:no-underline"
+            className="text-primary underline hover:no-underline"
           >
             organization
           </Link>{" "}
@@ -105,7 +105,7 @@ export function DevsPageClient(props: {
   return (
     <div className="w-full min-w-0 space-y-8">
       <div className="flex items-start gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-400/15 text-cyan-200">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
           {teamTab ? (
             <IconUsersGroup className="h-7 w-7" aria-hidden />
           ) : (
@@ -113,10 +113,10 @@ export function DevsPageClient(props: {
           )}
         </div>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
             {teamTab ? "Collaborator access" : "Insights"}
           </h1>
-          <p className="mt-2 max-w-2xl text-sm text-cyan-100/65">
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             {teamTab ? (
               <>
                 See every developer in your organization, which repos they are
@@ -130,7 +130,7 @@ export function DevsPageClient(props: {
                 duplicating the exposure modeling on{" "}
                 <Link
                   href="/dashboard/organization#risk"
-                  className="text-cyan-200 underline-offset-2 hover:text-cyan-100 hover:underline"
+                  className="text-primary underline-offset-2 hover:text-foreground hover:underline"
                 >
                   Risk assessment
                 </Link>
@@ -152,8 +152,8 @@ export function DevsPageClient(props: {
 
           {reposWithCollabs.length === 0 && gitlabRepos.length > 0 && (
             <section className="dash-panel p-6 sm:p-8">
-              <h2 className="text-lg font-medium text-cyan-50">GitLab projects</h2>
-              <p className="mt-1 text-sm text-cyan-100/65">
+              <h2 className="text-lg font-medium text-foreground">GitLab projects</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
                 Collaborator management for GitLab projects is done on GitLab.
                 Open the project and go to Members to add or remove people.
               </p>
@@ -162,10 +162,10 @@ export function DevsPageClient(props: {
                   <li key={r.full_name}>
                     <Link
                       href={repoDetailHref(r.full_name)}
-                      className="inline-flex items-center gap-2 text-sm font-medium text-cyan-50 transition-colors hover:text-cyan-300"
+                      className="inline-flex items-center gap-2 text-sm font-medium text-foreground transition-colors hover:text-primary"
                     >
                       <IconFolder
-                        className="h-4 w-4 text-cyan-300/80"
+                        className="h-4 w-4 text-primary"
                         aria-hidden
                       />
                       {r.full_name}
@@ -179,7 +179,7 @@ export function DevsPageClient(props: {
 
           {!hasProviderToken && githubTrackedCount > 0 && (
             <section className="dash-panel p-6 sm:p-8">
-              <p className="text-sm text-cyan-100/65">
+              <p className="text-sm text-muted-foreground">
                 Sign in with GitHub to see and manage collaborators on your
                 repos. GitLab projects: manage members from the project page on
                 GitLab.
@@ -189,7 +189,7 @@ export function DevsPageClient(props: {
 
           {reposWithCollabs.length > 0 ? (
             <div>
-              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-cyan-100/50">
+              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground/80">
                 By repository
               </h2>
               <div className="space-y-10 sm:space-y-12">

@@ -91,6 +91,7 @@ export function LoginForm({ redirectTo, error, signedOut, passwordReset }: Login
       options: {
         redirectTo: getAuthCallbackUrl(next),
         scopes: "repo",
+        queryParams: { prompt: "select_account" },
         skipBrowserRedirect: true,
       },
     });
@@ -183,20 +184,6 @@ export function LoginForm({ redirectTo, error, signedOut, passwordReset }: Login
           <GitHubIcon className="h-5 w-5 shrink-0" />
           Continue with GitHub
         </button>
-        {signedOut ? (
-          <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
-            To pick a different GitHub account or see the GitHub sign-in screen,{" "}
-            <a
-              href="https://github.com/logout"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium text-foreground underline underline-offset-2 hover:no-underline"
-            >
-              sign out of GitHub in your browser
-            </a>{" "}
-            first (opens a new tab), then use the button above.
-          </p>
-        ) : null}
         <button
           type="button"
           onClick={signInWithGitLab}

@@ -1,4 +1,8 @@
-export type DashboardTabKey = "dashboard" | "portfolio" | "operations";
+export type DashboardTabKey =
+  | "dashboard"
+  | "organization"
+  | "portfolio"
+  | "operations";
 
 export const DASHBOARD_TAB_CHANGED = "ownbase:dashboard-tab-changed";
 
@@ -7,6 +11,7 @@ export function isDashboardHomePath(pathname: string): boolean {
 }
 
 export function hashToDashboardTab(hash: string): DashboardTabKey {
+  if (hash === "organization") return "organization";
   if (hash === "portfolio") return "portfolio";
   if (hash === "operations") return "operations";
   return "dashboard";

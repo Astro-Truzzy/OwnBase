@@ -56,9 +56,17 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
         dashboardTab: "dashboard",
       },
       {
+        href: "/dashboard#organization",
+        label: "Organization",
+        icon: <IconBuilding className="h-4 w-4" />,
+        navId: "organization",
+        match: ["/dashboard"],
+        dashboardTab: "organization",
+      },
+      {
         href: "/dashboard#portfolio",
         label: "Portfolio",
-        icon: <IconBuilding className="h-4 w-4" />,
+        icon: <IconGitBranch className="h-4 w-4" />,
         navId: "portfolio",
         match: ["/dashboard"],
         dashboardTab: "portfolio",
@@ -151,23 +159,26 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
 /** Default sidebar highlight when several links share one dashboard tab hash. */
 const DEFAULT_TAB_NAV_ID: Record<DashboardTabKey, string> = {
   dashboard: "dashboard",
+  organization: "organization",
   portfolio: "repositories",
   operations: "operations",
 };
 
-export function DashboardSideRail() {
+export function DashboardSideRail({ onItemClick }: { onItemClick?: () => void } = {}) {
   const pathname = usePathname();
   const [hash, setHash] = useState<DashboardTabKey>("dashboard");
+  const [locationHash, setLocationHash] = useState("");
   const [activeNavIdByTab, setActiveNavIdByTab] = useState<
     Partial<Record<DashboardTabKey, string>>
   >({});
 
   useEffect(() => {
     const readHash = () => {
+      const raw = window.location.hash.replace("#", "");
+      setLocationHash(raw);
       if (isDashboardHomePath(pathname)) {
         setHash(readDashboardTabHash());
       } else {
-        const raw = window.location.hash.replace("#", "");
         setHash(raw ? (raw as DashboardTabKey) : "dashboard");
       }
     };
@@ -190,7 +201,7 @@ export function DashboardSideRail() {
 
   function hashMatchesItem(item: NavItem): boolean {
     if (!item.hashRule) return true;
-    const rawHash = window.location.hash.replace("#", "");
+    const rawHash = locationHash;
     if (item.hashRule === "__default__") {
       const canonical = item.defaultHashWhenPresent ?? "";
       return rawHash === "" || rawHash === canonical;
@@ -234,16 +245,16 @@ export function DashboardSideRail() {
               <Link
                 key={item.navId}
                 href={item.href}
-                onClick={
-                  item.dashboardTab
-                    ? (event) =>
-                        handleDashboardTabClick(
-                          event,
-                          item.dashboardTab!,
-                          item.navId,
-                        )
-                    : undefined
-                }
+                onClick={(event) => {
+                  if (item.dashboardTab) {
+                    handleDashboardTabClick(
+                      event,
+                      item.dashboardTab,
+                      item.navId,
+                    );
+                  }
+                  onItemClick?.();
+                }}
                 className={cn(
                   "group relative mt-0.5 flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                   isActive

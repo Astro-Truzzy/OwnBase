@@ -50,20 +50,20 @@ export default async function UploadedProjectPage({ params }: PageProps) {
       <div>
         <Link
           href="/dashboard/upload"
-          className="-ml-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-cyan-100/70 transition-colors hover:text-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+          className="-ml-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
         >
           ← Back to uploads
         </Link>
         <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-400/15 text-cyan-200">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
               <IconFolder className="h-6 w-6" aria-hidden />
             </div>
             <div className="min-w-0">
-              <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
                 {project.name}
               </h1>
-              <p className="mt-1.5 text-sm text-cyan-100/65">
+              <p className="mt-1.5 text-sm text-muted-foreground">
                 Uploaded {formatDate(project.created_at)} ·{" "}
                 {formatSize(project.file_size)}
               </p>
@@ -77,27 +77,27 @@ export default async function UploadedProjectPage({ params }: PageProps) {
       </div>
 
       <section className="dash-panel p-6 sm:p-8">
-        <h2 className="flex items-center gap-2 text-lg font-medium text-cyan-50">
-          <IconShield className="h-5 w-5 text-cyan-300/90" aria-hidden />
+        <h2 className="flex items-center gap-2 text-lg font-medium text-foreground">
+          <IconShield className="h-5 w-5 text-primary" aria-hidden />
           Stored in your environment
         </h2>
-        <p className="mt-2 text-sm leading-relaxed text-cyan-100/65">
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           This project is stored in your business’s storage. Your code stays
-          under your control. Use <strong>Download zip</strong> above to get the
+          under your control. Use <strong className="text-foreground">Download zip</strong> above to get the
           file and open it on your computer to view or extract the contents.
         </p>
         <dl className="mt-4 grid gap-2 text-sm">
           <div className="flex gap-2">
-            <dt className="shrink-0 text-cyan-100/55">Name:</dt>
-            <dd className="font-medium text-cyan-50">{project.name}</dd>
+            <dt className="shrink-0 text-muted-foreground">Name:</dt>
+            <dd className="font-medium text-foreground">{project.name}</dd>
           </div>
           <div className="flex gap-2">
-            <dt className="shrink-0 text-cyan-100/55">Size:</dt>
-            <dd className="text-cyan-100">{formatSize(project.file_size)}</dd>
+            <dt className="shrink-0 text-muted-foreground">Size:</dt>
+            <dd className="text-foreground">{formatSize(project.file_size)}</dd>
           </div>
           <div className="flex gap-2">
-            <dt className="shrink-0 text-cyan-100/55">Uploaded:</dt>
-            <dd className="text-cyan-100">{formatDate(project.created_at)}</dd>
+            <dt className="shrink-0 text-muted-foreground">Uploaded:</dt>
+            <dd className="text-foreground">{formatDate(project.created_at)}</dd>
           </div>
         </dl>
       </section>

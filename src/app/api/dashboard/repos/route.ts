@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { fetchSearchableReposForUser } from "@/lib/dashboard/searchable-repos";
 import { createClient } from "@/lib/supabase/server";
+import { getGitHubAccessToken } from "@/lib/supabase/github-token";
 
 export async function GET() {
   const supabase = await createClient();
@@ -12,12 +13,8 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
   const provider = (user.app_metadata?.provider as string) ?? "github";
-  const providerToken = session?.provider_token ?? null;
+  const providerToken = await getGitHubAccessToken(supabase, user);
 
   try {
     const repos = await fetchSearchableReposForUser({

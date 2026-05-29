@@ -39,10 +39,6 @@ export async function generateRepoSummary(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
   if (!user) {
     return { success: false, error: "You must be signed in." };
   }
@@ -56,7 +52,7 @@ export async function generateRepoSummary(
     return { success: false, error: access.error };
   }
 
-  const providerToken = session?.provider_token ?? null;
+  const providerToken = await getGitHubAccessToken(supabase, user);
   if (!providerToken) {
     return {
       success: false,
@@ -365,6 +361,7 @@ export async function addTrackedRepoAction(
   revalidatePath(`/dashboard/repo/${owner}/${name}`);
   revalidatePath("/dashboard");
   revalidatePath("/dashboard", "layout");
+  revalidatePath("/dashboard/organization");
   return { success: true };
 }
 
@@ -399,6 +396,7 @@ export async function removeTrackedRepoAction(
   revalidatePath(`/dashboard/repo/${owner}/${name}`);
   revalidatePath("/dashboard");
   revalidatePath("/dashboard", "layout");
+  revalidatePath("/dashboard/organization");
   return { success: true };
 }
 

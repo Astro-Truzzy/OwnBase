@@ -15,6 +15,7 @@ import {
 } from "@tabler/icons-react";
 import { FileFullViewModal } from "@/components/dashboard/file-full-view-modal";
 import { FileTypeIcon } from "@/components/dashboard/file-type-icon";
+import { DashboardSelect } from "@/components/dashboard/dashboard-select";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import { cn } from "@/lib/utils";
 
@@ -78,6 +79,18 @@ export function AiAssistantClient({ initialRepos }: AiAssistantClientProps) {
     if (row.repo_owner === "gitlab") return row.full_name.replace(/^gitlab\//, "");
     return row.full_name;
   }, [repos, fullName]);
+
+  const repoOptions = useMemo(
+    () =>
+      repos.map((repo) => ({
+        value: repo.full_name,
+        label:
+          repo.repo_owner === "gitlab"
+            ? repo.full_name.replace(/^gitlab\//, "")
+            : repo.full_name,
+      })),
+    [repos],
+  );
 
   const pathSegments = useMemo(() => {
     if (!dirPath) return [];
@@ -260,7 +273,7 @@ export function AiAssistantClient({ initialRepos }: AiAssistantClientProps) {
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-      <section className="flex min-w-0 flex-1 flex-col gap-4 rounded-2xl border border-border/70 bg-[#0c121c]/90 p-4 sm:p-5">
+      <section className="flex min-w-0 flex-1 flex-col gap-4 rounded-2xl border border-border/70 bg-card/90 p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold text-foreground">Repository &amp; files</h2>
           <Link
@@ -281,22 +294,12 @@ export function AiAssistantClient({ initialRepos }: AiAssistantClientProps) {
           </p>
         ) : (
           <>
-            <label className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Repository
-              <select
-                value={fullName}
-                onChange={(e) => onSelectRepo(e.target.value)}
-                className="mt-1.5 w-full rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
-              >
-                {repos.map((r) => (
-                  <option key={r.full_name} value={r.full_name}>
-                    {r.repo_owner === "gitlab"
-                      ? r.full_name.replace(/^gitlab\//, "")
-                      : r.full_name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <DashboardSelect
+              label="Repository"
+              value={fullName}
+              onChange={onSelectRepo}
+              options={repoOptions}
+            />
 
             <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
               <button
@@ -320,14 +323,14 @@ export function AiAssistantClient({ initialRepos }: AiAssistantClientProps) {
               ))}
             </div>
 
-            <div className="rounded-xl border border-border/60 bg-[#0a101c]/90">
+            <div className="rounded-xl border border-border/60 bg-card/90">
               {browseLoading ? (
                 <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
                   <IconLoader2 className="h-4 w-4 animate-spin" aria-hidden />
                   Loading…
                 </div>
               ) : browseError ? (
-                <p className="p-4 text-sm text-red-300">{browseError}</p>
+                <p className="p-4 text-sm text-red-600 dark:text-red-400">{browseError}</p>
               ) : (
                 <ul className="max-h-[min(40vh,320px)] divide-y divide-border/40 overflow-y-auto">
                   {entries.map((e) => (
@@ -357,9 +360,9 @@ export function AiAssistantClient({ initialRepos }: AiAssistantClientProps) {
               )}
             </div>
 
-            <div className="overflow-hidden rounded-xl border border-border/60 bg-[#0a101c]/90 ring-1 ring-border/40">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 bg-[#0d1117]/80 px-3 py-2">
-                <span className="flex min-w-0 items-center gap-2 truncate font-mono text-xs text-slate-300">
+            <div className="rounded-xl border border-border/60 bg-card/90 ring-1 ring-border/40">
+              <div className="relative z-20 flex flex-wrap items-center justify-between gap-2 overflow-visible border-b border-border/50 bg-muted/50 px-3 py-2">
+                <span className="flex min-w-0 items-center gap-2 truncate font-mono text-xs text-muted-foreground">
                   {filePath && (
                     <FileTypeIcon name={filePath.split("/").pop() ?? filePath} />
                   )}
@@ -378,7 +381,7 @@ export function AiAssistantClient({ initialRepos }: AiAssistantClientProps) {
                     </button>
                     <span
                       role="tooltip"
-                      className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md border border-border bg-[#0d1117] px-2 py-1 text-[11px] font-medium text-foreground opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                      className="pointer-events-none absolute top-full left-1/2 z-50 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-md border border-border bg-card px-2 py-1 text-[11px] font-medium text-foreground opacity-0 shadow-md ring-1 ring-border/60 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
                     >
                       Full view
                     </span>
@@ -394,6 +397,7 @@ export function AiAssistantClient({ initialRepos }: AiAssistantClientProps) {
                   </button>
                 </div>
               </div>
+              <div className="overflow-hidden rounded-b-xl">
               {fileLoading ? (
                 <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
                   <IconLoader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -401,7 +405,7 @@ export function AiAssistantClient({ initialRepos }: AiAssistantClientProps) {
                 </div>
               ) : fileError ? (
                 <div className="space-y-2 p-4">
-                  <p className="text-sm text-red-300">{fileError}</p>
+                  <p className="text-sm text-red-600 dark:text-red-400">{fileError}</p>
                   {fileError.includes("GitHub") && (
                     <p className="text-xs text-muted-foreground">
                       Sign out and sign in again with GitHub to refresh repository
@@ -426,12 +430,13 @@ export function AiAssistantClient({ initialRepos }: AiAssistantClientProps) {
                   Pick a file from the list to preview its contents.
                 </p>
               )}
+              </div>
             </div>
           </>
         )}
       </section>
 
-      <section className="flex min-h-[480px] min-w-0 flex-1 flex-col rounded-2xl border border-border/70 bg-[#0c121c]/90 p-4 sm:p-5">
+      <section className="flex min-h-[480px] min-w-0 flex-1 flex-col rounded-2xl border border-border/70 bg-card/90 p-4 sm:p-5">
         <div className="mb-3 flex items-center gap-2">
           <IconMessageCircle className="h-5 w-5 text-primary" aria-hidden />
           <h2 className="text-lg font-semibold text-foreground">Ask AI</h2>
@@ -464,7 +469,7 @@ export function AiAssistantClient({ initialRepos }: AiAssistantClientProps) {
           </div>
         )}
 
-        <div className="app-scrollbar mb-3 flex-1 space-y-3 overflow-y-auto rounded-xl border border-border/50 bg-[#0a101c]/80 p-3 min-h-[200px] max-h-[min(50vh,440px)]">
+        <div className="app-scrollbar mb-3 flex-1 space-y-3 overflow-y-auto rounded-xl border border-border/50 bg-card/85 p-3 min-h-[200px] max-h-[min(50vh,440px)]">
           {messages.length === 0 && (
             <p className="text-sm text-muted-foreground">
               Example: “Summarize what this repo does for a non-technical stakeholder”
@@ -500,7 +505,7 @@ export function AiAssistantClient({ initialRepos }: AiAssistantClientProps) {
         </div>
 
         {chatError && (
-          <p className="mb-2 text-sm text-red-300" role="alert">
+          <p className="mb-2 text-sm text-red-600 dark:text-red-400" role="alert">
             {chatError}
           </p>
         )}

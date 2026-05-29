@@ -58,11 +58,11 @@ export function ProtectionSection({
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
           <IconShield className="h-5 w-5" aria-hidden />
         </div>
-        <h2 className="text-lg font-medium text-cyan-50">
+        <h2 className="text-lg font-medium text-foreground">
           Protect your digital assets
         </h2>
       </div>
-      <p className="mt-2 text-sm text-cyan-100/65">
+      <p className="mt-2 text-sm text-muted-foreground">
         Keep a record of access and organization changes. Export the audit log
         for compliance or long-term archiving. Your code stays on GitHub; we
         help you track who has access and what changed.
@@ -72,7 +72,7 @@ export function ProtectionSection({
           type="button"
           onClick={handleExport}
           disabled={exporting || activityEntries.length === 0}
-          className="inline-flex items-center gap-2 rounded-lg border border-cyan-200/20 bg-[#050b16]/85 px-4 py-2 text-sm font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-[#0f1a2e] disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+          className="inline-flex items-center gap-2 rounded-lg border border-border dash-surface-inset px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary/35 hover:bg-muted/60 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
         >
           <IconDownload className="h-4 w-4" aria-hidden />
           {exporting ? "Exporting…" : "Export audit log (JSON)"}

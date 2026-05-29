@@ -27,6 +27,7 @@ const SECTION_IDS = [
   "pricing",
   "final-cta",
 ];
+const LOGIN_DASHBOARD_REDIRECT = "/login?redirectTo=%2Fdashboard";
 
 const DOCK_ITEMS = [
   {
@@ -71,7 +72,7 @@ const DOCK_ITEMS = [
   },
   {
     title: "Get started",
-    href: "/signup",
+    href: LOGIN_DASHBOARD_REDIRECT,
     icon: <IconRocket className="h-full w-full text-muted" />,
   },
 ] as const;
@@ -98,7 +99,7 @@ export function LandingNav() {
             Sign in
           </Link>
           <Link
-            href="/signup"
+            href={LOGIN_DASHBOARD_REDIRECT}
             className="rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-background transition-colors hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
           >
             Get started

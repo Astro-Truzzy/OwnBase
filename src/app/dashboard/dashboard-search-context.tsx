@@ -92,7 +92,9 @@ export function DashboardSearchProvider({ children }: { children: ReactNode }) {
 
   const setSearchableRepos = useCallback((repos: SearchableRepo[]) => {
     setSearchableReposState(repos);
-    remoteFetchStarted.current = false;
+    if (repos.length > 0) {
+      remoteFetchStarted.current = true;
+    }
   }, []);
 
   const openSearchOnDashboard = useCallback(
@@ -108,8 +110,6 @@ export function DashboardSearchProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (searchableRepos.length > 0 || remoteFetchStarted.current) return;
-    const trimmed = searchQuery.trim();
-    if (!trimmed) return;
 
     remoteFetchStarted.current = true;
     let cancelled = false;
@@ -133,7 +133,7 @@ export function DashboardSearchProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [searchQuery, searchableRepos.length]);
+  }, [searchableRepos.length]);
 
   const filteredRepos = useMemo(
     () => filterSearchableRepos(searchableRepos, searchQuery),

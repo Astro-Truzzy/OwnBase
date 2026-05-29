@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { fetchRepoCollaborators } from "../../../lib/github/fetch-collaborators";
+import { fetchUserRepos } from "../../../lib/github/fetch-repos";
+import { getGitHubAccessToken } from "@/lib/supabase/github-token";
 import {
   buildPortfolioRiskSnapshot,
   normalizeSummary,
@@ -50,7 +52,10 @@ export default async function OrganizationPage() {
   } = await supabase.auth.getSession();
 
   const provider = (user?.app_metadata?.provider as string) ?? "github";
-  const providerToken = session?.provider_token ?? null;
+  const providerToken =
+    provider === "gitlab"
+      ? (session?.provider_token ?? null)
+      : await getGitHubAccessToken(supabase, user);
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -80,6 +85,21 @@ export default async function OrganizationPage() {
     ]);
 
   const tracked = trackedRepos ?? [];
+
+  let availableGithubRepos: Array<{
+    full_name: string;
+    name: string;
+    private: boolean;
+  }> = [];
+
+  if (tracked.length === 0 && provider !== "gitlab" && providerToken) {
+    const { repos } = await fetchUserRepos(providerToken);
+    availableGithubRepos = repos.slice(0, 30).map((repo) => ({
+      full_name: repo.full_name,
+      name: repo.name,
+      private: repo.private,
+    }));
+  }
 
   const summariesByRepo = new Map<
     string,
@@ -190,6 +210,7 @@ export default async function OrganizationPage() {
         snapshot={snapshot}
         custodyFetchNote={custodyFetchNote}
         tracked={tracked}
+        availableGithubRepos={availableGithubRepos}
         businessName={businessName}
         viewerEmail={user.email ?? null}
         reportScheduleInitial={reportScheduleInitial}

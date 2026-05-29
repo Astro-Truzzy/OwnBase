@@ -9,6 +9,7 @@ import {
   removeCollaboratorAction,
   type ManageAccessResult,
 } from "../../actions";
+import { DashboardSelect } from "@/components/dashboard/dashboard-select";
 
 interface AccessSectionProps {
   owner: string;
@@ -108,19 +109,19 @@ export function AccessSection({
       className="dash-panel scroll-mt-[calc(64px+0.75rem)] p-6 sm:scroll-mt-[calc(56px+0.75rem)] sm:p-8"
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-medium text-cyan-50">Who has access</h2>
+        <h2 className="text-lg font-medium text-foreground">Who has access</h2>
         <a
           href={manageUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="-ml-1 inline-flex w-fit items-center gap-1.5 rounded px-1 text-sm text-cyan-100/65 transition-colors hover:text-cyan-100 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+          className="-ml-1 inline-flex w-fit items-center gap-1.5 rounded px-1 text-sm text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
         >
           <IconExternalLink className="h-4 w-4" aria-hidden />
           Advanced: manage on GitHub
         </a>
       </div>
 
-      <p className="mt-1 text-sm text-cyan-100/65">
+      <p className="mt-1 text-sm text-muted-foreground">
         Control who has access. Grant new collaborators or revoke access in one
         click—no need to leave this page.
       </p>
@@ -133,7 +134,7 @@ export function AccessSection({
         <div className="flex-1 min-w-[180px]">
           <label
             htmlFor="invite-username"
-            className="mb-1 block text-sm font-medium text-cyan-100"
+            className="mb-1 block text-sm font-medium text-foreground"
           >
             GitHub username
           </label>
@@ -144,38 +145,36 @@ export function AccessSection({
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             onFocus={clearMessage}
-            className="dash-input w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+            className="dash-input w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
             disabled={isAddPending}
             autoComplete="username"
           />
         </div>
-        <div className="w-full sm:w-[140px]">
+        <div className="w-full sm:w-[168px]">
           <label
             htmlFor="invite-permission"
-            className="mb-1 block text-sm font-medium text-cyan-100"
+            className="mb-1 block text-sm font-medium text-foreground"
           >
             Access level
           </label>
-          <select
+          <DashboardSelect
             id="invite-permission"
             value={permission}
-            onChange={(e) =>
-              setPermission(e.target.value as "pull" | "push" | "admin")
+            onChange={(value) =>
+              setPermission(value as "pull" | "push" | "admin")
             }
-            className="dash-input w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+            options={PERMISSION_OPTIONS.map((opt) => ({
+              value: opt.value,
+              label: opt.label,
+            }))}
             disabled={isAddPending}
-          >
-            {PERMISSION_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+            triggerClassName="dash-input shadow-none"
+          />
         </div>
         <button
           type="submit"
           disabled={isAddPending}
-          className="inline-flex items-center gap-2 rounded-lg border border-cyan-200/20 bg-[#050b16]/85 px-4 py-2.5 text-sm font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-[#0f1a2e] disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+          className="inline-flex items-center gap-2 rounded-lg border border-border dash-surface-inset px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-primary/35 hover:bg-muted/60 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
         >
           <IconUserPlus className="h-4 w-4" aria-hidden />
           {isAddPending ? "Adding…" : "Grant access"}
@@ -191,10 +190,10 @@ export function AccessSection({
         </p>
       )}
 
-      {error && <p className="mt-4 text-sm text-cyan-100/65">{error}</p>}
+      {error && <p className="mt-4 text-sm text-muted-foreground">{error}</p>}
 
       {!error && collaborators.length === 0 && (
-        <p className="mt-4 text-sm leading-relaxed text-cyan-100/60">
+        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
           No collaborators yet. Use the form above to grant access by GitHub
           username.
         </p>
@@ -204,7 +203,7 @@ export function AccessSection({
         <div className="mt-6 overflow-x-auto -mx-1 sm:mx-0">
           <table className="w-full min-w-[320px] text-sm">
             <thead>
-              <tr className="border-b border-cyan-200/15 text-left text-cyan-100/60">
+              <tr className="border-b border-border text-left text-muted-foreground">
                 <th className="pb-3 font-medium">Person</th>
                 <th className="pb-3 font-medium">Access level</th>
                 <th className="pb-3 font-medium w-24 text-right">Actions</th>
@@ -214,7 +213,7 @@ export function AccessSection({
               {collaborators.map((collab) => (
                 <tr
                   key={collab.id}
-                  className="border-b border-cyan-200/12 last:border-0"
+                  className="border-b border-border last:border-0"
                 >
                   <td className="py-3">
                     <a
@@ -228,12 +227,12 @@ export function AccessSection({
                         alt=""
                         className="h-8 w-8 rounded-full"
                       />
-                      <span className="font-medium text-cyan-50">
+                      <span className="font-medium text-foreground">
                         {collab.login}
                       </span>
                     </a>
                   </td>
-                  <td className="py-3 text-cyan-100/65">
+                  <td className="py-3 text-muted-foreground">
                     {getAccessLevelLabel(collab)}
                   </td>
                   <td className="py-3 text-right">

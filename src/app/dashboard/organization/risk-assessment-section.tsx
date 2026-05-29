@@ -21,13 +21,13 @@ import type {
 function tierStyle(tier: RepoRiskProfile["tier"]): string {
   switch (tier) {
     case "critical":
-      return "border-rose-400/35 bg-rose-500/10 text-rose-100";
+      return "border-rose-500/40 bg-rose-500/10 text-rose-950 dark:border-rose-400/35 dark:bg-rose-500/10 dark:text-rose-100";
     case "elevated":
-      return "border-amber-400/35 bg-amber-500/10 text-amber-100";
+      return "border-amber-500/40 bg-amber-500/10 text-amber-950 dark:border-amber-400/35 dark:bg-amber-500/10 dark:text-amber-100";
     case "watch":
-      return "border-cyan-400/35 bg-cyan-500/12 text-cyan-100";
+      return "border-primary/35 bg-primary/10 text-primary";
     default:
-      return "border-emerald-400/30 bg-emerald-500/10 text-emerald-100";
+      return "border-emerald-500/35 bg-emerald-500/10 text-emerald-950 dark:border-emerald-400/30 dark:bg-emerald-500/10 dark:text-emerald-100";
   }
 }
 
@@ -49,6 +49,10 @@ const TIER_BAR_BG: Record<RepoRiskTier, string> = {
   stable: "bg-emerald-500/70",
 };
 
+/** Mini stat / briefing cards — light inset on white panels, dark tint in dark mode */
+const riskMiniCardClass =
+  "rounded-lg border border-border bg-muted/40 dark:bg-black/30";
+
 function ExposureDistributionStrip(props: {
   tierCounts: Record<RepoRiskTier, number>;
   trackedCount: number;
@@ -59,15 +63,15 @@ function ExposureDistributionStrip(props: {
   const order: RepoRiskTier[] = ["critical", "elevated", "watch", "stable"];
   return (
     <div
-      className={`rounded-xl border border-cyan-200/15 bg-[#050b16]/85 ${compactPad}`}
+      className={`rounded-xl border border-border dash-surface-inset ${compactPad}`}
     >
-      <h3 className="text-sm font-semibold text-cyan-50">
+      <h3 className="text-sm font-semibold text-foreground">
         Exposure distribution
       </h3>
-      <p className="mt-0.5 text-[11px] text-cyan-100/55">
+      <p className="mt-0.5 text-[11px] text-muted-foreground">
         Share of tracked repos by modeled exposure tier
       </p>
-      <div className="mt-3 flex h-2.5 w-full overflow-hidden rounded-full bg-black/45 ring-1 ring-cyan-200/10">
+      <div className="mt-3 flex h-2.5 w-full overflow-hidden rounded-full bg-muted ring-1 ring-border dark:bg-black/45 dark:ring-cyan-200/10">
         {order.map((tier) => {
           const n = tierCounts[tier];
           const pct = (n / trackedCount) * 100;
@@ -82,7 +86,7 @@ function ExposureDistributionStrip(props: {
           );
         })}
       </div>
-      <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[11px] text-cyan-100/70">
+      <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[11px] text-muted-foreground">
         {order.map((tier) => (
           <li key={tier} className="flex items-center gap-1.5 capitalize">
             <span
@@ -90,7 +94,7 @@ function ExposureDistributionStrip(props: {
               aria-hidden
             />
             {tier}{" "}
-            <span className="tabular-nums text-cyan-200/90">
+            <span className="tabular-nums font-medium text-foreground">
               ({tierCounts[tier]})
             </span>
           </li>
@@ -118,43 +122,43 @@ function PortfolioRiskAggregates(props: {
 
   return (
     <div
-      className={`grid gap-2.5 rounded-xl border border-cyan-200/15 bg-[#050b16]/85 sm:grid-cols-2 lg:grid-cols-4 ${compactPad}`}
+      className={`grid gap-2.5 rounded-xl border border-border dash-surface-inset sm:grid-cols-2 lg:grid-cols-4 ${compactPad}`}
     >
-      <div className="rounded-lg border border-cyan-200/10 bg-black/30 px-3 py-2.5">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-cyan-100/55">
+      <div className={`${riskMiniCardClass} px-3 py-2.5`}>
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
           AI diligence flags
         </p>
-        <p className="mt-1 text-xl font-semibold tabular-nums text-white">
+        <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">
           {totalAiFlags}
         </p>
-        <p className="text-[11px] text-cyan-100/50">Across all summaries</p>
+        <p className="text-[11px] text-muted-foreground">Across all summaries</p>
       </div>
-      <div className="rounded-lg border border-cyan-200/10 bg-black/30 px-3 py-2.5">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-cyan-100/55">
+      <div className={`${riskMiniCardClass} px-3 py-2.5`}>
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
           No summary baseline
         </p>
-        <p className="mt-1 text-xl font-semibold tabular-nums text-white">
+        <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">
           {missingSummary}
         </p>
-        <p className="text-[11px] text-cyan-100/50">Repos missing overview</p>
+        <p className="text-[11px] text-muted-foreground">Repos missing overview</p>
       </div>
-      <div className="rounded-lg border border-cyan-200/10 bg-black/30 px-3 py-2.5">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-cyan-100/55">
+      <div className={`${riskMiniCardClass} px-3 py-2.5`}>
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
           Thin access (≤2)
         </p>
-        <p className="mt-1 text-xl font-semibold tabular-nums text-white">
+        <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">
           {thinCustody}
         </p>
-        <p className="text-[11px] text-cyan-100/50">Direct collaborator count</p>
+        <p className="text-[11px] text-muted-foreground">Direct collaborator count</p>
       </div>
-      <div className="rounded-lg border border-cyan-200/10 bg-black/30 px-3 py-2.5">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-cyan-100/55">
+      <div className={`${riskMiniCardClass} px-3 py-2.5`}>
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
           Multi auth pattern
         </p>
-        <p className="mt-1 text-xl font-semibold tabular-nums text-white">
+        <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">
           {multiAuth}
         </p>
-        <p className="text-[11px] text-cyan-100/50">
+        <p className="text-[11px] text-muted-foreground">
           Repos with ≥2 auth surfaces
         </p>
       </div>
@@ -171,13 +175,13 @@ function RepoRiskSpotlightGrid(props: {
   if (repos.length === 0) return null;
   return (
     <div
-      className={`rounded-xl border border-cyan-200/15 bg-[#050b16]/85 ${compactPad}`}
+      className={`rounded-xl border border-border dash-surface-inset ${compactPad}`}
     >
-      <h3 className="flex items-center gap-2 text-sm font-semibold text-cyan-50">
-        <IconLayoutGrid className="h-4 w-4 text-cyan-300" aria-hidden />
+      <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+        <IconLayoutGrid className="h-4 w-4 text-primary" aria-hidden />
         Repository spotlight
       </h3>
-      <p className="mt-0.5 text-[11px] text-cyan-100/55">
+      <p className="mt-0.5 text-[11px] text-muted-foreground">
         Ranked by exposure index — open a repo for summaries, access, and audit
         exports.
       </p>
@@ -186,10 +190,10 @@ function RepoRiskSpotlightGrid(props: {
           <Link
             key={repo.fullName}
             href={repoDetailHref(repo.fullName)}
-            className="group block rounded-lg border border-cyan-200/12 bg-black/35 p-3.5 transition-colors hover:border-cyan-300/35 hover:bg-[#0a1524]/95"
+            className="group block rounded-lg border border-border bg-muted/40 p-3.5 transition-colors hover:border-primary/35 hover:bg-muted/60"
           >
             <div className="flex items-start justify-between gap-2">
-              <span className="min-w-0 break-all text-[13px] font-medium text-cyan-50 group-hover:text-cyan-100">
+              <span className="min-w-0 break-all text-[13px] font-medium text-foreground group-hover:text-foreground">
                 {repo.fullName}
               </span>
               <span
@@ -199,17 +203,17 @@ function RepoRiskSpotlightGrid(props: {
               </span>
             </div>
             <div className="mt-2.5 flex items-center gap-2">
-              <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-black/50">
+              <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-muted dark:bg-black/50">
                 <div
                   className="h-full rounded-full bg-linear-to-r from-cyan-600/90 to-cyan-400/70"
                   style={{ width: `${repo.exposureScore}%` }}
                 />
               </div>
-              <span className="shrink-0 tabular-nums text-xs font-semibold text-white">
+              <span className="shrink-0 tabular-nums text-xs font-semibold text-foreground">
                 {repo.exposureScore}
               </span>
             </div>
-            <ul className="mt-2.5 space-y-1 text-[11px] leading-snug text-cyan-100/65">
+            <ul className="mt-2.5 space-y-1 text-[11px] leading-snug text-muted-foreground">
               {(repo.signals.length > 0
                 ? repo.signals.slice(0, 4)
                 : [
@@ -219,12 +223,12 @@ function RepoRiskSpotlightGrid(props: {
                   ]
               ).map((line, i) => (
                 <li key={`${repo.fullName}-${i}-${line.slice(0, 48)}`} className="flex gap-1.5">
-                  <span className="text-cyan-400/80">•</span>
+                  <span className="text-primary">•</span>
                   <span className="min-w-0">{line}</span>
                 </li>
               ))}
             </ul>
-            <p className="mt-2.5 text-[10px] font-medium uppercase tracking-wide text-cyan-300/80">
+            <p className="mt-2.5 text-[10px] font-medium uppercase tracking-wide text-primary">
               Open repo →
             </p>
           </Link>
@@ -248,11 +252,11 @@ export function ReportsQuickSection(props: {
       <div className="dash-panel p-6 sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-cyan-50">Reports</h2>
-            <p className="mt-1 max-w-2xl text-sm text-cyan-100/65">
+            <h2 className="text-lg font-semibold text-foreground">Reports</h2>
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
               Generate repository handoffs and AI executive summaries before
               investor or compliance conversations. Coverage:{" "}
-              <strong className="text-cyan-100">
+              <strong className="text-foreground">
                 {summarizedCount}/{trackedCount}
               </strong>{" "}
               tracked repos currently have summaries.
@@ -261,14 +265,14 @@ export function ReportsQuickSection(props: {
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             <Link
               href="/dashboard/organization#reports"
-              className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-cyan-300/25 bg-cyan-500/15 px-4 py-2.5 text-sm font-medium text-cyan-50 transition hover:border-cyan-300/45 hover:bg-cyan-500/20"
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-primary/35 bg-primary/12 px-4 py-2.5 text-sm font-medium text-primary transition hover:border-primary/50 hover:bg-primary/18"
             >
               Reports workspace
               <IconArrowRight className="h-4 w-4" aria-hidden />
             </Link>
             <Link
               href="/dashboard"
-              className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-cyan-200/20 bg-cyan-400/10 px-4 py-2.5 text-sm font-medium text-cyan-50 transition hover:border-cyan-300/35 hover:bg-cyan-400/15"
+              className="dash-btn-secondary inline-flex shrink-0 items-center gap-2 px-4 py-2.5 text-sm font-medium"
             >
               Open dashboard
               <IconArrowRight className="h-4 w-4" aria-hidden />
@@ -292,14 +296,14 @@ export function RiskAssessmentSection(props: {
   const compact = density === "compact";
   const kpiPad = compact ? "p-3.5 sm:p-4" : "p-5";
   const kpiValueCls = compact
-    ? "mt-2 text-xl font-semibold tabular-nums text-white sm:text-2xl"
-    : "mt-3 text-2xl font-semibold tabular-nums text-white";
+    ? "mt-2 text-xl font-semibold tabular-nums text-foreground sm:text-2xl"
+    : "mt-3 text-2xl font-semibold tabular-nums text-foreground";
   const kpiSpanCls = compact
-    ? "text-sm font-normal text-cyan-100/55 sm:text-base"
-    : "text-base font-normal text-cyan-100/55";
+    ? "text-sm font-normal text-muted-foreground sm:text-base"
+    : "text-base font-normal text-muted-foreground";
   const tdRepoCls = compact
-    ? "px-3 py-2.5 align-top font-medium text-cyan-50 sm:px-4 sm:py-3"
-    : "px-4 py-3.5 align-top font-medium text-cyan-50 sm:px-5";
+    ? "px-3 py-2.5 align-top font-medium text-foreground sm:px-4 sm:py-3"
+    : "px-4 py-3.5 align-top font-medium text-foreground sm:px-5";
   const tdStdCls = compact
     ? "px-2.5 py-2.5 align-top sm:px-3 sm:py-3"
     : "px-3 py-3.5 align-top";
@@ -327,24 +331,24 @@ export function RiskAssessmentSection(props: {
         className={`scroll-mt-[calc(64px+0.75rem)] sm:scroll-mt-[calc(56px+0.75rem)] w-full min-w-0${compact ? " max-w-none" : ""}`}
       >
         <div
-          className={`dash-panel w-full min-w-0 border-dashed border-cyan-200/25 ${compact ? "p-5 sm:p-6" : "p-6 sm:p-8"}`}
+          className={`dash-panel w-full min-w-0 border-dashed border-border ${compact ? "p-5 sm:p-6" : "p-6 sm:p-8"}`}
         >
           <div className="flex flex-wrap items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-400/10 text-cyan-200">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
               <IconShieldLock className="h-6 w-6" aria-hidden />
             </div>
             <div className="min-w-0">
-              <h2 className="text-lg font-semibold text-cyan-50">
+              <h2 className="text-lg font-semibold text-foreground">
                 Risk assessment
               </h2>
-              <p className="mt-2 max-w-xl text-sm text-cyan-100/65">
+              <p className="mt-2 max-w-xl text-sm text-muted-foreground">
                 Track at least one repository to unlock portfolio custody,
                 summary coverage, and vendor-concentration signals derived from
                 your AI summaries and GitHub collaborator lists.
               </p>
               <Link
                 href="/dashboard"
-                className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-cyan-200 underline-offset-4 hover:text-cyan-50 hover:underline"
+                className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary underline-offset-4 hover:text-foreground hover:underline"
               >
                 Connect and add repos
                 <IconArrowRight className="h-4 w-4" />
@@ -363,12 +367,12 @@ export function RiskAssessmentSection(props: {
     >
       <div className="dash-panel w-full min-w-0 overflow-hidden p-0 sm:p-0">
         <div
-          className={`border-b border-cyan-200/15 bg-[#061018]/80 ${compact ? "px-3.5 py-3 sm:px-5 sm:py-4" : "px-6 py-6 sm:px-8 sm:py-7"}`}
+          className={`border-b border-border bg-muted/40 ${compact ? "px-3.5 py-3 sm:px-5 sm:py-4" : "px-6 py-6 sm:px-8 sm:py-7"}`}
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex min-w-0 items-start gap-3 sm:gap-4">
               <div
-                className={`flex shrink-0 items-center justify-center rounded-xl border border-cyan-300/35 bg-cyan-400/15 text-cyan-100 ${compact ? "h-10 w-10 sm:h-11 sm:w-11" : "h-12 w-12"}`}
+                className={`flex shrink-0 items-center justify-center rounded-xl border border-primary/35 bg-primary/10 text-foreground ${compact ? "h-10 w-10 sm:h-11 sm:w-11" : "h-12 w-12"}`}
               >
                 <IconShieldLock
                   className={compact ? "h-6 w-6" : "h-7 w-7"}
@@ -380,25 +384,25 @@ export function RiskAssessmentSection(props: {
                 <h2
                   className={
                     compact
-                      ? "text-lg font-semibold tracking-tight text-white sm:text-xl"
-                      : "text-xl font-semibold tracking-tight text-white sm:text-2xl"
+                      ? "text-lg font-semibold tracking-tight text-foreground sm:text-xl"
+                      : "text-xl font-semibold tracking-tight text-foreground sm:text-2xl"
                   }
                 >
                   Risk assessment
                 </h2>
                 {compact ? (
-                  <p className="mt-1 max-w-4xl text-[13px] leading-snug text-cyan-100/65 sm:text-sm">
+                  <p className="mt-1 max-w-4xl text-[13px] leading-snug text-muted-foreground sm:text-sm">
                     Custody, AI summary flags, integrations, payments, and org
                     access — not a penetration test; use to steer ownership and
                     vendor reviews.
                   </p>
                 ) : (
-                  <p className="mt-2 max-w-3xl text-sm leading-relaxed text-cyan-100/65">
+                  <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">
                     Portfolio-level diligence built from tracked repositories:
                     collaborator custody, AI-flagged codebase notes from your
                     summaries, integrations, payment touchpoints, and recent org
                     access events.{" "}
-                    <span className="text-cyan-100/50">
+                    <span className="text-muted-foreground/80">
                       Not a penetration test — it highlights ownership and vendor
                       risk you should escalate internally.
                     </span>
@@ -407,15 +411,15 @@ export function RiskAssessmentSection(props: {
               </div>
             </div>
             <div className="flex flex-col items-start gap-2 sm:items-end">
-              <span className="text-[11px] font-medium uppercase tracking-wider text-cyan-100/55">
+              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                 Portfolio posture
               </span>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-cyan-300/35 bg-black/35 px-3 py-1 text-sm font-semibold text-cyan-50">
+                <span className="rounded-full border border-primary/35 bg-muted/40 px-3 py-1 text-sm font-semibold text-foreground">
                   {portfolioLabel}
                 </span>
                 {snapshot.avgExposure != null ? (
-                  <span className="rounded-full border border-border/60 bg-muted/30 px-3 py-1 text-xs text-cyan-100/85">
+                  <span className="rounded-full border border-border/60 bg-muted/30 px-3 py-1 text-xs text-muted-foreground">
                     Avg exposure index{" "}
                     <strong>{snapshot.avgExposure}</strong>/100
                   </span>
@@ -426,12 +430,12 @@ export function RiskAssessmentSection(props: {
         </div>
 
         <div
-          className={`grid border-b border-cyan-200/12 sm:grid-cols-2 lg:grid-cols-4 ${compact ? "gap-2.5 p-3.5 sm:p-5 sm:pb-4" : "gap-4 p-6 sm:p-8 sm:pb-7"}`}
+          className={`grid border-b border-border sm:grid-cols-2 lg:grid-cols-4 ${compact ? "gap-2.5 p-3.5 sm:p-5 sm:pb-4" : "gap-4 p-6 sm:p-8 sm:pb-7"}`}
         >
           <div
-            className={`rounded-xl border border-cyan-200/15 bg-[#050b16]/85 ${kpiPad}`}
+            className={`rounded-xl border border-border dash-surface-inset ${kpiPad}`}
           >
-            <div className="flex items-center gap-2 text-cyan-200/85">
+            <div className="flex items-center gap-2 text-primary">
               <IconSparkles className="h-4 w-4" />
               <span className="text-[11px] font-semibold uppercase tracking-wide">
                 Summary coverage
@@ -441,13 +445,13 @@ export function RiskAssessmentSection(props: {
               {snapshot.coveragePct}
               <span className={kpiSpanCls}>%</span>
             </p>
-            <p className="mt-1 text-xs text-cyan-100/55">
+            <p className="mt-1 text-xs text-muted-foreground">
               {snapshot.summarizedCount} of {snapshot.trackedCount} repos with AI
               overview
             </p>
           </div>
-          <div className={`rounded-xl border border-cyan-200/15 bg-[#050b16]/85 ${kpiPad}`}>
-            <div className="flex items-center gap-2 text-cyan-200/85">
+          <div className={`rounded-xl border border-border dash-surface-inset ${kpiPad}`}>
+            <div className="flex items-center gap-2 text-primary">
               <IconUsers className="h-4 w-4" />
               <span className="text-[11px] font-semibold uppercase tracking-wide">
                 Custody risk
@@ -457,32 +461,32 @@ export function RiskAssessmentSection(props: {
               {snapshot.custodyCritical}
               <span className={kpiSpanCls}> critical</span>
             </p>
-            <p className="mt-1 text-xs text-cyan-100/55">
+            <p className="mt-1 text-xs text-muted-foreground">
               Single maintainer • {snapshot.custodyElevated} repos with only two
               collaborators
             </p>
           </div>
-          <div className={`rounded-xl border border-cyan-200/15 bg-[#050b16]/85 ${kpiPad}`}>
-            <div className="flex items-center gap-2 text-cyan-200/85">
+          <div className={`rounded-xl border border-border dash-surface-inset ${kpiPad}`}>
+            <div className="flex items-center gap-2 text-primary">
               <IconCoin className="h-4 w-4" />
               <span className="text-[11px] font-semibold uppercase tracking-wide">
                 Payment surface
               </span>
             </div>
             <p className={kpiValueCls}>{snapshot.paymentRepos}</p>
-            <p className="mt-1 text-xs text-cyan-100/55">
+            <p className="mt-1 text-xs text-muted-foreground">
               Repos where summaries mention billing or payments
             </p>
           </div>
-          <div className={`rounded-xl border border-cyan-200/15 bg-[#050b16]/85 ${kpiPad}`}>
-            <div className="flex items-center gap-2 text-cyan-200/85">
+          <div className={`rounded-xl border border-border dash-surface-inset ${kpiPad}`}>
+            <div className="flex items-center gap-2 text-primary">
               <IconPlug className="h-4 w-4" />
               <span className="text-[11px] font-semibold uppercase tracking-wide">
                 Vendor load
               </span>
             </div>
             <p className={kpiValueCls}>{snapshot.highVendorRepos}</p>
-            <p className="mt-1 text-xs text-cyan-100/55">
+            <p className="mt-1 text-xs text-muted-foreground">
               Repos with deeper third-party footprints (≥8 integrations noted)
             </p>
           </div>
@@ -502,9 +506,9 @@ export function RiskAssessmentSection(props: {
                 : "space-y-4 lg:col-span-4"
             }
           >
-            <div className={`rounded-xl border border-cyan-200/15 bg-[#050b16]/85 ${kpiPad}`}>
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-cyan-50">
-                <IconChartPie className="h-4 w-4 text-cyan-300" />
+            <div className={`rounded-xl border border-border dash-surface-inset ${kpiPad}`}>
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <IconChartPie className="h-4 w-4 text-primary" />
                 Exposure mix
               </h3>
               <ul
@@ -520,10 +524,10 @@ export function RiskAssessmentSection(props: {
                 ).map(([label, count]) => (
                   <li
                     key={label}
-                    className="flex justify-between gap-4 border-b border-cyan-200/10 py-2 last:border-0"
+                    className="flex justify-between gap-4 border-b border-border py-2 last:border-0"
                   >
-                    <span className="capitalize text-cyan-100/70">{label}</span>
-                    <span className="font-medium tabular-nums text-cyan-50">
+                    <span className="capitalize text-muted-foreground">{label}</span>
+                    <span className="font-medium tabular-nums text-foreground">
                       {count}
                     </span>
                   </li>
@@ -535,18 +539,18 @@ export function RiskAssessmentSection(props: {
               <div
                 className={`rounded-xl border border-amber-400/25 bg-amber-500/8 ${kpiPad}`}
               >
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-amber-50">
-                  <IconAlertTriangle className="h-4 w-4 text-amber-300" />
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-amber-950 dark:text-amber-50">
+                  <IconAlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-300" />
                   What to do next
                 </h3>
-                <ul className="mt-3 list-disc space-y-2 pl-4 text-sm text-amber-100/85">
+                <ul className="mt-3 list-disc space-y-2 pl-4 text-sm text-amber-900/90 dark:text-amber-100/85">
                   {snapshot.strategicNotes.map((note, i) => (
                     <li key={i}>{note}</li>
                   ))}
                 </ul>
                 <Link
                   href="/dashboard/devs"
-                  className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-amber-100 underline-offset-4 hover:text-amber-50 hover:underline"
+                  className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-amber-800 underline-offset-4 hover:text-amber-950 dark:text-amber-100 dark:hover:text-amber-50 hover:underline"
                 >
                   Review team access patterns
                   <IconArrowRight className="h-4 w-4" />
@@ -556,21 +560,21 @@ export function RiskAssessmentSection(props: {
 
             {snapshot.indicatorThemes.length > 0 ? (
               <div
-                className={`rounded-xl border border-cyan-200/15 bg-[#050b16]/85 ${kpiPad}`}
+                className={`rounded-xl border border-border dash-surface-inset ${kpiPad}`}
               >
-                <h3 className="text-sm font-semibold text-cyan-50">
+                <h3 className="text-sm font-semibold text-foreground">
                   Recurring AI risk themes
                 </h3>
                 <ul className={`${compact ? "mt-2 space-y-1.5" : "mt-3 space-y-2"} text-sm`}>
                   {snapshot.indicatorThemes.map((theme, i) => (
                     <li
                       key={`${theme.text}-${i}`}
-                      className="flex justify-between gap-3 rounded-lg bg-black/35 px-3 py-2"
+                      className="flex justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2"
                     >
-                      <span className="min-w-0 text-cyan-100/80">
+                      <span className="min-w-0 text-muted-foreground">
                         {theme.text}
                       </span>
-                      <span className="shrink-0 tabular-nums text-cyan-200/95">
+                      <span className="shrink-0 tabular-nums text-primary">
                         ×{theme.count}
                       </span>
                     </li>
@@ -579,7 +583,7 @@ export function RiskAssessmentSection(props: {
               </div>
             ) : (
               <div
-                className={`rounded-xl border border-dashed border-cyan-200/20 bg-[#050b16]/50 text-sm text-cyan-100/60 ${kpiPad}`}
+                className={`rounded-xl border border-dashed border-border bg-muted/40 text-sm text-muted-foreground ${kpiPad}`}
               >
                 Generate summaries on repos to populate AI-derived risk clues
                 alongside custody metrics.
@@ -587,13 +591,13 @@ export function RiskAssessmentSection(props: {
             )}
 
             <div
-              className={`rounded-xl border border-cyan-200/15 bg-[#050b16]/85 ${kpiPad}`}
+              className={`rounded-xl border border-border dash-surface-inset ${kpiPad}`}
             >
-              <h3 className="text-sm font-semibold text-cyan-50">
+              <h3 className="text-sm font-semibold text-foreground">
                 Recent access & custody events
               </h3>
               {snapshot.auditHighlights.length === 0 ? (
-                <p className="mt-3 text-sm text-cyan-100/55">
+                <p className="mt-3 text-sm text-muted-foreground">
                   No collaborator or tracking events recorded recently.
                 </p>
               ) : (
@@ -603,14 +607,14 @@ export function RiskAssessmentSection(props: {
                   {snapshot.auditHighlights.map((entry) => (
                     <li
                       key={entry.id}
-                      className="rounded-lg border border-cyan-200/12 bg-black/35 px-3 py-2"
+                      className="rounded-lg border border-border bg-muted/40 px-3 py-2"
                     >
-                      <p className="text-[13px] font-medium text-cyan-50">
+                      <p className="text-[13px] font-medium text-foreground">
                         {entry.label}
                       </p>
-                      <p className="text-xs text-cyan-100/65">
+                      <p className="text-xs text-muted-foreground">
                         {entry.repo}{" "}
-                        <span className="text-cyan-100/45">
+                        <span className="text-muted-foreground/70">
                           · {formatShortDate(entry.at)}
                         </span>
                       </p>
@@ -641,23 +645,23 @@ export function RiskAssessmentSection(props: {
                 />
               </>
             ) : null}
-            <div className="w-full min-w-0 overflow-hidden rounded-xl border border-cyan-200/18 bg-[#050b14]/92">
+            <div className="w-full min-w-0 overflow-hidden rounded-xl border border-border bg-card/95">
               <div
-                className={`flex flex-wrap items-center justify-between gap-3 border-b border-cyan-200/15 bg-[#07121e]/95 ${compact ? "px-3 py-3 sm:px-4" : "px-4 py-4 sm:px-5"}`}
+                className={`flex flex-wrap items-center justify-between gap-3 border-b border-border bg-muted/50 ${compact ? "px-3 py-3 sm:px-4" : "px-4 py-4 sm:px-5"}`}
               >
                 <div>
                   <h3
                     className={
                       compact
-                        ? "text-[15px] font-semibold text-cyan-50 sm:text-base"
-                        : "text-base font-semibold text-cyan-50"
+                        ? "text-[15px] font-semibold text-foreground sm:text-base"
+                        : "text-base font-semibold text-foreground"
                     }
                   >
                     Repository exposure register
                   </h3>
                   <p
                     className={
-                      compact ? "text-[11px] text-cyan-100/55" : "text-xs text-cyan-100/55"
+                      compact ? "text-[11px] text-muted-foreground" : "text-xs text-muted-foreground"
                     }
                   >
                     Sorted by modeled exposure · Open a repo to refresh summary
@@ -667,7 +671,7 @@ export function RiskAssessmentSection(props: {
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-black/55 text-[11px] font-semibold uppercase tracking-wider text-cyan-100/65">
+                  <thead className="bg-muted/70 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                     <tr>
                       <th
                         className={
@@ -704,16 +708,16 @@ export function RiskAssessmentSection(props: {
                     {sortedRepos.map((repo) => (
                       <tr
                         key={repo.fullName}
-                        className="border-t border-cyan-200/10 transition hover:bg-cyan-500/5"
+                        className="border-t border-border transition hover:bg-cyan-500/5"
                       >
                         <td className={tdRepoCls}>
                           <Link
                             href={repoDetailHref(repo.fullName)}
-                            className="inline-flex flex-col gap-0.5 underline-offset-2 hover:text-cyan-100 hover:underline"
+                            className="inline-flex flex-col gap-0.5 underline-offset-2 hover:text-foreground hover:underline"
                           >
                             {repo.fullName}
                             {!repo.hasSummary ? (
-                              <span className="text-[11px] font-normal uppercase tracking-wide text-amber-200/95">
+                              <span className="inline-flex w-fit rounded border border-amber-500/40 bg-amber-500/12 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900 dark:text-amber-100">
                                 No summary
                               </span>
                             ) : null}
@@ -721,7 +725,7 @@ export function RiskAssessmentSection(props: {
                         </td>
                         <td className={tdStdCls}>
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="tabular-nums font-semibold text-white">
+                            <span className="tabular-nums font-semibold text-foreground">
                               {repo.exposureScore}
                             </span>
                             <span
@@ -732,7 +736,7 @@ export function RiskAssessmentSection(props: {
                           </div>
                         </td>
                         <td
-                          className={`${tdStdCls} hidden sm:table-cell text-cyan-100/85`}
+                          className={`${tdStdCls} hidden sm:table-cell text-muted-foreground`}
                         >
                           {repo.collaboratorCount != null ? (
                             <>
@@ -742,19 +746,19 @@ export function RiskAssessmentSection(props: {
                               collaborators
                             </>
                           ) : (
-                            <span className="text-cyan-100/55 text-xs">
+                            <span className="text-muted-foreground text-xs">
                               {repo.collaboratorError ??
                                 "Not available"}
                             </span>
                           )}
                         </td>
                         <td
-                          className={`${tdStdCls} hidden md:table-cell text-cyan-100/85 tabular-nums`}
+                          className={`${tdStdCls} hidden md:table-cell text-muted-foreground tabular-nums`}
                         >
                           {repo.riskIndicators.length}
                         </td>
                         <td
-                          className={`${tdStdCls} hidden lg:table-cell text-cyan-100/85 tabular-nums`}
+                          className={`${tdStdCls} hidden lg:table-cell text-muted-foreground tabular-nums`}
                         >
                           {repo.externalServicesCount}
                         </td>
@@ -762,19 +766,19 @@ export function RiskAssessmentSection(props: {
                           {repo.paymentTouches ? (
                             <span className="text-emerald-200">Yes</span>
                           ) : (
-                            <span className="text-cyan-100/55">No</span>
+                            <span className="text-muted-foreground">No</span>
                           )}
                         </td>
                         <td className={tdActionsCls}>
                           <Link
                             href={`${repoDetailHref(repo.fullName)}#summary`}
-                            className="mr-3 inline-block border-b border-cyan-400/55 pb-px text-cyan-100 transition hover:text-white"
+                            className="mr-3 inline-block border-b border-cyan-400/55 pb-px text-foreground transition hover:text-foreground"
                           >
                             Summary
                           </Link>
                           <Link
                             href={`${repoDetailHref(repo.fullName)}#access`}
-                            className="inline-block border-b border-cyan-400/55 pb-px text-cyan-100 transition hover:text-white"
+                            className="inline-block border-b border-cyan-400/55 pb-px text-foreground transition hover:text-foreground"
                           >
                             Access
                           </Link>
@@ -786,15 +790,15 @@ export function RiskAssessmentSection(props: {
               </div>
               {sortedRepos.filter((r) => r.signals.length > 0).length > 0 ? (
                 <div
-                  className={`border-t border-cyan-200/12 text-xs text-cyan-100/70 ${compact ? "px-3.5 py-3 sm:px-4" : "px-5 py-4"}`}
+                  className={`border-t border-border ${compact ? "px-3.5 py-3 sm:px-4" : "px-5 py-4"}`}
                 >
                   <p
-                    className={`font-semibold uppercase tracking-wide text-cyan-100/80 ${compact ? "mb-2" : "mb-3"}`}
+                    className={`text-xs font-semibold uppercase tracking-wide text-muted-foreground ${compact ? "mb-2" : "mb-3"}`}
                   >
                     Highest exposure — briefing notes
                   </p>
                   <div
-                    className={compact ? "grid gap-3 sm:grid-cols-2" : "space-y-4"}
+                    className={compact ? "grid gap-3 sm:grid-cols-2" : "space-y-3"}
                   >
                     {sortedRepos
                       .filter((r) => r.signals.length > 0)
@@ -802,27 +806,28 @@ export function RiskAssessmentSection(props: {
                       .map((repo) => (
                         <div
                           key={repo.fullName}
-                          className={
-                            compact
-                              ? "rounded-lg border border-cyan-200/10 bg-black/25 p-3"
-                              : ""
-                          }
+                          className={`${riskMiniCardClass} p-3`}
                         >
-                          <p className="text-[13px] font-medium text-cyan-50">
+                          <p className="text-[13px] font-medium text-foreground">
                             {repo.fullName}
-                            <span className="ml-2 font-normal text-cyan-100/55">
+                            <span className="ml-2 font-normal text-muted-foreground">
                               ({repo.exposureScore} index)
                             </span>
                           </p>
                           <ul
                             className={
                               compact
-                                ? "mt-1.5 space-y-0.5 leading-snug"
-                                : "mt-1.5 space-y-1 leading-relaxed"
+                                ? "mt-1.5 space-y-0.5 text-xs leading-snug text-foreground/85"
+                                : "mt-1.5 space-y-1 text-sm leading-relaxed text-foreground/85"
                             }
                           >
                             {repo.signals.map((s) => (
-                              <li key={s}>• {s}</li>
+                              <li key={s} className="flex gap-1.5">
+                                <span className="shrink-0 text-primary" aria-hidden>
+                                  •
+                                </span>
+                                <span>{s}</span>
+                              </li>
                             ))}
                           </ul>
                         </div>
@@ -831,7 +836,7 @@ export function RiskAssessmentSection(props: {
                 </div>
               ) : null}
               {custodyFetchNote ? (
-                <p className="border-t border-cyan-200/12 px-5 py-3 text-center text-[11px] text-cyan-100/55">
+                <p className="border-t border-border px-5 py-3 text-center text-[11px] text-muted-foreground">
                   {custodyFetchNote}
                 </p>
               ) : null}

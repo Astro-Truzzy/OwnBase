@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getConnectErrorMessage } from "@/lib/auth/connect-errors";
 import { DashboardRepoConnectPrompt } from "./dashboard-repo-connect-prompt";
 
-const SETUP_PATH_PREFIXES = ["/dashboard/upload", "/dashboard/organization"];
+const SETUP_PATH_PREFIXES = ["/dashboard/organization"];
 
 function isSetupPath(pathname: string | null): boolean {
   if (!pathname) return false;
@@ -13,12 +13,12 @@ function isSetupPath(pathname: string | null): boolean {
 }
 
 interface DashboardRepoConnectGateProps {
-  hasConnectedRepo: boolean;
+  hasConnectedProvider: boolean;
   walkthroughCompleted: boolean;
 }
 
 export function DashboardRepoConnectGate({
-  hasConnectedRepo,
+  hasConnectedProvider,
   walkthroughCompleted,
 }: DashboardRepoConnectGateProps) {
   const pathname = usePathname();
@@ -39,13 +39,13 @@ export function DashboardRepoConnectGate({
   }, [searchParams, pathname, router]);
 
   useEffect(() => {
-    if (!walkthroughCompleted || hasConnectedRepo) return;
+    if (!walkthroughCompleted || hasConnectedProvider) return;
     const t = window.setTimeout(() => setDeferredReady(true), 400);
     return () => window.clearTimeout(t);
-  }, [walkthroughCompleted, hasConnectedRepo]);
+  }, [walkthroughCompleted, hasConnectedProvider]);
 
   const shouldShow =
-    !hasConnectedRepo && walkthroughCompleted && deferredReady;
+    !hasConnectedProvider && walkthroughCompleted && deferredReady;
 
   return (
     <DashboardRepoConnectPrompt

@@ -9,8 +9,8 @@ interface SubscribeButtonProps {
 }
 
 const PLAN_LABELS: Record<string, string> = {
-  starter: "Starter — ₦9,999/mo",
-  pro: "Pro — ₦24,999/mo",
+  starter: "Starter — ₦6,500/mo",
+  pro: "Pro — ₦15,000/mo",
 };
 
 export function SubscribeButton({ planId, label }: SubscribeButtonProps) {
@@ -41,7 +41,7 @@ export function SubscribeButton({ planId, label }: SubscribeButtonProps) {
         type="button"
         onClick={handleClick}
         disabled={pending}
-        className="rounded-lg border border-cyan-300/35 bg-linear-to-r from-cyan-500/90 to-violet-600/85 px-4 py-2.5 text-sm font-medium text-white shadow-[0_10px_28px_rgba(34,211,238,0.2)] transition hover:brightness-110 disabled:opacity-50"
+        className="rounded-lg border border-primary/40 bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:brightness-105 disabled:opacity-50"
       >
         {pending
           ? "Redirecting…"

@@ -1,4 +1,8 @@
-export type DashboardWalkthroughTab = "dashboard" | "portfolio" | "operations";
+export type DashboardWalkthroughTab =
+  | "dashboard"
+  | "organization"
+  | "portfolio"
+  | "operations";
 
 export type DashboardWalkthroughViewport = "desktop" | "mobile";
 
@@ -37,9 +41,25 @@ export const DASHBOARD_WALKTHROUGH_STEPS: DashboardWalkthroughStep[] = [
   {
     id: "tabs",
     target: '[data-tour="dashboard-tabs"]',
-    title: "Three main views",
-    body: "Switch between Overview, Repositories, and Activity using these tabs. Each view focuses on a different part of your portfolio.",
+    title: "Four main views",
+    body: "Switch between Overview, Organization, Repositories, and Activity. Organization is the fastest way to add repos to your workspace.",
     placement: "bottom",
+  },
+  {
+    id: "tab-organization",
+    target: '[data-tour="tab-organization"]',
+    tab: "organization",
+    title: "Organization",
+    body: "Browse linked GitHub or GitLab repos and add them to your organization in one click—no need to open each repo hub first.",
+    placement: "bottom",
+  },
+  {
+    id: "organization-panel",
+    target: '[data-tour="organization-panel"]',
+    tab: "organization",
+    title: "Add repositories",
+    body: "Search, filter by status, and use Add to organization. Tracked repos appear across portfolio health, access maps, and AI tools.",
+    placement: "top",
   },
   {
     id: "tab-overview",
@@ -100,10 +120,10 @@ export const DASHBOARD_WALKTHROUGH_STEPS: DashboardWalkthroughStep[] = [
   {
     id: "mobile-nav",
     viewport: "mobile",
-    target: '[data-tour="mobile-nav-menu"]',
+    target: '[data-tour="side-nav"]',
     title: "Navigation on mobile",
-    body: "The workspace sidebar is hidden on phones. Your profile menu opens Organization, Uploads, Billing, and settings. Ask AI stays in the top bar, and you can search repositories just below.",
-    placement: "bottom",
+    body: "Tap the menu icon to open workspace navigation—Dashboard tabs, Ask AI, Billing, and more. Theme and account options live in the profile menu (top right).",
+    placement: "right",
     prepare: "open-mobile-menu",
   },
   {

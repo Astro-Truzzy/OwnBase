@@ -563,6 +563,187 @@ body {
   box-shadow: 0 0 0 2px rgb(34 211 238 / 0.35);
 }
 
+/* Theme-aware dashboard surfaces (use instead of hardcoded hex) */
+.dash-surface {
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background-color: color-mix(in srgb, var(--card) 92%, transparent);
+}
+
+.dash-surface-inset {
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background-color: color-mix(in srgb, var(--muted) 75%, transparent);
+}
+
+.dash-btn-secondary {
+  border-radius: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
+  background-color: color-mix(in srgb, var(--muted) 88%, transparent);
+  color: var(--foreground);
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.dash-btn-secondary:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--primary) 42%, var(--border));
+  background-color: color-mix(in srgb, var(--muted) 100%, transparent);
+}
+
+.dash-btn-secondary:disabled {
+  opacity: 0.5;
+}
+
+.dash-promo {
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--muted) 90%, var(--background)) 0%,
+    var(--card) 45%,
+    color-mix(in srgb, var(--primary) 12%, var(--card)) 100%
+  );
+}
+
+.dark .dash-promo {
+  background: linear-gradient(
+    135deg,
+    rgb(5 8 16) 0%,
+    rgb(15 23 41) 50%,
+    color-mix(in srgb, var(--primary) 18%, rgb(15 23 41)) 100%
+  );
+}
+
+.dash-page .dash-grid-overlay {
+  opacity: 0.04;
+}
+
+.dark .dash-page .dash-grid-overlay {
+  opacity: 0.055;
+}
+
+/* Dashboard — theme-aware blocks (light default, .dark overrides) */
+.dash-hero {
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  background-color: color-mix(in srgb, var(--card) 96%, transparent);
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+}
+
+.dark .dash-hero {
+  border-color: color-mix(in srgb, var(--border) 70%, transparent);
+  background-color: rgb(12 18 28 / 0.85);
+  box-shadow: 0 20px 50px -24px rgba(0, 0, 0, 0.65);
+}
+
+.dash-hero-glow {
+  display: none;
+}
+
+.dark .dash-hero-glow {
+  display: block;
+  background:
+    radial-gradient(
+      ellipse 90% 60% at 0% -10%,
+      rgba(34, 211, 238, 0.08),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 70% 50% at 100% 0%,
+      rgba(124, 58, 237, 0.07),
+      transparent 50%
+    );
+}
+
+.dash-stat-card {
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  background-color: color-mix(in srgb, var(--card) 94%, transparent);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.dark .dash-stat-card {
+  background-color: rgb(14 23 40 / 0.8);
+  box-shadow: none;
+}
+
+.dash-inset-panel {
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  background-color: color-mix(in srgb, var(--card) 90%, transparent);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+}
+
+.dark .dash-inset-panel {
+  background-color: rgb(14 23 40 / 0.95);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+}
+
+.dash-usage-panel {
+  border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--border));
+  background-color: color-mix(in srgb, var(--card) 96%, var(--muted) 4%);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+}
+
+.dark .dash-usage-panel {
+  border-color: rgb(165 243 252 / 0.2);
+  background-color: rgb(8 16 31 / 0.9);
+  box-shadow: 0 18px 40px rgba(2, 8, 24, 0.3);
+}
+
+.dash-todo-panel {
+  border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--border));
+  background-color: color-mix(in srgb, var(--card) 98%, transparent);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+}
+
+.dark .dash-todo-panel {
+  border-color: rgb(103 232 249 / 0.2);
+  background-color: rgb(13 23 43 / 0.95);
+  box-shadow: 0 12px 30px rgba(3, 8, 20, 0.45);
+}
+
+.dash-todo-link {
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  background-color: color-mix(in srgb, var(--muted) 55%, var(--card));
+  color: var(--foreground);
+}
+
+.dash-todo-link:hover {
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+  background-color: color-mix(in srgb, var(--primary) 8%, var(--card));
+}
+
+.dark .dash-todo-link {
+  border-color: rgb(148 163 184 / 0.25);
+  background-color: rgb(17 26 47 / 0.92);
+}
+
+.dark .dash-todo-link:hover {
+  border-color: rgb(103 232 249 / 0.45);
+  background-color: rgb(21 35 64);
+}
+
+.dash-chart-panel {
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  background-color: color-mix(in srgb, var(--muted) 40%, var(--card));
+}
+
+.dark .dash-chart-panel {
+  border-color: rgb(165 243 252 / 0.2);
+  background-color: rgb(7 11 20 / 0.8);
+  box-shadow: 0 18px 45px rgba(2, 10, 35, 0.35);
+}
+
+.dash-chart-empty {
+  border: 1px dashed color-mix(in srgb, var(--border) 80%, transparent);
+  background-color: color-mix(in srgb, var(--muted) 50%, transparent);
+  color: var(--muted-foreground);
+}
+
+.dark .dash-chart-empty {
+  border-color: rgb(165 243 252 / 0.25);
+  background-color: rgb(7 11 20 / 0.6);
+}
+
 /* Dashboard overview — to-do list (always stacked rows) */
 .dashboard-todo-list {
   display: flex !important;
@@ -677,4 +858,76 @@ body {
 }
 .dark .glow-violet {
   box-shadow: 0 0 32px -8px rgba(167, 139, 250, 0.25);
+}
+
+/* Theme toggle — circular spread via View Transitions API */
+html {
+  view-transition-name: root;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 999;
+}
+
+.theme-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  pointer-events: none;
+}
+
+/* Theme toggle — 3D front/back flip (moon ↔ sun) */
+.theme-toggle-btn {
+  perspective: 640px;
+}
+
+.theme-toggle-flip {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 650ms ease-in-out;
+}
+
+.theme-toggle-flip.is-dark {
+  transform: rotateY(180deg);
+}
+
+.theme-toggle-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.theme-toggle-face--back {
+  transform: rotateY(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle-flip {
+    transition: none;
+  }
+}
+
+/* AOS hides [data-aos] until .aos-animate — ensure content stays visible without motion */
+@media (prefers-reduced-motion: reduce) {
+  [data-aos] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }

@@ -7,6 +7,7 @@ import {
   sanitizeAuthRedirect,
 } from "@/lib/auth/redirects";
 import { EMAIL_OTP_LENGTH } from "@/lib/auth/email-otp";
+import { DashboardSelect } from "@/components/dashboard/dashboard-select";
 import { createClient } from "../../lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
@@ -35,6 +36,7 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
   const [isPending, setIsPending] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [verifyPhase, setVerifyPhase] = useState<"idle" | "verifying" | "redirecting">("idle");
+  const [businessSector, setBusinessSector] = useState("");
   const isVerifyingRef = useRef(false);
   const verifyFormRef = useRef<HTMLFormElement>(null);
 
@@ -228,6 +230,7 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
       options: {
         redirectTo: getAuthCallbackUrl(next),
         scopes: "repo",
+        queryParams: { prompt: "select_account" },
         skipBrowserRedirect: true,
       },
     });
@@ -462,19 +465,18 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
           <label htmlFor="businessSector" className={labelClass}>
             Business sector <span className="text-red-500">*</span>
           </label>
-          <select
+          <DashboardSelect
             id="businessSector"
             name="businessSector"
-            required
-            className={authInputClassName}
-          >
-            <option value="">Select sector</option>
-            {BUSINESS_SECTORS.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
+            value={businessSector}
+            onChange={setBusinessSector}
+            options={BUSINESS_SECTORS.map((sector) => ({
+              value: sector,
+              label: sector,
+            }))}
+            placeholder="Select sector"
+            triggerClassName={authInputClassName}
+          />
         </div>
         <div>
           <label htmlFor="email" className={labelClass}>

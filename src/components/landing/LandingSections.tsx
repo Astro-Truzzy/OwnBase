@@ -43,6 +43,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { BentoFeatures } from "./BentoFeatures";
 import { PricingPlans } from "./PricingPlans";
 import { PlatformSection, FeatureCardsSection } from "./PlatformSection";
+const LOGIN_DASHBOARD_REDIRECT = "/login?redirectTo=%2Fdashboard";
 
 /* ─── Shared sub-components ─── */
 
@@ -1302,7 +1303,7 @@ function FinalCtaSection() {
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.45, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
-          <Link href="/signup" className="inline-block">
+          <Link href={LOGIN_DASHBOARD_REDIRECT} className="inline-block">
             <motion.span
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent text-background px-8 py-4 text-sm font-semibold shadow-lg focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
               style={{ boxShadow: "0 8px 32px -8px rgba(34,211,238,0.35)" }}

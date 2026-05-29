@@ -5,8 +5,8 @@
 1. Log in to [Paystack Dashboard](https://dashboard.paystack.com).
 2. Go to **Settings → Plans** (or **Plans** in the sidebar).
 3. Create at least one plan, e.g.:
-   - **Starter**: ₦9,999/month, interval **monthly**.
-   - **Pro**: ₦24,999/month, interval **monthly**.
+   - **Starter**: ₦6,500/month, interval **monthly**.
+   - **Pro**: ₦15,000/month, interval **monthly**.
 4. Copy each plan’s **Plan code** (e.g. `PLN_xxxx`).
 
 ## 2. Environment variables

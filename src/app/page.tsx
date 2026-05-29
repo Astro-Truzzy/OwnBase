@@ -12,6 +12,7 @@ import {
   IconBrandGitlab,
   IconShieldLock,
 } from "@tabler/icons-react";
+const LOGIN_DASHBOARD_REDIRECT = "/login?redirectTo=%2Fdashboard";
 
 export default function HomePage() {
   return (
@@ -73,7 +74,7 @@ export default function HomePage() {
                 {/* CTAs */}
                 <div className="mt-8 flex flex-wrap gap-3">
                   <Link
-                    href="/signup"
+                    href={LOGIN_DASHBOARD_REDIRECT}
                     className="inline-flex items-center gap-2 rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground hover:bg-accent-hover transition-all focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background hover:shadow-[0_0_28px_rgba(34,211,238,0.35)] dark:shadow-[0_0_32px_rgba(34,211,238,0.42)] dark:hover:bg-accent-hover"
                   >
                     Start Securing Your Code

@@ -20,7 +20,10 @@ export async function getGitHubAccessToken(
     token = refreshed.session?.provider_token?.trim() || null;
   }
 
-  if (!token && provider === "github") {
+  const hasGitHubIdentity =
+    user.identities?.some((identity) => identity.provider === "github") ?? false;
+
+  if (!token && (provider === "github" || hasGitHubIdentity)) {
     token = await loadStoredGitHubToken(user.id);
   }
 
@@ -63,7 +66,7 @@ export async function persistGitHubTokens(
       },
       { onConflict: "user_id" },
     );
-  } catch {
-    // Non-fatal if service role or table is unavailable.
+  } catch (error) {
+    console.error("[persistGitHubTokens] failed", error);
   }
 }

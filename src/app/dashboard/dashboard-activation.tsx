@@ -50,9 +50,9 @@ function Meter({
 
   return (
     <div className="min-w-0 flex-1">
-      <div className="mb-1 flex items-center justify-between gap-2 text-xs text-cyan-100/65">
-        <span className="truncate font-medium text-cyan-50">{label}</span>
-        <span className="shrink-0 tabular-nums text-cyan-100/85">
+      <div className="mb-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span className="truncate font-medium text-foreground">{label}</span>
+        <span className="shrink-0 tabular-nums text-foreground/85">
           {max == null ? `${used} (unlimited)` : `${used} / ${max}`}
         </span>
       </div>
@@ -85,8 +85,8 @@ export function DashboardActivation({
         <div
           className={`rounded-lg border px-4 py-3 text-sm ${
             usage.anyAtHardLimit
-              ? "border-red-500/40 bg-red-500/10 text-red-200"
-              : "border-amber-500/40 bg-amber-500/10 text-amber-100"
+              ? "border-red-500/40 bg-red-500/10 text-red-800 dark:text-red-200"
+              : "border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-100"
           }`}
         >
           <p className="font-medium text-foreground">
@@ -94,7 +94,7 @@ export function DashboardActivation({
               ? "You have reached a plan limit"
               : "You are close to a plan limit"}
           </p>
-          <p className="mt-1 text-muted">
+          <p className="mt-1 text-muted-foreground">
             {usage.anyAtHardLimit
               ? "Upgrade to continue tracking repos, uploading projects, or generating AI summaries at full capacity."
               : "Consider upgrading soon to avoid interruptions."}
@@ -102,13 +102,13 @@ export function DashboardActivation({
           <div className="mt-3 flex flex-wrap gap-3">
             <Link
               href="/dashboard/billing"
-              className="font-medium text-cyan-300 underline underline-offset-2 hover:text-cyan-200 hover:no-underline"
+              className="font-medium text-primary underline underline-offset-2 hover:text-primary/80 hover:no-underline"
             >
               Billing
             </Link>
             <Link
               href="/pricing"
-              className="font-medium text-cyan-300 underline underline-offset-2 hover:text-cyan-200 hover:no-underline"
+              className="font-medium text-primary underline underline-offset-2 hover:text-primary/80 hover:no-underline"
             >
               View plans
             </Link>
@@ -116,10 +116,10 @@ export function DashboardActivation({
         </div>
       )}
 
-      <div className="rounded-xl border border-cyan-200/20 bg-[#08101f]/90 p-4 shadow-[0_18px_40px_rgba(2,8,24,0.3)] backdrop-blur-sm sm:p-5">
+      <div className="dash-usage-panel rounded-xl p-4 backdrop-blur-sm sm:p-5">
         <div className="mb-3 flex items-center gap-2">
-          <IconChartBar className="h-4 w-4 text-cyan-300/90" aria-hidden />
-          <h2 className="text-sm font-semibold text-white">
+          <IconChartBar className="h-4 w-4 text-primary" aria-hidden />
+          <h2 className="text-sm font-semibold text-foreground">
             Plan usage ({usage.plan})
           </h2>
         </div>
@@ -143,11 +143,13 @@ export function DashboardActivation({
       </div>
 
       {showChecklist && (
-        <div className="rounded-xl border border-cyan-200/20 bg-[#08101f]/90 p-4 shadow-[0_18px_40px_rgba(2,8,24,0.3)] backdrop-blur-sm sm:p-5">
+        <div className="dash-usage-panel rounded-xl p-4 backdrop-blur-sm sm:p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-sm font-semibold text-white">Get started</h2>
-              <p className="mt-1 text-xs text-cyan-100/60">
+              <h2 className="text-sm font-semibold text-foreground">
+                Get started
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">
                 Complete these steps to get value from Ownbase quickly.
               </p>
             </div>
@@ -159,7 +161,7 @@ export function DashboardActivation({
                 })
               }
               disabled={pending}
-              className="shrink-0 rounded-md p-1 text-cyan-100/50 hover:bg-white/5 hover:text-cyan-100 disabled:opacity-50"
+              className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
               aria-label="Dismiss checklist"
             >
               <IconX className="h-4 w-4" />
@@ -172,15 +174,15 @@ export function DashboardActivation({
                   href={step.href}
                   className={`flex gap-3 rounded-lg border p-3 transition-colors ${
                     step.done
-                      ? "border-cyan-200/15 bg-white/5 hover:bg-white/[0.07]"
-                      : "border-cyan-200/25 bg-cyan-400/5 hover:bg-cyan-400/10"
+                      ? "border-border bg-muted/40 hover:bg-muted/60"
+                      : "border-primary/25 bg-primary/5 hover:bg-primary/10"
                   }`}
                 >
                   <span
                     className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs ${
                       step.done
-                        ? "border-cyan-400/45 bg-cyan-400/15 text-cyan-200"
-                        : "border-white/20 text-cyan-100/45"
+                        ? "border-primary/40 bg-primary/15 text-primary"
+                        : "border-border text-muted-foreground"
                     }`}
                   >
                     {step.done ? (
@@ -190,19 +192,19 @@ export function DashboardActivation({
                     )}
                   </span>
                   <span className="min-w-0">
-                    <span className="flex items-center gap-2 text-sm font-medium text-cyan-50">
+                    <span className="flex items-center gap-2 text-sm font-medium text-foreground">
                       {step.id === "track" && (
-                        <IconFolder className="h-4 w-4 shrink-0 text-cyan-300/90" />
+                        <IconFolder className="h-4 w-4 shrink-0 text-primary" />
                       )}
                       {step.id === "upload" && (
-                        <IconUpload className="h-4 w-4 shrink-0 text-cyan-300/90" />
+                        <IconUpload className="h-4 w-4 shrink-0 text-primary" />
                       )}
                       {step.id === "summary" && (
-                        <IconSparkles className="h-4 w-4 shrink-0 text-cyan-300/90" />
+                        <IconSparkles className="h-4 w-4 shrink-0 text-primary" />
                       )}
                       {step.title}
                     </span>
-                    <span className="mt-0.5 block text-xs text-cyan-100/60">
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
                       {step.description}
                     </span>
                   </span>

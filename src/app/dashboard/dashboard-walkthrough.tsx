@@ -72,11 +72,17 @@ function measureTarget(selector: string | undefined): SpotlightRect | null {
   el.scrollIntoView({ block: "center", inline: "nearest", behavior: "auto" });
   const box = el.getBoundingClientRect();
   if (box.width < 1 || box.height < 1) return null;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const x = Math.max(8, box.left - SPOTLIGHT_PAD);
+  const y = Math.max(8, box.top - SPOTLIGHT_PAD);
+  const maxWidth = Math.max(24, vw - x - 8);
+  const maxHeight = Math.max(24, vh - y - 8);
   return {
-    x: Math.max(8, box.left - SPOTLIGHT_PAD),
-    y: Math.max(8, box.top - SPOTLIGHT_PAD),
-    width: box.width + SPOTLIGHT_PAD * 2,
-    height: box.height + SPOTLIGHT_PAD * 2,
+    x,
+    y,
+    width: Math.min(box.width + SPOTLIGHT_PAD * 2, maxWidth),
+    height: Math.min(box.height + SPOTLIGHT_PAD * 2, maxHeight),
   };
 }
 
@@ -85,9 +91,15 @@ function tooltipStyle(
   placement: DashboardWalkthroughStep["placement"],
 ): CSSProperties {
   const margin = 16;
-  const maxW = 360;
+  const maxW = 400;
+  const estimatedTooltipHeight = 320;
   const vw = typeof window !== "undefined" ? window.innerWidth : 1024;
   const vh = typeof window !== "undefined" ? window.innerHeight : 768;
+  const clamp = (value: number, min: number, max: number) =>
+    Math.min(Math.max(value, min), max);
+  const maxLeft = Math.max(16, vw - maxW - 16);
+  const minTop = 16;
+  const maxTop = Math.max(16, vh - estimatedTooltipHeight - 16);
 
   if (!rect || placement === "center") {
     return {
@@ -96,6 +108,8 @@ function tooltipStyle(
       top: "50%",
       transform: "translate(-50%, -50%)",
       width: `min(${maxW}px, calc(100vw - 32px))`,
+      maxHeight: "calc(100vh - 32px)",
+      overflowY: "auto",
       zIndex: OVERLAY_Z + 2,
     };
   }
@@ -104,41 +118,71 @@ function tooltipStyle(
     position: "fixed",
     width: `min(${maxW}px, calc(100vw - 32px))`,
     zIndex: OVERLAY_Z + 2,
+    maxHeight: "calc(100vh - 32px)",
+    overflowY: "auto",
   };
 
   if (placement === "right") {
-    const left = Math.min(rect.x + rect.width + margin, vw - maxW - 16);
-    const top = Math.min(
-      Math.max(16, rect.y + rect.height / 2 - 80),
-      vh - 220,
+    const preferredLeft = rect.x + rect.width + margin;
+    const fallbackLeft = rect.x - maxW - margin;
+    const left = clamp(
+      preferredLeft <= maxLeft ? preferredLeft : fallbackLeft,
+      16,
+      maxLeft,
+    );
+    const top = clamp(
+      rect.y + rect.height / 2 - estimatedTooltipHeight / 2,
+      minTop,
+      maxTop,
     );
     return { ...base, left, top };
   }
 
   if (placement === "left") {
-    return {
-      ...base,
-      right: Math.max(16, vw - rect.x + margin),
-      top: Math.min(
-        Math.max(16, rect.y + rect.height / 2 - 80),
-        vh - 220,
-      ),
-    };
+    const preferredLeft = rect.x - maxW - margin;
+    const fallbackLeft = rect.x + rect.width + margin;
+    const left = clamp(
+      preferredLeft >= 16 ? preferredLeft : fallbackLeft,
+      16,
+      maxLeft,
+    );
+    const top = clamp(
+      rect.y + rect.height / 2 - estimatedTooltipHeight / 2,
+      minTop,
+      maxTop,
+    );
+    return { ...base, left, top };
   }
 
   if (placement === "top") {
-    const bottom = Math.max(16, vh - rect.y + margin);
-    const left = Math.min(
-      Math.max(16, rect.x + rect.width / 2 - maxW / 2),
-      vw - maxW - 16,
+    const spaceAbove = rect.y - margin - 16;
+    const spaceBelow = vh - (rect.y + rect.height) - margin - 16;
+    const useBelow = spaceAbove < estimatedTooltipHeight && spaceBelow > spaceAbove;
+    const top = clamp(
+      useBelow ? rect.y + rect.height + margin : rect.y - estimatedTooltipHeight - margin,
+      minTop,
+      maxTop,
     );
-    return { ...base, left, bottom };
+    const left = clamp(
+      rect.x + rect.width / 2 - maxW / 2,
+      16,
+      maxLeft,
+    );
+    return { ...base, left, top };
   }
 
-  const top = Math.min(rect.y + rect.height + margin, vh - 220);
-  const left = Math.min(
-    Math.max(16, rect.x + rect.width / 2 - maxW / 2),
-    vw - maxW - 16,
+  const spaceBelow = vh - (rect.y + rect.height) - margin - 16;
+  const spaceAbove = rect.y - margin - 16;
+  const useAbove = spaceBelow < estimatedTooltipHeight && spaceAbove > spaceBelow;
+  const top = clamp(
+    useAbove ? rect.y - estimatedTooltipHeight - margin : rect.y + rect.height + margin,
+    minTop,
+    maxTop,
+  );
+  const left = clamp(
+    rect.x + rect.width / 2 - maxW / 2,
+    16,
+    maxLeft,
   );
   return { ...base, left, top };
 }
@@ -249,18 +293,18 @@ export function DashboardWalkthrough({ displayName }: DashboardWalkthroughProps)
       role="dialog"
       aria-modal="true"
       aria-labelledby="dashboard-walkthrough-title"
-      className="rounded-xl border border-border/70 bg-[#0f1624]/95 p-5 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur-md"
+      className="rounded-xl border border-primary/35 bg-card p-5 text-foreground shadow-[0_24px_60px_rgba(0,0,0,0.65)] backdrop-blur-md"
       style={tooltipStyle(spotlight, step.placement)}
     >
       <div className="mb-1 flex items-start justify-between gap-3">
-        <p className="text-[11px] font-medium uppercase tracking-wider text-primary/90">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
           Step {stepIndex + 1} of {steps.length}
         </p>
         <button
           type="button"
           onClick={finish}
           disabled={pending}
-          className="shrink-0 rounded-md p-1 text-muted-foreground transition hover:bg-muted/50 hover:text-foreground"
+          className="shrink-0 rounded-md p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground"
           aria-label="Skip tour"
         >
           <IconX className="h-4 w-4" />
@@ -280,7 +324,7 @@ export function DashboardWalkthrough({ displayName }: DashboardWalkthroughProps)
           type="button"
           onClick={finish}
           disabled={pending}
-          className="text-sm text-muted-foreground transition hover:text-foreground disabled:opacity-50"
+          className="rounded-md px-2 py-1 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50"
         >
           Skip tour
         </button>
@@ -290,7 +334,7 @@ export function DashboardWalkthrough({ displayName }: DashboardWalkthroughProps)
               type="button"
               onClick={goBack}
               disabled={pending}
-              className="rounded-lg border border-border/60 px-4 py-2 text-sm text-foreground transition hover:bg-muted/50 disabled:opacity-50"
+              className="dash-btn-secondary px-4 py-2 text-sm font-medium disabled:opacity-50"
             >
               Back
             </button>
@@ -299,7 +343,7 @@ export function DashboardWalkthrough({ displayName }: DashboardWalkthroughProps)
             type="button"
             onClick={goNext}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-linear-to-r from-primary/90 to-accent-violet/90 px-4 py-2 text-sm font-medium text-white shadow-[0_8px_24px_rgba(34,211,238,0.2)] transition hover:opacity-95 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:brightness-105 disabled:opacity-50"
           >
             {isLast ? "Get started" : "Next"}
             {!isLast && <IconArrowRight className="h-4 w-4" />}
@@ -312,7 +356,7 @@ export function DashboardWalkthrough({ displayName }: DashboardWalkthroughProps)
   const overlay = (
     <div className="fixed inset-0" style={{ zIndex: OVERLAY_Z }} aria-hidden={false}>
       {isCentered ? (
-        <div className="absolute inset-0 bg-[#070b12]/82 backdrop-blur-md" />
+        <div className="absolute inset-0 bg-background/82 backdrop-blur-md" />
       ) : (
         <>
           <svg
@@ -343,7 +387,7 @@ export function DashboardWalkthrough({ displayName }: DashboardWalkthroughProps)
             </defs>
           </svg>
           <div
-            className="absolute inset-0 bg-[#070b12]/78 backdrop-blur-[4px]"
+            className="absolute inset-0 bg-background/80 backdrop-blur-[3px]"
             style={{
               mask: `url(#${maskIdRef.current})`,
               WebkitMask: `url(#${maskIdRef.current})`,
@@ -351,7 +395,7 @@ export function DashboardWalkthrough({ displayName }: DashboardWalkthroughProps)
           />
           {spotlight && (
             <div
-              className="pointer-events-none absolute rounded-xl ring-2 ring-primary/55 ring-offset-2 ring-offset-[#070b12]/40 shadow-[0_0_0_1px_rgba(34,211,238,0.25)]"
+              className="pointer-events-none absolute rounded-xl ring-2 ring-primary/70 ring-offset-2 ring-offset-background shadow-[0_0_0_2px_rgba(56,189,248,0.4),0_0_32px_rgba(56,189,248,0.25)]"
               style={{
                 left: spotlight.x,
                 top: spotlight.y,

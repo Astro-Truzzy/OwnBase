@@ -3,10 +3,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Logo } from "@/components/Logo";
-import { hasConnectedRepositorySource } from "@/lib/dashboard/has-connected-source";
 import { ensureTrialForNewAccount } from "@/lib/profiles/ensure-trial";
 import { getUsageSnapshot } from "@/lib/usage-stats";
 import { createClient } from "../../lib/supabase/server";
+import { DashboardMobileNavProvider } from "./dashboard-mobile-nav";
 import { DashboardRepoConnectGate } from "./dashboard-repo-connect-gate";
 import { DashboardSearchProvider } from "./dashboard-search-context";
 import { DashboardSideRail } from "./dashboard-side-rail";
@@ -103,10 +103,11 @@ export default async function DashboardLayout({
     (user.email?.slice(0, 2).toUpperCase() ?? "OB");
 
   const usage = await getUsageSnapshot(supabase, user.id);
-  const hasConnectedRepo = hasConnectedRepositorySource({
-    trackedRepos: usage.trackedRepos,
-    uploads: usage.uploads,
-  });
+  const hasConnectedProvider =
+    user.identities?.some(
+      (identity) =>
+        identity.provider === "github" || identity.provider === "gitlab",
+    ) ?? false;
   const walkthroughCompleted =
     profileRow?.dashboard_walkthrough_completed_at != null;
 
@@ -119,12 +120,10 @@ export default async function DashboardLayout({
     avatarSignedUrl = signed?.signedUrl ?? null;
   }
 
-  /* `dark` class scopes Tailwind `dark:*` and `.dark .dash-panel` so the shell stays
-     correct even when the global theme toggle is set to light. */
   return (
-    <div className="dark h-screen overflow-hidden bg-background text-foreground">
+    <div className="h-screen overflow-hidden bg-background text-foreground">
       {trialExpired && (
-        <div className="border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-center text-xs text-amber-200">
+        <div className="border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-center text-xs text-amber-800 dark:text-amber-200">
           Your free trial has ended.{" "}
           <Link
             href="/dashboard/billing"
@@ -138,14 +137,15 @@ export default async function DashboardLayout({
 
       <Suspense fallback={null}>
         <DashboardRepoConnectGate
-          hasConnectedRepo={hasConnectedRepo}
+          hasConnectedProvider={hasConnectedProvider}
           walkthroughCompleted={walkthroughCompleted}
         />
       </Suspense>
       <Suspense fallback={null}>
         <DashboardSearchProvider>
+          <DashboardMobileNavProvider>
           <div className="flex h-full">
-            <aside className="hidden h-full w-60 shrink-0 flex-col border-r border-border bg-[#0c121c] md:flex lg:w-64">
+            <aside className="hidden h-full w-60 shrink-0 flex-col border-r border-border bg-sidebar md:flex lg:w-64">
             <div className="border-b border-border/80 px-5 py-5">
               <Link href="/dashboard" className="flex items-center gap-3">
                 <Logo className="h-8 w-8" />
@@ -169,7 +169,7 @@ export default async function DashboardLayout({
               />
             </Suspense>
 
-            <div className="app-scrollbar dash-page relative flex-1 overflow-y-auto bg-[#070b12] px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+            <div className="app-scrollbar dash-page relative flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
               <div className="dash-ambient z-0" aria-hidden />
               <div
                 className="pointer-events-none absolute inset-0 z-10 opacity-[0.025]"
@@ -180,7 +180,7 @@ export default async function DashboardLayout({
                 aria-hidden
               />
               <div
-                className="pointer-events-none absolute inset-0 z-1 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-size-[48px_48px] opacity-[0.055]"
+                className="dash-grid-overlay pointer-events-none absolute inset-0 z-1 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-size-[48px_48px]"
                 aria-hidden
               />
               <div className="relative z-2 min-w-0 w-full max-w-full">
@@ -189,6 +189,7 @@ export default async function DashboardLayout({
             </div>
           </main>
           </div>
+          </DashboardMobileNavProvider>
         </DashboardSearchProvider>
       </Suspense>
     </div>

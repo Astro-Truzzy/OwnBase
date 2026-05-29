@@ -64,21 +64,23 @@ export function DeleteAccountSection({
 
   return (
     <>
-      <section className="dash-panel border border-rose-500/25 bg-rose-950/20 p-6 sm:p-8">
+      <section className="dash-panel border border-rose-500/30 bg-rose-500/10 p-6 sm:p-8 dark:bg-rose-950/20">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-rose-500/35 bg-rose-500/10 text-rose-300">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-rose-500/35 bg-rose-500/15 text-rose-700 dark:text-rose-300">
             <IconAlertTriangle className="h-5 w-5" aria-hidden />
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-semibold text-rose-50">Delete account</h2>
-            <p className="mt-1 text-sm text-rose-100/75">
+            <h2 className="text-lg font-semibold text-rose-900 dark:text-rose-50">
+              Delete account
+            </h2>
+            <p className="mt-1 text-sm text-rose-800/85 dark:text-rose-100/75">
               Permanently remove your Ownbase account, profile, tracked repositories,
               uploads, summaries, and connected integrations. This cannot be undone.
             </p>
             <button
               type="button"
               onClick={openDialog}
-              className="mt-4 inline-flex items-center justify-center rounded-lg border border-rose-500/45 bg-rose-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:opacity-50"
+              className="mt-4 inline-flex items-center justify-center rounded-lg border border-rose-500/45 bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:opacity-50 dark:hover:bg-rose-600"
             >
               Delete my account
             </button>
@@ -97,20 +99,20 @@ export function DeleteAccountSection({
             aria-modal="true"
             aria-labelledby="delete-account-title"
             aria-describedby="delete-account-desc"
-            className="w-full max-w-md rounded-xl border border-rose-500/35 bg-[#0c121c] p-6 shadow-2xl shadow-black/50"
+            className="w-full max-w-md rounded-xl border border-rose-500/35 bg-card p-6 shadow-2xl shadow-black/50"
             onClick={(e) => e.stopPropagation()}
           >
             <h3
               id="delete-account-title"
-              className="text-lg font-semibold text-rose-50"
+              className="text-lg font-semibold text-rose-900 dark:text-rose-50"
             >
               Delete your account?
             </h3>
-            <p id="delete-account-desc" className="mt-2 text-sm text-cyan-100/80">
+            <p id="delete-account-desc" className="mt-2 text-sm text-muted-foreground">
               This permanently deletes your account and all associated data,
               including:
             </p>
-            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-cyan-100/75">
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
               <li>Profile and settings</li>
               <li>Tracked repositories and activity history</li>
               <li>AI summaries and uploaded project files</li>
@@ -121,7 +123,7 @@ export function DeleteAccountSection({
               after deletion.
             </p>
 
-            <label className="mt-4 flex cursor-pointer items-start gap-2 text-sm text-cyan-100/85">
+            <label className="mt-4 flex cursor-pointer items-start gap-2 text-sm text-muted-foreground">
               <input
                 type="checkbox"
                 checked={acknowledged}
@@ -135,7 +137,7 @@ export function DeleteAccountSection({
             <div className="mt-4">
               <label
                 htmlFor="delete-account-email"
-                className="mb-1 block text-sm font-medium text-cyan-100"
+                className="mb-1 block text-sm font-medium text-foreground"
               >
                 Type {confirmPhrase.includes("@") ? "your email" : "your account ID"} to
                 confirm
@@ -148,7 +150,7 @@ export function DeleteAccountSection({
                 value={confirmEmail}
                 onChange={(e) => setConfirmEmail(e.target.value)}
                 placeholder={confirmPhrase}
-                className="dash-input w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-rose-500/40 focus:ring-offset-2 focus:ring-offset-[#0c121c]"
+                className="dash-input w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-rose-500/40 focus:ring-offset-2 focus:ring-offset-background"
               />
             </div>
 
@@ -164,7 +166,7 @@ export function DeleteAccountSection({
                 type="button"
                 disabled={isDeleting}
                 onClick={closeDialog}
-                className="inline-flex justify-center rounded-lg border border-border px-4 py-2 text-sm font-medium text-cyan-100 transition hover:bg-muted/40 disabled:opacity-50"
+                className="inline-flex justify-center rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted/40 disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -172,7 +174,7 @@ export function DeleteAccountSection({
                 type="button"
                 disabled={!canConfirm}
                 onClick={() => void handleDelete()}
-                className="inline-flex justify-center rounded-lg border border-rose-500/50 bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex justify-center rounded-lg border border-rose-500/50 bg-rose-600 px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isDeleting ? "Deleting…" : "Yes, delete my account"}
               </button>

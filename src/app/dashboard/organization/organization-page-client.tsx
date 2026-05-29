@@ -43,10 +43,17 @@ function readOrgHashView(): OrgHashView {
   return "full";
 }
 
+export type AvailableGithubRepo = {
+  full_name: string;
+  name: string;
+  private: boolean;
+};
+
 export function OrganizationPageClient(props: {
   snapshot: PortfolioRiskSnapshot;
   custodyFetchNote: string | null;
   tracked: TrackedRepoRow[];
+  availableGithubRepos?: AvailableGithubRepo[];
   businessName: string | null;
   viewerEmail: string | null;
   reportScheduleInitial: ReportScheduleInitial;
@@ -55,6 +62,7 @@ export function OrganizationPageClient(props: {
     snapshot,
     custodyFetchNote,
     tracked,
+    availableGithubRepos = [],
     businessName,
     viewerEmail,
     reportScheduleInitial,
@@ -88,16 +96,16 @@ export function OrganizationPageClient(props: {
   if (orgView === "risk") {
     return (
       <div className="w-full min-w-0 space-y-4 pb-5 sm:space-y-5 sm:pb-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-cyan-200/10 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
           <Link
             href="/dashboard"
-            className="-ml-1 inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-sm font-medium text-cyan-100/70 transition-colors hover:text-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+            className="-ml-1 inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
           >
             ← Back to dashboard
           </Link>
           <Link
             href="/dashboard/organization"
-            className="text-sm font-medium text-cyan-200/90 underline-offset-4 transition hover:text-cyan-50 hover:underline"
+            className="text-sm font-medium text-primary underline-offset-4 transition hover:text-primary/80 hover:underline"
           >
             Organization overview
           </Link>
@@ -115,16 +123,16 @@ export function OrganizationPageClient(props: {
   if (orgView === "reports") {
     return (
       <div className="w-full min-w-0 space-y-4 pb-5 sm:space-y-5 sm:pb-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-cyan-200/10 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
           <Link
             href="/dashboard"
-            className="-ml-1 inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-sm font-medium text-cyan-100/70 transition-colors hover:text-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+            className="-ml-1 inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
           >
             ← Back to dashboard
           </Link>
           <Link
             href="/dashboard/organization"
-            className="text-sm font-medium text-cyan-200/90 underline-offset-4 transition hover:text-cyan-50 hover:underline"
+            className="text-sm font-medium text-primary underline-offset-4 transition hover:text-primary/80 hover:underline"
           >
             Organization overview
           </Link>
@@ -147,22 +155,22 @@ export function OrganizationPageClient(props: {
       <div>
         <Link
           href="/dashboard"
-          className="-ml-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-cyan-100/70 transition-colors hover:text-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+          className="-ml-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
         >
           ← Back to dashboard
         </Link>
         <div className="mt-6 flex items-start gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-400/15 text-cyan-200">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
             <IconBuilding className="h-7 w-7" aria-hidden />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
               Your organization
             </h1>
             {businessName && (
-              <p className="mt-1 text-lg text-cyan-100">{businessName}</p>
+              <p className="mt-1 text-lg text-foreground/90">{businessName}</p>
             )}
-            <p className="mt-2 max-w-2xl text-sm text-cyan-100/65">
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
               Your organization is where you keep repositories and projects
               under your control. Create it by adding repos from GitHub or
               GitLab, or by uploading a project.
@@ -183,11 +191,11 @@ export function OrganizationPageClient(props: {
       />
 
       <section className="dash-panel p-6 sm:p-8">
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-cyan-50">
-          <IconPlus className="h-5 w-5 text-cyan-300" aria-hidden />
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+          <IconPlus className="h-5 w-5 text-primary" aria-hidden />
           Create or set up your organization
         </h2>
-        <p className="mt-2 text-sm leading-relaxed text-cyan-100/65">
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           You don’t need a separate account — your organization is built from
           the repos and projects you add. Choose one of the options below to add
           your first (or next) repo.
@@ -195,61 +203,100 @@ export function OrganizationPageClient(props: {
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <Link
             href="/dashboard"
-            className="group flex items-center gap-4 rounded-xl border border-cyan-200/15 bg-[#050b16]/70 p-5 transition-colors hover:border-cyan-300/35 hover:bg-[#0f1a2e] focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+            className="group flex items-center gap-4 rounded-xl border border-border dash-surface-inset p-5 transition-colors hover:border-primary/35 hover:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-cyan-300/25 bg-cyan-400/10 text-cyan-200">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
               <IconFolder className="h-5 w-5" aria-hidden />
             </div>
             <div className="min-w-0 flex-1">
-              <span className="block font-medium text-cyan-50">
+              <span className="block font-medium text-foreground">
                 Add repos from GitHub or GitLab
               </span>
-              <span className="mt-0.5 block text-sm text-cyan-100/60">
+              <span className="mt-0.5 block text-sm text-muted-foreground">
                 Go to the dashboard, open a repo, then click &quot;Add to my
                 organization&quot;.
               </span>
             </div>
             <IconArrowRight
-              className="h-5 w-5 shrink-0 text-cyan-100/50 transition-colors group-hover:text-cyan-300"
+              className="h-5 w-5 shrink-0 text-muted-foreground/80 transition-colors group-hover:text-primary"
               aria-hidden
             />
           </Link>
           <Link
             href="/dashboard/upload"
-            className="group flex items-center gap-4 rounded-xl border border-cyan-200/15 bg-[#050b16]/70 p-5 transition-colors hover:border-cyan-300/35 hover:bg-[#0f1a2e] focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+            className="group flex items-center gap-4 rounded-xl border border-border dash-surface-inset p-5 transition-colors hover:border-primary/35 hover:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-cyan-300/25 bg-cyan-400/10 text-cyan-200">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
               <IconUpload className="h-5 w-5" aria-hidden />
             </div>
             <div className="min-w-0 flex-1">
-              <span className="block font-medium text-cyan-50">
+              <span className="block font-medium text-foreground">
                 Upload a project
               </span>
-              <span className="mt-0.5 block text-sm text-cyan-100/60">
+              <span className="mt-0.5 block text-sm text-muted-foreground">
                 Upload a zip of your project. It’s stored in your environment
                 and appears in your organization.
               </span>
             </div>
             <IconArrowRight
-              className="h-5 w-5 shrink-0 text-cyan-100/50 transition-colors group-hover:text-cyan-300"
+              className="h-5 w-5 shrink-0 text-muted-foreground/80 transition-colors group-hover:text-primary"
               aria-hidden
             />
           </Link>
         </div>
       </section>
 
+      {tracked.length === 0 && availableGithubRepos.length > 0 && (
+        <section className="dash-panel p-6 sm:p-8">
+          <h2 className="text-lg font-semibold text-foreground">
+            Your GitHub repositories
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Open a repository, then choose{" "}
+            <span className="font-medium text-foreground">
+              Add to my organization
+            </span>{" "}
+            to include it in your portfolio.
+          </p>
+          <ul className="mt-6 space-y-2" role="list">
+            {availableGithubRepos.map((repo) => (
+              <li key={repo.full_name}>
+                <Link
+                  href={repoDetailHref(repo.full_name)}
+                  className="inline-flex w-full items-center gap-2 rounded-lg border border-border dash-surface-inset px-4 py-3 text-sm text-foreground transition-colors hover:border-primary/35 hover:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background sm:w-auto"
+                >
+                  <IconFolder
+                    className="h-4 w-4 shrink-0 text-primary"
+                    aria-hidden
+                  />
+                  <span className="font-medium">{repo.full_name}</span>
+                  <span className="ml-1 text-xs text-muted-foreground/80">
+                    {repo.private ? "Private" : "Public"}
+                  </span>
+                  <IconArrowRight
+                    className="ml-auto h-4 w-4 shrink-0 text-muted-foreground/80"
+                    aria-hidden
+                  />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="dash-panel p-6 sm:p-8">
-        <h2 className="text-lg font-semibold text-cyan-50">
+        <h2 className="text-lg font-semibold text-foreground">
           Repos in your organization
         </h2>
-        <p className="mt-1 text-sm text-cyan-100/65">
+        <p className="mt-1 text-sm text-muted-foreground">
           Repositories and projects you’ve added. Click one to manage access,
           view activity, or export the audit log.
         </p>
         {tracked.length === 0 ? (
-          <p className="mt-6 text-sm text-cyan-100/60">
-            No repos yet. Use the options above to add repos from the dashboard
-            or upload a project.
+          <p className="mt-6 text-sm text-muted-foreground">
+            {availableGithubRepos.length > 0
+              ? "No repos tracked yet. Pick one from your GitHub list above."
+              : "No repos yet. Use the options above to add repos from the dashboard or upload a project."}
           </p>
         ) : (
           <ul className="mt-6 space-y-2" role="list">
@@ -257,15 +304,15 @@ export function OrganizationPageClient(props: {
               <li key={row.full_name}>
                 <Link
                   href={repoDetailHref(row.full_name)}
-                  className="inline-flex w-full items-center gap-2 rounded-lg border border-cyan-200/15 bg-[#050b16]/70 px-4 py-3 text-sm text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-[#0f1a2e] focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914] sm:w-auto"
+                  className="inline-flex w-full items-center gap-2 rounded-lg border border-border dash-surface-inset px-4 py-3 text-sm text-foreground transition-colors hover:border-primary/35 hover:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background sm:w-auto"
                 >
                   <IconFolder
-                    className="h-4 w-4 shrink-0 text-cyan-300/80"
+                    className="h-4 w-4 shrink-0 text-primary"
                     aria-hidden
                   />
                   <span className="font-medium">{row.full_name}</span>
                   <IconArrowRight
-                    className="ml-auto h-4 w-4 shrink-0 text-cyan-100/50"
+                    className="ml-auto h-4 w-4 shrink-0 text-muted-foreground/80"
                     aria-hidden
                   />
                 </Link>

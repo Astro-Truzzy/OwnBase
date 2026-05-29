@@ -99,17 +99,17 @@ export default async function RepoDetailPage({ params }: PageProps) {
         <div>
           <Link
             href="/dashboard"
-            className="-ml-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-cyan-100/70 transition-colors hover:text-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+            className="-ml-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
           >
             ← Back to dashboard
           </Link>
           <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
                 {displayName}
               </h1>
               {gitlabProject?.description && (
-                <p className="mt-1.5 leading-relaxed text-cyan-100/65">
+                <p className="mt-1.5 leading-relaxed text-muted-foreground">
                   {gitlabProject.description}
                 </p>
               )}
@@ -117,13 +117,13 @@ export default async function RepoDetailPage({ params }: PageProps) {
                 href={webUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-3 inline-block text-sm text-cyan-200/90 transition-colors hover:text-cyan-100"
+                className="mt-3 inline-block text-sm text-primary transition-colors hover:text-foreground"
               >
                 Open on GitLab →
               </a>
             </div>
             <span
-              className="w-fit shrink-0 rounded-md border border-cyan-200/20 bg-[#050b16]/70 px-3 py-1.5 text-xs font-medium text-cyan-100/80"
+              className="w-fit shrink-0 rounded-md border border-border dash-surface-inset px-3 py-1.5 text-xs font-medium text-muted-foreground"
               title={
                 gitlabProject?.visibility === "private" ? "Private" : "Public"
               }
@@ -136,15 +136,15 @@ export default async function RepoDetailPage({ params }: PageProps) {
         <TrackSection owner={owner} name={name} isTracked={isTracked} />
 
         <section className="dash-panel p-6 sm:p-8">
-          <h2 className="text-lg font-medium text-cyan-50">Access</h2>
-          <p className="mt-1 text-sm text-cyan-100/65">
+          <h2 className="text-lg font-medium text-foreground">Access</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
             Manage members and permissions in GitLab.
           </p>
           <a
             href={`${webUrl}/-/project_members`}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-4 inline-flex items-center gap-2 rounded-lg border border-cyan-200/20 bg-[#050b16]/80 px-4 py-2 text-sm font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-[#0f1a2e]"
+            className="mt-4 inline-flex items-center gap-2 rounded-lg border border-border dash-surface-inset px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary/35 hover:bg-muted/60"
           >
             Manage on GitLab →
           </a>
@@ -222,17 +222,17 @@ export default async function RepoDetailPage({ params }: PageProps) {
       <div>
         <Link
           href="/dashboard"
-          className="-ml-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-cyan-100/70 transition-colors hover:text-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+          className="-ml-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
         >
           ← Back to dashboard
         </Link>
         <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
               {repo.name}
             </h1>
             {repo.description && (
-              <p className="mt-1.5 leading-relaxed text-cyan-100/65">
+              <p className="mt-1.5 leading-relaxed text-muted-foreground">
                 {repo.description}
               </p>
             )}
@@ -240,13 +240,13 @@ export default async function RepoDetailPage({ params }: PageProps) {
               href={repo.html_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-3 inline-block text-sm text-cyan-200/90 transition-colors hover:text-cyan-100"
+              className="mt-3 inline-block text-sm text-primary transition-colors hover:text-foreground"
             >
               Open on GitHub →
             </a>
           </div>
           <span
-            className="w-fit shrink-0 rounded-md border border-cyan-200/20 bg-[#050b16]/70 px-3 py-1.5 text-xs font-medium text-cyan-100/80"
+            className="w-fit shrink-0 rounded-md border border-border dash-surface-inset px-3 py-1.5 text-xs font-medium text-muted-foreground"
             title={repo.private ? "Private" : "Public"}
           >
             {repo.private ? "Private" : "Public"}

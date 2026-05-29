@@ -10,6 +10,7 @@ import {
 } from "../../../lib/dashboard/devs-insights";
 import { createClient } from "../../../lib/supabase/server";
 import { fetchRepoCollaborators } from "../../../lib/github/fetch-collaborators";
+import { getGitHubAccessToken } from "@/lib/supabase/github-token";
 import type { GitHubCollaborator } from "../../../lib/github/types";
 import { DevsPageClient } from "./devs-page-client";
 
@@ -32,7 +33,11 @@ export default async function DevsPage() {
 
   if (!user) redirect("/login");
 
-  const providerToken = session?.provider_token ?? null;
+  const provider = (user.app_metadata?.provider as string) ?? "github";
+  const providerToken =
+    provider === "gitlab"
+      ? (session?.provider_token ?? null)
+      : await getGitHubAccessToken(supabase, user);
 
   const [{ data: trackedRows }, { data: summaryRows }, { data: auditRows }] =
     await Promise.all([
@@ -141,7 +146,7 @@ export default async function DevsPage() {
       <div>
         <Link
           href="/dashboard"
-          className="-ml-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-cyan-100/70 transition-colors hover:text-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+          className="-ml-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
         >
           ← Back to dashboard
         </Link>

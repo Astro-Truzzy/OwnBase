@@ -75,4 +75,5 @@ For branded confirmation emails (not the default plain Supabase template), see [
 | Lands on `/dashboard` instead of intended page | Check `redirectTo` is present on `/login`; middleware and forms pass it through |
 | Works locally, fails on Vercel | Set `NEXT_PUBLIC_APP_URL` and add production + preview callback URLs in Supabase |
 | OAuth error lands on homepage (`identity_already_exists`, etc.) | Failed link/sign-in redirects to Site URL; app recovers via `/dashboard?connect_error=…`. Enable **Manual linking** in Supabase if using Connect GitHub while signed in with email |
+| Successful GitLab/GitHub connect lands on homepage | Supabase sent you to **Site URL** instead of `/auth/callback`. The app forwards `/?code=…` to the callback automatically; ensure `http://localhost:3000/auth/callback` (and production) are in **Redirect URLs** |
 | `identity_already_exists` when connecting GitHub | That GitHub account is tied to another Ownbase user. Sign in with GitHub instead of email, or use a different GitHub account / upload zip |

@@ -59,15 +59,15 @@ export function UploadForm() {
 
   return (
     <section className="dash-panel p-6 sm:p-8">
-      <h2 className="text-lg font-medium text-cyan-50">Upload a zip file</h2>
-      <p className="mt-1 text-sm text-cyan-100/65">
+      <h2 className="text-lg font-medium text-foreground">Upload a zip file</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
         Max 50 MB. Your code is stored in an environment owned by your business.
       </p>
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
           <label
             htmlFor="upload-name"
-            className="mb-1 block text-sm font-medium text-cyan-100"
+            className="mb-1 block text-sm font-medium text-foreground"
           >
             Project name
           </label>
@@ -77,14 +77,14 @@ export function UploadForm() {
             type="text"
             placeholder="e.g. my-app"
             required
-            className="dash-input w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+            className="dash-input w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
             disabled={isPending}
           />
         </div>
         <div>
           <label
             htmlFor="upload-file"
-            className="mb-1 block text-sm font-medium text-cyan-100"
+            className="mb-1 block text-sm font-medium text-foreground"
           >
             Zip file
           </label>
@@ -93,7 +93,7 @@ export function UploadForm() {
             name="file"
             type="file"
             accept=".zip,application/zip,application/x-zip-compressed"
-            className="dash-input w-full rounded-lg px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-cyan-400/15 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-cyan-200 focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+            className="dash-input w-full rounded-lg px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary/12 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
             disabled={isPending}
           />
         </div>
@@ -108,7 +108,7 @@ export function UploadForm() {
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex items-center gap-2 rounded-lg border border-cyan-200/20 bg-[#050b16]/85 px-4 py-2.5 text-sm font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-[#0f1a2e] disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+          className="inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition hover:brightness-105 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
         >
           <IconUpload className="h-4 w-4" aria-hidden />
           {isPending ? "Uploading…" : "Upload"}

@@ -67,8 +67,8 @@ export function FileFullViewModal({
         aria-label="Close full view"
         onClick={onClose}
       />
-      <div className="relative flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-border/70 bg-[#0c121c] shadow-2xl shadow-black/50 ring-1 ring-primary/20">
-        <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-[#0d1117] px-4 py-3">
+      <div className="relative flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-2xl shadow-black/50 ring-1 ring-primary/20">
+        <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-muted px-4 py-3">
           <div className="flex min-w-0 items-center gap-2">
             <FileTypeIcon name={fileName} className="h-5 w-5" />
             <h2

@@ -17,6 +17,7 @@ const LEGAL_LINKS = [
   { label: "Privacy", href: "/privacy" },
   { label: "Terms", href: "/terms" },
 ] as const;
+const LOGIN_DASHBOARD_REDIRECT = "/login?redirectTo=%2Fdashboard";
 
 function FooterColumn({
   title,
@@ -94,7 +95,7 @@ export function LandingFooter() {
             </p>
             <div className="mt-6">
               <Link
-                href="/signup"
+                href={LOGIN_DASHBOARD_REDIRECT}
                 className="inline-flex items-center justify-center rounded-lg bg-accent text-background px-5 py-2.5 text-sm font-semibold hover:bg-accent-hover transition-all hover:shadow-[0_0_20px_rgba(34,211,238,0.25)] focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
               >
                 Get started

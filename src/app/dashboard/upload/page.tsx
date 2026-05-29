@@ -32,14 +32,14 @@ export default async function UploadPage() {
       <div>
         <Link
           href="/dashboard"
-          className="-ml-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-cyan-100/70 transition-colors hover:text-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+          className="-ml-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
         >
           ← Back to dashboard
         </Link>
-        <h1 className="mt-6 text-2xl font-semibold tracking-tight text-white">
+        <h1 className="mt-6 text-2xl font-semibold tracking-tight text-foreground">
           Upload project
         </h1>
-        <p className="mt-2 text-sm text-cyan-100/65">
+        <p className="mt-2 text-sm text-muted-foreground">
           Upload a zip of your project. It will be stored in your
           environment—your code, your business.
         </p>
@@ -48,10 +48,10 @@ export default async function UploadPage() {
       <UploadForm />
 
       <section className="dash-panel p-6 sm:p-8">
-        <h2 className="text-lg font-medium text-cyan-50">
+        <h2 className="text-lg font-medium text-foreground">
           Your uploaded projects
         </h2>
-        <p className="mt-1 text-sm text-cyan-100/65">
+        <p className="mt-1 text-sm text-muted-foreground">
           Projects you’ve uploaded are stored securely in your own storage.
         </p>
         <UploadedProjectsList projects={projects ?? []} />

@@ -47,6 +47,28 @@ export function filterSearchableRepos(
   return repos.filter((repo) => matchSearchableRepo(repo, normalizedQuery));
 }
 
+export type PortfolioFilterKey =
+  | "all"
+  | "critical"
+  | "finance"
+  | "operations"
+  | "security";
+
+/** Category chips on the portfolio tab (All Systems, Finance, etc.). */
+export function applyPortfolioCategoryFilter<T extends { unit: string }>(
+  repos: T[],
+  filter: PortfolioFilterKey,
+  isCritical?: (repo: T) => boolean,
+): T[] {
+  if (filter === "all") return repos;
+  if (filter === "critical") {
+    return repos.filter(
+      isCritical ?? ((repo) => repo.unit.toLowerCase() === "security"),
+    );
+  }
+  return repos.filter((repo) => repo.unit.toLowerCase() === filter);
+}
+
 export async function fetchSearchableReposForUser(options: {
   provider: string;
   providerToken: string | null;

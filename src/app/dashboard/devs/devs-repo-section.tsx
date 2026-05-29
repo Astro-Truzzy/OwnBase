@@ -46,26 +46,26 @@ export function DevsRepoSection({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <Link
           href={repoDetailHref(fullName)}
-          className="inline-flex w-fit items-center gap-2 rounded-lg font-medium text-cyan-50 transition-colors hover:text-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+          className="inline-flex w-fit items-center gap-2 rounded-lg font-medium text-foreground transition-colors hover:text-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
         >
           <IconFolder
-            className="h-5 w-5 shrink-0 text-cyan-300/80"
+            className="h-5 w-5 shrink-0 text-primary"
             aria-hidden
           />
           {fullName}
         </Link>
         <Link
           href={repoDetailHref(fullName)}
-          className="-mr-2 inline-flex w-fit items-center gap-1.5 rounded px-2 py-1 text-sm text-cyan-100/60 transition-colors hover:text-cyan-100 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+          className="-mr-2 inline-flex w-fit items-center gap-1.5 rounded px-2 py-1 text-sm text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
         >
           Manage on repo
           <IconArrowRight className="h-4 w-4" aria-hidden />
         </Link>
       </div>
 
-      {error && <p className="mt-3 text-sm text-cyan-100/65">{error}</p>}
+      {error && <p className="mt-3 text-sm text-muted-foreground">{error}</p>}
       {!error && collaborators.length === 0 && (
-        <p className="mt-4 text-sm text-cyan-100/60">
+        <p className="mt-4 text-sm text-muted-foreground">
           No collaborators yet. Open the repo to grant access.
         </p>
       )}
@@ -74,7 +74,7 @@ export function DevsRepoSection({
         <div className="mt-4 overflow-x-auto -mx-1 sm:mx-0">
           <table className="w-full min-w-[320px] text-sm">
             <thead>
-              <tr className="border-b border-cyan-200/15 text-left text-cyan-100/60">
+              <tr className="border-b border-border text-left text-muted-foreground">
                 <th className="py-2 font-medium">Developer</th>
                 <th className="py-2 font-medium">Access</th>
                 <th className="py-2 text-right font-medium">Action</th>
@@ -84,7 +84,7 @@ export function DevsRepoSection({
               {collaborators.map((collab) => (
                 <tr
                   key={collab.id}
-                  className="border-b border-cyan-200/12 last:border-0"
+                  className="border-b border-border last:border-0"
                 >
                   <td className="py-3">
                     <div className="flex items-center gap-2">
@@ -92,20 +92,20 @@ export function DevsRepoSection({
                       <img
                         src={collab.avatar_url}
                         alt=""
-                        className="h-7 w-7 rounded-full border border-cyan-200/20 object-cover"
+                        className="h-7 w-7 rounded-full border border-border object-cover"
                         loading="lazy"
                       />
                       <a
                         href={collab.html_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="font-medium text-cyan-50 hover:underline"
+                        className="font-medium text-foreground hover:underline"
                       >
                         {collab.login}
                       </a>
                     </div>
                   </td>
-                  <td className="py-3 text-cyan-100/65">
+                  <td className="py-3 text-muted-foreground">
                     {getAccessLevelLabel(collab)}
                   </td>
                   <td className="py-3 text-right">
@@ -113,7 +113,7 @@ export function DevsRepoSection({
                       type="button"
                       onClick={() => handleRevoke(collab.login)}
                       disabled={removingLogin === collab.login}
-                      className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-500/10 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-[#050914] dark:text-red-400"
+                      className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-500/10 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-background dark:text-red-400"
                       aria-label={`Revoke access for ${collab.login}`}
                     >
                       <IconTrash className="h-3.5 w-3.5" aria-hidden />

@@ -1,12 +1,10 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
 import {
   IconBrandGithub,
   IconBrandGitlab,
-  IconUpload,
 } from "@tabler/icons-react";
 import {
   connectGitHubAccount,
@@ -17,7 +15,7 @@ import {
 const OVERLAY_Z = 10050;
 
 const optionButtonClass =
-  "flex w-full items-center gap-3 rounded-lg border border-cyan-500/20 bg-[#151d2e] px-4 py-3.5 text-left transition hover:border-cyan-400/45 hover:bg-[#1a2538] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50 disabled:cursor-not-allowed disabled:opacity-50";
+  "flex w-full items-center gap-3 rounded-lg border border-primary/30 bg-muted px-4 py-3.5 text-left transition hover:border-primary/50 hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 interface DashboardRepoConnectPromptProps {
   open: boolean;
@@ -30,7 +28,6 @@ export function DashboardRepoConnectPrompt({
   variant = "modal",
   oauthError = null,
 }: DashboardRepoConnectPromptProps) {
-  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -63,10 +60,6 @@ export function DashboardRepoConnectPrompt({
     });
   };
 
-  const handleUpload = () => {
-    router.push("/dashboard/upload");
-  };
-
   const handleSignInWithGitHub = () => {
     setMessage(null);
     startTransition(async () => {
@@ -83,17 +76,17 @@ export function DashboardRepoConnectPrompt({
     Boolean(message?.includes("already linked"));
 
   const bodyCopy =
-    "Choose how you want to bring code into Ownbase. Connect GitHub or GitLab to browse repositories, or upload a project zip.";
+    "Connect GitHub or GitLab to continue. This unlocks repository browsing and setup in Ownbase.";
 
   if (variant === "banner") {
     return createPortal(
       <div
-        className="fixed inset-x-0 top-0 z-10040 border-b border-cyan-500/30 bg-[#0c121c] px-4 py-4 shadow-lg"
+        className="fixed inset-x-0 top-0 z-10040 border-b border-primary/35 bg-card px-4 py-4 shadow-lg"
         role="status"
         aria-live="polite"
       >
-        <p className="mx-auto max-w-3xl text-center text-sm text-slate-300">
-          <span className="font-semibold text-white">
+        <p className="mx-auto max-w-3xl text-center text-sm text-muted-foreground">
+          <span className="font-semibold text-foreground">
             Add a repository to continue —{" "}
           </span>
           {bodyCopy}
@@ -106,7 +99,7 @@ export function DashboardRepoConnectPrompt({
   return createPortal(
     <>
       <div
-        className="fixed inset-0 bg-[#050810]/90 backdrop-blur-md"
+        className="fixed inset-0 bg-background/90 backdrop-blur-md"
         style={{ zIndex: OVERLAY_Z }}
         aria-hidden
       />
@@ -114,23 +107,23 @@ export function DashboardRepoConnectPrompt({
         role="dialog"
         aria-modal="true"
         aria-labelledby="repo-connect-title"
-        className="fixed left-1/2 top-1/2 w-[min(420px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-cyan-500/25 bg-[#0c121c] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.65)]"
+        className="fixed left-1/2 top-1/2 w-[min(420px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-primary/30 bg-card p-6 shadow-[0_24px_60px_rgba(0,0,0,0.65)]"
         style={{ zIndex: OVERLAY_Z + 1 }}
       >
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-cyan-400">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
           Connect your code
         </p>
         <h2
           id="repo-connect-title"
-          className="mt-1.5 text-xl font-semibold tracking-tight text-white"
+          className="mt-1.5 text-xl font-semibold tracking-tight text-foreground"
         >
           Add a repository to get started
         </h2>
-        <p className="mt-2 text-sm leading-relaxed text-slate-300">
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           {bodyCopy}
         </p>
         {displayError ? (
-          <p className="mt-3 rounded-lg border border-red-500/40 bg-red-950/50 px-3 py-2 text-sm text-red-200">
+          <p className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-200">
             {displayError}
           </p>
         ) : null}
@@ -139,7 +132,7 @@ export function DashboardRepoConnectPrompt({
             type="button"
             onClick={handleSignInWithGitHub}
             disabled={pending}
-            className="mt-3 w-full rounded-lg border border-cyan-500/30 bg-cyan-950/40 px-4 py-2.5 text-sm font-medium text-cyan-100 transition hover:bg-cyan-950/60 disabled:opacity-50"
+            className="mt-3 w-full rounded-lg border border-primary/35 bg-primary/10 px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-primary/15 disabled:opacity-50"
           >
             Sign in with your existing GitHub account
           </button>
@@ -151,12 +144,12 @@ export function DashboardRepoConnectPrompt({
             disabled={pending}
             className={optionButtonClass}
           >
-            <IconBrandGithub className="h-5 w-5 shrink-0 text-white" aria-hidden />
+            <IconBrandGithub className="h-5 w-5 shrink-0 text-foreground" aria-hidden />
             <span>
-              <span className="block text-sm font-semibold text-white">
+              <span className="block text-sm font-semibold text-foreground">
                 Connect GitHub
               </span>
-              <span className="mt-0.5 block text-xs text-slate-400">
+              <span className="mt-0.5 block text-xs text-muted-foreground">
                 Sign in with GitHub to access your repositories
               </span>
             </span>
@@ -168,31 +161,15 @@ export function DashboardRepoConnectPrompt({
             className={optionButtonClass}
           >
             <IconBrandGitlab
-              className="h-5 w-5 shrink-0 text-orange-400"
+              className="h-5 w-5 shrink-0 text-orange-500"
               aria-hidden
             />
             <span>
-              <span className="block text-sm font-semibold text-white">
+              <span className="block text-sm font-semibold text-foreground">
                 Connect GitLab
               </span>
-              <span className="mt-0.5 block text-xs text-slate-400">
+              <span className="mt-0.5 block text-xs text-muted-foreground">
                 Sign in with GitLab to access your projects
-              </span>
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={handleUpload}
-            disabled={pending}
-            className={optionButtonClass}
-          >
-            <IconUpload className="h-5 w-5 shrink-0 text-cyan-400" aria-hidden />
-            <span>
-              <span className="block text-sm font-semibold text-white">
-                Upload a project zip
-              </span>
-              <span className="mt-0.5 block text-xs text-slate-400">
-                Store a snapshot without linking a provider
               </span>
             </span>
           </button>

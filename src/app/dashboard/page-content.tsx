@@ -2,6 +2,8 @@ import { createClient } from "../../lib/supabase/server";
 import { fetchUserProjects } from "../../lib/gitlab/fetch-projects";
 import { fetchRepoCollaborators } from "../../lib/github/fetch-collaborators";
 import { fetchUserRepos } from "../../lib/github/fetch-repos";
+import { getGitHubAccessToken } from "@/lib/supabase/github-token";
+import type { SearchableRepo } from "@/lib/dashboard/searchable-repos";
 import { getUsageSnapshot } from "../../lib/usage-stats";
 import {
   DashboardActivation,
@@ -120,7 +122,7 @@ export default async function DashboardPageContent() {
       ? await supabase
           .from("profiles")
           .select(
-            "onboarding_checklist_dismissed_at, dashboard_walkthrough_completed_at, first_name, last_name, plan",
+            "onboarding_checklist_dismissed_at, dashboard_walkthrough_completed_at, first_name, last_name, plan, business_name",
           )
           .eq("user_id", user.id)
           .maybeSingle()
@@ -198,12 +200,20 @@ export default async function DashboardPageContent() {
   ];
 
   const provider = (user?.app_metadata?.provider as string) ?? "github";
-  const providerToken = session?.provider_token ?? null;
+  const hasGitHubIdentity =
+    user?.identities?.some((identity) => identity.provider === "github") ??
+    false;
+  const githubToken =
+    user != null ? await getGitHubAccessToken(supabase, user) : null;
+  const providerToken =
+    provider === "gitlab"
+      ? (session?.provider_token ?? null)
+      : githubToken;
 
   const githubResult =
-    provider === "gitlab" || !providerToken
+    provider === "gitlab" || !githubToken
       ? { repos: [] }
-      : await fetchUserRepos(providerToken);
+      : await fetchUserRepos(githubToken);
   const githubRepos = githubResult.repos ?? [];
 
   const { projects: gitlabProjects } =
@@ -267,6 +277,54 @@ export default async function DashboardPageContent() {
         [`gitlab/${project.path_with_namespace}`, project] as const,
     ),
   );
+
+  const discoverableRepos: SearchableRepo[] = [
+    ...(provider !== "gitlab" && githubRepos.length > 0
+      ? githubRepos.slice(0, 60).map((repo) => ({
+          id: `github-${repo.id}`,
+          fullName: repo.full_name,
+          detailHref: repoDetailHref(repo.full_name),
+          name: repo.name,
+          unit: inferRepoUnit(repo.name),
+          tech: `GitHub • ${repo.private ? "Private" : "Public"}`,
+        }))
+      : []),
+    ...(provider === "gitlab" && gitlabProjects.length > 0
+      ? gitlabProjects.slice(0, 60).map((project) => ({
+          id: `gitlab-${project.id}`,
+          fullName: `gitlab/${project.path_with_namespace}`,
+          detailHref: repoDetailHref(`gitlab/${project.path_with_namespace}`),
+          name: project.name,
+          unit: inferRepoUnit(project.name),
+          tech: `GitLab • ${project.visibility === "private" ? "Private" : "Public"}`,
+        }))
+      : []),
+  ];
+
+  const organizationTracked = tracked.map((row) => {
+    const isGitlab = row.repo_owner === "gitlab";
+    const fullName = row.full_name;
+    const githubRepo = githubByFullName.get(fullName);
+    const gitlabProject = isGitlab
+      ? gitlabByFullName.get(
+          fullName.startsWith("gitlab/")
+            ? fullName
+            : `gitlab/${row.repo_name}`,
+        )
+      : undefined;
+
+    return {
+      fullName,
+      name: row.repo_name,
+      detailHref: repoDetailHref(fullName),
+      tech: isGitlab
+        ? `GitLab • ${gitlabProject?.visibility === "private" ? "Private" : "Public"}`
+        : githubRepo
+          ? `GitHub • ${githubRepo.private ? "Private" : "Public"}`
+          : "Tracked repository",
+      addedAt: row.added_at,
+    };
+  });
 
   const repositories: DashboardRepoView[] = tracked.map((row) => {
     const isGitlab = row.repo_owner === "gitlab";
@@ -517,8 +575,20 @@ export default async function DashboardPageContent() {
   ).length;
   const lowHealthRepos = repositories.filter((r) => r.health < 85).length;
   const securityEvents = activities.filter((a) => a.type === "security").length;
+  const summarizedFullNames = new Set(
+    (summaryRows ?? [])
+      .map((row) => row.full_name)
+      .filter((name): name is string => Boolean(name)),
+  );
+  const firstWithoutSummary = repositories.find(
+    (repo) => !summarizedFullNames.has(repo.fullName),
+  );
+  const firstSingleContributor = repositories.find((repo) => repo.busFactor <= 1);
+  const firstLowHealth = repositories.find((repo) => repo.health < 85);
+  const firstSecurityActivity = activities.find((a) => a.type === "security");
+
   const todos = buildDashboardTodos({
-    repositoryCount: repositories.length,
+    repositoryCount: repositories.length || discoverableRepos.length,
     trackedRepos: usage?.trackedRepos ?? 0,
     uploads: usage?.uploads ?? 0,
     summariesCount: summaryRows?.length ?? 0,
@@ -526,7 +596,24 @@ export default async function DashboardPageContent() {
     singleContributorRepos,
     lowHealthRepos,
     securityEvents,
-    hasGitProvider: Boolean(providerToken),
+    hasGitProvider: Boolean(providerToken) || hasGitHubIdentity,
+    targets: {
+      summary: firstWithoutSummary
+        ? `${firstWithoutSummary.detailHref}#summary`
+        : repositories[0]
+          ? `${repositories[0].detailHref}#summary`
+          : null,
+      busFactor: firstSingleContributor
+        ? `${firstSingleContributor.detailHref}#access`
+        : "/dashboard/devs#team",
+      lowHealth: firstLowHealth
+        ? `${firstLowHealth.detailHref}#activity`
+        : null,
+      security: firstSecurityActivity
+        ? `${repoDetailHref(firstSecurityActivity.repo)}#activity`
+        : null,
+      access: "/dashboard/devs#team",
+    },
   });
   const hasPortfolioData = tracked.length > 0;
 
@@ -545,6 +632,11 @@ export default async function DashboardPageContent() {
       )}
       <DashboardTabsView
         repositories={repositories}
+        discoverableRepos={discoverableRepos}
+        organizationTracked={organizationTracked}
+        trackedLimit={usage?.limits.maxTrackedRepos ?? 5}
+        businessName={profileExtras?.business_name?.trim() ?? null}
+        hasGitProvider={Boolean(providerToken) || hasGitHubIdentity}
         activities={activities}
         team={team}
         onboarding={onboarding}

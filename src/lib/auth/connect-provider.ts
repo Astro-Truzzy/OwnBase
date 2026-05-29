@@ -1,5 +1,6 @@
 import { getAuthCallbackUrl } from "@/lib/auth/redirects";
 import { getConnectErrorMessage } from "@/lib/auth/connect-errors";
+import { stashAuthNext } from "@/lib/auth/oauth-return";
 import { createClient } from "@/lib/supabase/client";
 
 const POST_CONNECT_PATH = "/dashboard/organization";
@@ -53,6 +54,7 @@ export async function connectGitHubAccount(): Promise<{ error?: string }> {
     options: {
       redirectTo,
       scopes: "repo",
+      queryParams: { prompt: "select_account" },
       skipBrowserRedirect: true,
     },
   });
@@ -62,6 +64,7 @@ export async function connectGitHubAccount(): Promise<{ error?: string }> {
   }
 
   if (data?.url) {
+    stashAuthNext(POST_CONNECT_PATH);
     window.location.assign(data.url);
   }
 
@@ -103,6 +106,7 @@ export async function connectGitLabAccount(): Promise<{ error?: string }> {
   }
 
   if (data?.url) {
+    stashAuthNext(POST_CONNECT_PATH);
     window.location.assign(data.url);
   }
 
@@ -122,6 +126,7 @@ export async function signInWithGitHubAccount(): Promise<{ error?: string }> {
     options: {
       redirectTo,
       scopes: "repo",
+      queryParams: { prompt: "select_account" },
       skipBrowserRedirect: true,
     },
   });
@@ -131,6 +136,7 @@ export async function signInWithGitHubAccount(): Promise<{ error?: string }> {
   }
 
   if (data?.url) {
+    stashAuthNext(POST_CONNECT_PATH);
     window.location.assign(data.url);
   }
 

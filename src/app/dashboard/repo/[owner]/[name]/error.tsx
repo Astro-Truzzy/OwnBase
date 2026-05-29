@@ -18,7 +18,7 @@ export default function RepoDetailError({
     <div className="space-y-6">
       <Link
         href="/dashboard"
-        className="text-sm font-medium text-muted hover:text-foreground transition-colors inline-block focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background rounded px-1 -ml-1"
+        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors inline-block focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background rounded px-1 -ml-1"
       >
         ← Back to dashboard
       </Link>
@@ -36,7 +36,7 @@ export default function RepoDetailError({
         <button
           type="button"
           onClick={reset}
-          className="mt-4 rounded-lg border border-cyan-200/20 bg-[#08101f]/90 px-4 py-2.5 text-sm font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-[#0f1a2e] focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+          className="mt-4 rounded-lg border border-border dash-usage-panel px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-primary/35 hover:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
         >
           Try again
         </button>

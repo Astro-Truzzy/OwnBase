@@ -30,7 +30,7 @@ export function ManageSubscriptionButton() {
         type="button"
         onClick={handleClick}
         disabled={pending}
-        className="inline-flex w-fit items-center gap-2 rounded-lg border border-cyan-200/20 bg-[#050b16]/80 px-4 py-2 text-sm font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-[#0f1a2e] disabled:opacity-50"
+        className="dash-btn-secondary inline-flex w-fit items-center gap-2 px-4 py-2 text-sm font-medium disabled:opacity-50"
       >
         {pending ? "Opening…" : "Open Paystack subscription management →"}
       </button>

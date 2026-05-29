@@ -40,7 +40,7 @@ export function FolderStructureSection({
   if (loading) {
     return (
       <section className="dash-panel p-6 sm:p-8">
-        <h2 className="text-lg font-medium text-cyan-50">
+        <h2 className="text-lg font-medium text-foreground">
           Repository structure
         </h2>
         <div className="mt-4 flex flex-wrap gap-3">
@@ -58,10 +58,10 @@ export function FolderStructureSection({
   if (error) {
     return (
       <section className="dash-panel p-6 sm:p-8">
-        <h2 className="text-lg font-medium text-cyan-50">
+        <h2 className="text-lg font-medium text-foreground">
           Repository structure
         </h2>
-        <p className="mt-2 text-sm text-cyan-100/65">{error}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{error}</p>
       </section>
     );
   }
@@ -69,36 +69,36 @@ export function FolderStructureSection({
   return (
     <section className="dash-panel p-6 sm:p-8">
       <div className="flex items-center gap-2">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-cyan-300/25 bg-cyan-400/10 text-cyan-200">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
           <IconFolder className="h-5 w-5" />
         </div>
-        <h2 className="text-lg font-medium text-cyan-50">
+        <h2 className="text-lg font-medium text-foreground">
           Repository structure
         </h2>
       </div>
-      <p className="mt-1 text-sm text-cyan-100/65">
+      <p className="mt-1 text-sm text-muted-foreground">
         Folders in this repo, grouped by category.
       </p>
       <div className="mt-6 flex flex-wrap gap-4">
-        <div className="rounded-xl border border-cyan-200/15 bg-[#050b16]/75 px-5 py-3">
-          <span className="text-2xl font-semibold tabular-nums text-white">
+        <div className="rounded-xl border border-border dash-surface-inset px-5 py-3">
+          <span className="text-2xl font-semibold tabular-nums text-foreground">
             {totalFolders}
           </span>
-          <span className="ml-2 text-sm text-cyan-100/60">folders total</span>
+          <span className="ml-2 text-sm text-muted-foreground">folders total</span>
         </div>
         {byCategory.map(({ category, count }) => {
           const Icon = CATEGORY_ICONS[category] ?? IconFolder;
           return (
             <div
               key={category}
-              className="flex items-center gap-3 rounded-xl border border-cyan-200/15 bg-[#050b16]/75 px-4 py-3"
+              className="flex items-center gap-3 rounded-xl border border-border dash-surface-inset px-4 py-3"
             >
-              <Icon className="h-5 w-5 shrink-0 text-cyan-300/90" />
+              <Icon className="h-5 w-5 shrink-0 text-primary" />
               <div>
-                <span className="font-semibold tabular-nums text-cyan-50">
+                <span className="font-semibold tabular-nums text-foreground">
                   {count}
                 </span>
-                <span className="ml-1.5 text-sm text-cyan-100/60">
+                <span className="ml-1.5 text-sm text-muted-foreground">
                   {category}
                 </span>
               </div>

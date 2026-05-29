@@ -46,32 +46,31 @@ export default async function BillingPage() {
     <div className="space-y-8">
       <div className="dash-panel dash-panel--lg p-6 sm:p-8">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-400/15 text-cyan-200">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
             <IconCreditCard className="h-6 w-6" aria-hidden />
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
             Billing
           </h1>
         </div>
-        <p className="mt-2 text-cyan-100/70">
+        <p className="mt-2 text-muted-foreground">
           Your plan, trial, and subscription. Pay securely with Paystack when
           you&apos;re ready.
         </p>
       </div>
 
-      {/* Status card */}
       <div className="dash-panel p-6 sm:p-8">
-        <h2 className="text-lg font-semibold text-cyan-50">Current status</h2>
+        <h2 className="text-lg font-semibold text-foreground">Current status</h2>
         <div className="mt-4 space-y-4">
           {hasActiveSubscription && (
-            <div className="flex items-center gap-3 rounded-lg border border-cyan-200/15 bg-[#050b16]/70 p-4">
+            <div className="flex items-center gap-3 rounded-lg border border-emerald-500/35 bg-emerald-500/10 p-4">
               <IconCheck
-                className="h-5 w-5 shrink-0 text-emerald-400"
+                className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400"
                 aria-hidden
               />
               <div>
-                <p className="font-medium text-cyan-50">Active subscription</p>
-                <p className="text-sm text-cyan-100/65">
+                <p className="font-medium text-foreground">Active subscription</p>
+                <p className="text-sm text-muted-foreground">
                   Your subscription is active until{" "}
                   {subscriptionEndsAt?.toLocaleDateString(undefined, {
                     dateStyle: "long",
@@ -82,14 +81,14 @@ export default async function BillingPage() {
             </div>
           )}
           {onTrial && (
-            <div className="flex items-center gap-3 rounded-lg border border-cyan-200/15 bg-[#050b16]/70 p-4">
+            <div className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/8 p-4">
               <IconCalendar
-                className="h-5 w-5 shrink-0 text-cyan-300"
+                className="h-5 w-5 shrink-0 text-primary"
                 aria-hidden
               />
               <div>
-                <p className="font-medium text-cyan-50">Free trial</p>
-                <p className="text-sm text-cyan-100/65">
+                <p className="font-medium text-foreground">Free trial</p>
+                <p className="text-sm text-muted-foreground">
                   Your trial ends on{" "}
                   {trialEndsAt?.toLocaleDateString(undefined, {
                     dateStyle: "long",
@@ -100,14 +99,14 @@ export default async function BillingPage() {
             </div>
           )}
           {trialExpired && !hasActiveSubscription && (
-            <div className="flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+            <div className="flex items-center gap-3 rounded-lg border border-amber-500/40 bg-amber-500/12 p-4">
               <IconRocket
-                className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400"
+                className="h-5 w-5 shrink-0 text-amber-700 dark:text-amber-400"
                 aria-hidden
               />
               <div>
-                <p className="font-medium text-cyan-50">Trial ended</p>
-                <p className="text-sm text-cyan-100/65">
+                <p className="font-medium text-foreground">Trial ended</p>
+                <p className="text-sm text-muted-foreground">
                   Subscribe now to keep full access to your repositories and
                   features.
                 </p>
@@ -117,13 +116,12 @@ export default async function BillingPage() {
         </div>
       </div>
 
-      {/* Subscribe section */}
       {(!hasActiveSubscription || trialExpired) && (
         <div className="dash-panel p-6 sm:p-8">
-          <h2 className="text-lg font-semibold text-cyan-50">
+          <h2 className="text-lg font-semibold text-foreground">
             Subscribe with Paystack
           </h2>
-          <p className="mt-2 text-sm text-cyan-100/65">
+          <p className="mt-2 text-sm text-muted-foreground">
             Choose a plan and complete payment securely. You&apos;ll be charged
             monthly. You can cancel or update your card from your Paystack
             dashboard.
@@ -132,8 +130,8 @@ export default async function BillingPage() {
             <SubscribeButton planId="starter" />
             <SubscribeButton planId="pro" />
           </div>
-          <div className="mt-4 flex items-center gap-2 text-sm text-cyan-100/60">
-            <IconShield className="h-4 w-4 shrink-0" aria-hidden />
+          <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+            <IconShield className="h-4 w-4 shrink-0 text-primary" aria-hidden />
             <span>Secured by Paystack. We never store your card details.</span>
           </div>
         </div>
@@ -141,10 +139,10 @@ export default async function BillingPage() {
 
       {hasActiveSubscription && profile?.paystack_subscription_code && (
         <div className="dash-panel p-6 sm:p-8">
-          <h2 className="text-lg font-semibold text-cyan-50">
+          <h2 className="text-lg font-semibold text-foreground">
             Manage subscription
           </h2>
-          <p className="mt-2 text-sm text-cyan-100/65">
+          <p className="mt-2 text-sm text-muted-foreground">
             Update your payment method or cancel from Paystack&apos;s
             subscription management page.
           </p>
@@ -152,8 +150,11 @@ export default async function BillingPage() {
         </div>
       )}
 
-      <p className="text-sm text-cyan-100/65">
-        <Link href="/pricing" className="text-cyan-300 hover:underline">
+      <p className="text-sm text-muted-foreground">
+        <Link
+          href="/pricing"
+          className="font-medium text-primary underline-offset-2 hover:underline"
+        >
           View all plans
         </Link>{" "}
         on the pricing page.

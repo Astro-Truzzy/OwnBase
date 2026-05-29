@@ -35,7 +35,7 @@ export function CodeViewer({
     language === "jsx" ? "jsx" : language === "tsx" ? "tsx" : language;
 
   return (
-    <div className="overflow-hidden rounded-b-xl bg-[#0d1117]">
+    <div className="overflow-hidden rounded-b-xl bg-muted">
       <div className="flex overflow-auto" style={{ maxHeight }}>
         <div
           className="sticky left-0 shrink-0 select-none border-r border-white/8 bg-[#010409]/90 py-3 pr-3 pl-2 text-right font-mono text-[11px] leading-[1.55] text-slate-500"

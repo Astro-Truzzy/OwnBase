@@ -19,7 +19,7 @@ export default function DashboardError({
         <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
           Dashboard
         </h1>
-        <p className="mt-2 text-muted">
+        <p className="mt-2 text-muted-foreground">
           Something went wrong loading this page.
         </p>
       </div>
@@ -35,7 +35,7 @@ export default function DashboardError({
         <button
           type="button"
           onClick={reset}
-          className="mt-4 rounded-lg border border-cyan-200/20 bg-[#08101f]/90 px-4 py-2.5 text-sm font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-[#0f1a2e] focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-[#050914]"
+          className="mt-4 rounded-lg border border-border dash-usage-panel px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-primary/35 hover:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
         >
           Try again
         </button>

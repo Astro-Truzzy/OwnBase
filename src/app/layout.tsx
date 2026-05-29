@@ -3,7 +3,7 @@ import Script from "next/script";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { AOSInit } from "@/components/AOSInit";
 import { OAuthErrorRecovery } from "@/components/auth/oauth-error-recovery";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { GlobalThemeToggle } from "@/components/ThemeToggle";
 import "./globals.css";
 
 const themeInitScript =
@@ -58,7 +58,7 @@ export default function RootLayout({
         </Script>
         <AOSInit />
         <OAuthErrorRecovery />
-        <ThemeToggle />
+        <GlobalThemeToggle />
         {children}
       </body>
     </html>

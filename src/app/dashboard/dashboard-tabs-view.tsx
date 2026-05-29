@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   IconAlertCircle,
@@ -18,7 +18,6 @@ import {
   IconFolder,
   IconGitCommit,
   IconGitPullRequest,
-  IconInfoCircle,
   IconRocket,
   IconSearch,
   IconSettings,
@@ -28,13 +27,23 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import Link from "next/link";
+import { InfoHint } from "@/components/dashboard/info-hint";
+import { DashboardOrganizationPanel } from "./dashboard-organization-panel";
+import type { OrganizationTrackedRepo } from "./dashboard-organization-panel";
 import { DashboardTodoPanel } from "./dashboard-todo-panel";
+import { KnowledgeRiskMatrixChart } from "./knowledge-risk-matrix-chart";
 import { SystemHealthTrendChart } from "./system-health-trend-chart";
 import {
+  applyPortfolioCategoryFilter,
   filterSearchableRepos,
+  type PortfolioFilterKey,
   type SearchableRepo,
 } from "@/lib/dashboard/searchable-repos";
 import { useDashboardSearch } from "./dashboard-search-context";
+import {
+  DASHBOARD_PORTFOLIO_FILTER_CHANGED,
+  parsePortfolioFilterParam,
+} from "./dashboard-todo-navigation";
 import {
   DASHBOARD_TAB_CHANGED,
   readDashboardTabHash,
@@ -57,6 +66,32 @@ export interface DashboardRepoView {
   status: "healthy" | "warning" | "critical";
   busFactor: number;
   description: string;
+}
+
+function repoStatusBadge(status: DashboardRepoView["status"]): {
+  label: string;
+  className: string;
+} {
+  switch (status) {
+    case "healthy":
+      return {
+        label: "Healthy",
+        className:
+          "border-emerald-500/40 bg-emerald-500/12 text-emerald-800 dark:text-emerald-100",
+      };
+    case "critical":
+      return {
+        label: "Critical",
+        className:
+          "border-rose-500/40 bg-rose-500/12 text-rose-900 dark:text-rose-100",
+      };
+    default:
+      return {
+        label: "Review",
+        className:
+          "border-amber-500/40 bg-amber-500/12 text-amber-900 dark:text-amber-100",
+      };
+  }
 }
 
 export interface DashboardActivityView {
@@ -92,6 +127,12 @@ export interface DashboardTodoView {
 
 interface DashboardTabsViewProps {
   repositories: DashboardRepoView[];
+  /** GitHub/GitLab repos available before any are tracked in Ownbase. */
+  discoverableRepos?: SearchableRepo[];
+  organizationTracked?: OrganizationTrackedRepo[];
+  trackedLimit?: number;
+  businessName?: string | null;
+  hasGitProvider?: boolean;
   activities: DashboardActivityView[];
   team: DashboardTeamView[];
   onboarding: DashboardOnboardingView[];
@@ -134,6 +175,11 @@ function minutesFromRelativeLabel(value: string): number | null {
 
 export function DashboardTabsView({
   repositories,
+  discoverableRepos = [],
+  organizationTracked = [],
+  trackedLimit = 5,
+  businessName = null,
+  hasGitProvider = false,
   activities,
   team,
   onboarding,
@@ -149,26 +195,54 @@ export function DashboardTabsView({
   industryAverageValues,
 }: DashboardTabsViewProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabKey>("dashboard");
-  const [filter, setFilter] = useState<
-    "all" | "critical" | "finance" | "operations" | "security"
-  >("all");
+  const [filter, setFilter] = useState<PortfolioFilterKey>(() => {
+    const fromUrl = parsePortfolioFilterParam(searchParams.get("pf"));
+    return fromUrl ?? "all";
+  });
   const { searchQuery, clearSearch, setSearchableRepos, isSearchActive } =
     useDashboardSearch();
   const [selectedRepoId, setSelectedRepoId] = useState<string | null>(null);
   const [activityWindowIndex, setActivityWindowIndex] = useState(1);
 
   useEffect(() => {
-    const searchable: SearchableRepo[] = repositories.map((repo) => ({
-      id: repo.id,
-      name: repo.name,
-      fullName: repo.fullName,
-      detailHref: repo.detailHref,
-      unit: repo.unit,
-      tech: repo.tech,
-    }));
+    const searchable: SearchableRepo[] =
+      repositories.length > 0
+        ? repositories.map((repo) => ({
+            id: repo.id,
+            name: repo.name,
+            fullName: repo.fullName,
+            detailHref: repo.detailHref,
+            unit: repo.unit,
+            tech: repo.tech,
+          }))
+        : discoverableRepos;
     setSearchableRepos(searchable);
-  }, [repositories, setSearchableRepos]);
+  }, [repositories, discoverableRepos, setSearchableRepos]);
+
+  useEffect(() => {
+    const pf = parsePortfolioFilterParam(searchParams.get("pf"));
+    if (pf) setFilter(pf);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const onPortfolioFilter = (event: Event) => {
+      const detail = (event as CustomEvent<{ filter: PortfolioFilterKey }>)
+        .detail;
+      if (detail?.filter) setFilter(detail.filter);
+    };
+    window.addEventListener(
+      DASHBOARD_PORTFOLIO_FILTER_CHANGED,
+      onPortfolioFilter,
+    );
+    return () => {
+      window.removeEventListener(
+        DASHBOARD_PORTFOLIO_FILTER_CHANGED,
+        onPortfolioFilter,
+      );
+    };
+  }, []);
 
   useEffect(() => {
     const syncFromHash = () => {
@@ -177,7 +251,14 @@ export function DashboardTabsView({
         setDashboardTabHash("portfolio");
         return;
       }
-      setActiveTab(readDashboardTabHash());
+      const tab = readDashboardTabHash();
+      setActiveTab(tab);
+      if (tab === "portfolio") {
+        const pf = parsePortfolioFilterParam(
+          new URLSearchParams(window.location.search).get("pf"),
+        );
+        if (pf) setFilter(pf);
+      }
     };
     syncFromHash();
     window.addEventListener("hashchange", syncFromHash);
@@ -200,22 +281,12 @@ export function DashboardTabsView({
   }
 
   const filteredRepos = useMemo(() => {
-    const filterMatched =
-      filter === "all"
-        ? repositories
-        : filter === "critical"
-          ? repositories.filter(
-              (r) => r.busFactor <= 1 || r.status === "critical",
-            )
-          : filter === "finance"
-            ? repositories.filter((r) => r.unit.toLowerCase() === "finance")
-            : filter === "operations"
-              ? repositories.filter(
-                  (r) => r.unit.toLowerCase() === "operations",
-                )
-              : repositories.filter((r) => r.unit.toLowerCase() === "security");
-
-    const searchable = filterMatched.map((repo) => ({
+    const categoryMatched = applyPortfolioCategoryFilter(
+      repositories,
+      filter,
+      (repo) => repo.busFactor <= 1 || repo.status === "critical",
+    );
+    const searchable = categoryMatched.map((repo) => ({
       id: repo.id,
       name: repo.name,
       fullName: repo.fullName,
@@ -226,7 +297,7 @@ export function DashboardTabsView({
     const matchedIds = new Set(
       filterSearchableRepos(searchable, searchQuery).map((r) => r.id),
     );
-    return filterMatched.filter((r) => matchedIds.has(r.id));
+    return categoryMatched.filter((r) => matchedIds.has(r.id));
   }, [repositories, filter, searchQuery]);
 
   const overviewRepos = useMemo(() => {
@@ -243,6 +314,22 @@ export function DashboardTabsView({
     );
     return repositories.filter((r) => matchedIds.has(r.id));
   }, [repositories, searchQuery]);
+
+  const inDiscoverableMode =
+    repositories.length === 0 && discoverableRepos.length > 0;
+
+  const filteredDiscoverable = useMemo(() => {
+    const categoryMatched = applyPortfolioCategoryFilter(
+      discoverableRepos,
+      filter,
+      (repo) =>
+        repo.unit.toLowerCase() === "security" ||
+        repo.name.toLowerCase().includes("auth"),
+    );
+    return filterSearchableRepos(categoryMatched, searchQuery);
+  }, [discoverableRepos, filter, searchQuery]);
+
+  const showDiscoverableList = inDiscoverableMode;
 
   function exportPortfolioCsv() {
     const csvEscape = (value: string | number) => {
@@ -352,11 +439,8 @@ export function DashboardTabsView({
   const showTrendChart = hasTrendData && !isNewWorkspace;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-[#0c121c]/85 p-5 shadow-[0_20px_50px_-24px_rgba(0,0,0,0.65)] sm:p-6 lg:p-8">
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_60%_at_0%_-10%,rgba(34,211,238,0.08),transparent_55%),radial-gradient(ellipse_70%_50%_at_100%_0%,rgba(124,58,237,0.07),transparent_50%)]"
-        aria-hidden
-      />
+    <div className="dash-hero relative overflow-hidden rounded-2xl p-5 sm:p-6 lg:p-8">
+      <div className="dash-hero-glow pointer-events-none absolute inset-0" aria-hidden />
       <div className="relative mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-border/60 pb-6">
         <div className="min-w-0 space-y-1">
           <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
@@ -364,7 +448,7 @@ export function DashboardTabsView({
           </h2>
           <p className="max-w-2xl text-sm text-muted-foreground">
             Your workspace for repository ownership, health signals, and team
-            access — built for dark mode clarity.
+            access.
           </p>
         </div>
         <span
@@ -402,6 +486,7 @@ export function DashboardTabsView({
         {(
           [
             ["dashboard", "Overview", "tab-overview"],
+            ["organization", "Organization", "tab-organization"],
             ["portfolio", "Repositories", "tab-portfolio"],
             ["operations", "Activity", "tab-operations"],
           ] as const
@@ -461,12 +546,12 @@ export function DashboardTabsView({
           </div>
 
           <div className="stagger-grid grid grid-cols-1 gap-6">
-            <div className="stagger-item rounded-xl border border-border/60 bg-card/85 p-6 shadow-xl shadow-black/25 backdrop-blur-sm">
+            <div className="stagger-item rounded-xl border border-border/60 bg-card/85 p-6 shadow-md shadow-slate-200/60 dark:shadow-xl dark:shadow-black/25 backdrop-blur-sm">
               <div className="mb-6">
                 <h3 className="text-xl font-semibold tracking-tight text-foreground">
                   System Health Trend
                 </h3>
-                <p className="text-sm text-muted">
+                <p className="text-sm text-muted-foreground">
                   Composite score across all repositories
                 </p>
               </div>
@@ -495,7 +580,7 @@ export function DashboardTabsView({
             </div>
           </div>
 
-          <div className="stagger-item rounded-xl border border-border/60 bg-[#0e1728]/95 p-5 shadow-lg shadow-black/20 sm:p-6">
+          <div className="dash-inset-panel stagger-item rounded-xl p-5 sm:p-6">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
@@ -515,16 +600,33 @@ export function DashboardTabsView({
               </button>
             </div>
             <div className="space-y-3">
-              {repositories.length === 0 ? (
+              {showDiscoverableList ? (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    <button
+                      type="button"
+                      onClick={() => switchTab("organization")}
+                      className="font-medium text-primary underline-offset-2 hover:underline"
+                    >
+                      Open Organization
+                    </button>{" "}
+                    to add repos in one click, or open a hub for full detail.
+                  </p>
+                  {filteredDiscoverable.slice(0, 8).map((repo) => (
+                    <DiscoverableRepoRow key={repo.id} repo={repo} />
+                  ))}
+                </>
+              ) : repositories.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-border/70 bg-muted/15 px-4 py-10 text-center text-sm text-muted-foreground">
-                  No repositories yet. Connect GitHub or GitLab, then open{" "}
-                  <Link
-                    href="/dashboard/organization"
+                  No repositories yet. Connect GitHub or GitLab, then use the{" "}
+                  <button
+                    type="button"
+                    onClick={() => switchTab("organization")}
                     className="font-medium text-primary underline-offset-2 hover:underline"
                   >
                     Organization
-                  </Link>{" "}
-                  to track a repo, or{" "}
+                  </button>{" "}
+                  tab to add repos, or{" "}
                   <Link
                     href="/dashboard/upload"
                     className="font-medium text-primary underline-offset-2 hover:underline"
@@ -547,13 +649,13 @@ export function DashboardTabsView({
           </div>
 
           <div className="stagger-grid grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <div className="stagger-item rounded-xl border border-border/60 bg-card/85 p-6 shadow-xl shadow-black/25 backdrop-blur-sm">
+            <div className="stagger-item rounded-xl border border-border/60 bg-card/85 p-6 shadow-md shadow-slate-200/60 dark:shadow-xl dark:shadow-black/25 backdrop-blur-sm">
               <h3 className="mb-4 text-xl font-semibold tracking-tight text-foreground">
                 Recent Changes
               </h3>
               <div className="space-y-3">
                 {activities.length === 0 ? (
-                  <p className="rounded-sm border border-border/50 bg-muted/50 p-3 text-sm text-muted">
+                  <p className="rounded-sm border border-border/50 bg-muted/50 p-3 text-sm text-muted-foreground">
                     No recent changes yet. Activity will appear after repository
                     actions.
                   </p>
@@ -571,7 +673,7 @@ export function DashboardTabsView({
                           {a.action}
                         </Link>
                       </p>
-                      <p className="text-xs text-muted">
+                      <p className="text-xs text-muted-foreground">
                         {a.repo} • {a.time}
                       </p>
                     </div>
@@ -579,22 +681,35 @@ export function DashboardTabsView({
                 )}
               </div>
             </div>
-            <div className="stagger-item rounded-xl border border-border/60 bg-card/85 p-6 shadow-xl shadow-black/25 backdrop-blur-sm">
-              <div className="mb-4 flex items-center justify-between">
+            <div className="stagger-item rounded-xl border border-border/60 bg-card/85 p-6 shadow-md shadow-slate-200/60 dark:shadow-xl dark:shadow-black/25 backdrop-blur-sm">
+              <div className="mb-4 flex items-center justify-between gap-3">
                 <h3 className="text-xl font-semibold tracking-tight text-foreground">
                   Knowledge Distribution
                 </h3>
-                <IconInfoCircle className="h-4 w-4 text-muted" />
+                <InfoHint label="About Knowledge Distribution">
+                  <p className="font-medium text-foreground">
+                    Who holds access per repository
+                  </p>
+                  <p className="mt-1.5">
+                    Each bar shows how many collaborators can work on a tracked
+                    repo. Fewer people with access means more knowledge
+                    concentration — and higher risk if someone leaves.
+                  </p>
+                  <p className="mt-1.5">
+                    Use this to spot repos that depend on one or two people and
+                    may need backup access or documentation.
+                  </p>
+                </InfoHint>
               </div>
               <div className="space-y-3">
                 {contributorsBars.length === 0 ? (
-                  <p className="text-sm text-muted">
+                  <p className="text-sm text-muted-foreground">
                     Add repositories to view contributor distribution.
                   </p>
                 ) : (
                   contributorsBars.map((b) => (
                     <div key={b.label}>
-                      <div className="mb-1 flex justify-between text-xs text-muted">
+                      <div className="mb-1 flex justify-between text-xs text-muted-foreground">
                         <span>{b.label}</span>
                         <span>{b.value}</span>
                       </div>
@@ -611,20 +726,20 @@ export function DashboardTabsView({
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-2xl border border-primary/25 bg-linear-to-br from-[#050810] via-[#0f1729] to-primary/20 p-6 sm:p-8">
+          <div className="dash-promo relative overflow-hidden rounded-2xl p-6 sm:p-8">
             <div
-              className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-accent-violet/25 blur-3xl"
+              className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-primary/10 blur-3xl dark:bg-accent-violet/25"
               aria-hidden
             />
             <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="max-w-xl space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary/90">
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary">
                   Ownbase
                 </p>
-                <h3 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+                <h3 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
                   Turn repository signals into ownership you can prove.
                 </h3>
-                <p className="text-sm text-slate-300/90">
+                <p className="text-sm text-muted-foreground">
                   Summaries, access maps, and uploads stay in one workspace so
                   your team always knows what runs the business.
                 </p>
@@ -632,13 +747,13 @@ export function DashboardTabsView({
               <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
                 <Link
                   href="/dashboard/organization"
-                  className="inline-flex justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition hover:brightness-110"
+                  className="inline-flex justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/15 transition hover:brightness-105 dark:shadow-lg dark:shadow-primary/20"
                 >
                   Get started
                 </Link>
                 <Link
                   href="/pricing"
-                  className="inline-flex justify-center rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/10"
+                  className="dash-btn-secondary inline-flex justify-center rounded-xl px-5 py-2.5 text-sm font-medium"
                 >
                   View plans
                 </Link>
@@ -646,6 +761,17 @@ export function DashboardTabsView({
             </div>
           </div>
         </div>
+      )}
+
+      {activeTab === "organization" && (
+        <DashboardOrganizationPanel
+          discoverableRepos={discoverableRepos}
+          trackedRepos={organizationTracked}
+          trackedCount={summary.totalSystems}
+          trackedLimit={trackedLimit}
+          businessName={businessName}
+          hasGitProvider={hasGitProvider}
+        />
       )}
 
       {activeTab === "portfolio" && (
@@ -687,9 +813,9 @@ export function DashboardTabsView({
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <IconSearch className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
             <span>
-              {filteredRepos.length} match
-              {filteredRepos.length === 1 ? "" : "es"} — refine with the header
-              search and filters below.
+              {showDiscoverableList
+                ? `${filteredDiscoverable.length} GitHub repositor${filteredDiscoverable.length === 1 ? "y" : "ies"} linked to your account`
+                : `${filteredRepos.length} match${filteredRepos.length === 1 ? "" : "es"} — refine with the header search and filters below.`}
             </span>
           </div>
 
@@ -704,10 +830,10 @@ export function DashboardTabsView({
               <button
                 key={key}
                 onClick={() => setFilter(key as typeof filter)}
-                className={`rounded-sm border px-4 py-2 text-sm ${
+                className={`rounded-lg border px-4 py-2 text-sm font-medium transition ${
                   filter === key
-                    ? "border-primary/45 bg-linear-to-r from-primary/35 to-accent-violet/35 text-white shadow-[0_8px_24px_rgba(34,211,238,0.2)]"
-                    : "border-border/60 bg-muted/55 text-foreground hover:border-primary/30 hover:bg-accent/10"
+                    ? "border-primary bg-primary text-primary-foreground shadow-sm dark:border-primary/45 dark:bg-linear-to-r dark:from-primary/90 dark:to-accent-violet/90 dark:text-white dark:shadow-[0_8px_24px_rgba(34,211,238,0.2)]"
+                    : "border-border/60 bg-muted/55 text-foreground hover:border-primary/30 hover:bg-muted"
                 }`}
               >
                 {label}
@@ -715,88 +841,120 @@ export function DashboardTabsView({
             ))}
           </div>
 
-          {repositories.length === 0 && (
-            <div className="rounded-lg border border-dashed border-border/55 bg-muted/40 p-8 text-center">
-              <p className="text-base font-medium text-foreground">
-                No repositories in your portfolio yet
+          {showDiscoverableList ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Repositories linked to your account. Use the{" "}
+                <button
+                  type="button"
+                  onClick={() => switchTab("organization")}
+                  className="font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  Organization
+                </button>{" "}
+                tab to add them in one click.
               </p>
-              <p className="mt-2 text-sm text-muted">
-                Connect GitHub or GitLab, open a repository, and add it to your
-                organization—or upload a project zip.
-              </p>
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-                <Link
-                  href="/dashboard/organization"
-                  className="inline-flex items-center justify-center rounded-lg border border-primary/35 bg-linear-to-r from-primary/90 to-accent-violet/90 px-4 py-2.5 text-sm font-medium text-white shadow-[0_10px_28px_rgba(34,211,238,0.2)] transition hover:brightness-110"
-                >
-                  Set up organization
-                </Link>
-                <Link
-                  href="/dashboard/upload"
-                  className="inline-flex items-center justify-center rounded-lg border border-border/60 bg-card/90 px-4 py-2.5 text-sm font-medium text-foreground hover:border-primary/35 hover:bg-muted/80"
-                >
-                  Upload a project
-                </Link>
-                <Link
-                  href="/dashboard"
-                  className="inline-flex items-center justify-center rounded-lg border border-border/60 px-4 py-2.5 text-sm font-medium text-muted-foreground transition hover:border-primary/30 hover:bg-accent/10 hover:text-foreground"
-                >
-                  Back to dashboard
-                </Link>
-              </div>
-            </div>
-          )}
-
-          <div className="stagger-grid grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {filteredRepos.map((repo) => (
-              <button
-                key={repo.id}
-                onClick={() => setSelectedRepoId(repo.id)}
-                className="stagger-item magnetic-card rounded-xl border border-border/50 bg-card/90 p-6 text-left shadow-xl shadow-black/30 transition duration-300 hover:border-primary/35 hover:bg-muted/80"
-              >
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-lg font-semibold tracking-tight text-foreground">
-                    {repo.name}
-                  </span>
-                  <span
-                    className={`rounded-sm border px-2 py-1 text-xs ${repo.status === "healthy" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-amber-500/30 bg-amber-500/10 text-amber-300"}`}
-                  >
-                    {repo.status === "healthy" ? "Healthy" : "Review"}
-                  </span>
+              {filteredDiscoverable.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border/55 bg-muted/40 p-6 text-center text-sm text-muted-foreground">
+                  No repositories match this filter. Try &quot;All Systems&quot; or
+                  another category.
                 </div>
-                <p className="text-sm text-muted">
-                  {repo.unit} • {repo.tech}
+              ) : (
+                <div className="stagger-grid grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {filteredDiscoverable.map((repo) => (
+                    <DiscoverableRepoRow key={repo.id} repo={repo} />
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            repositories.length === 0 && (
+              <div className="rounded-lg border border-dashed border-border/55 bg-muted/40 p-8 text-center">
+                <p className="text-base font-medium text-foreground">
+                  No repositories in your portfolio yet
                 </p>
-                <div className="mt-4">
-                  <div className="mb-1 flex justify-between text-xs text-muted">
-                    <span>Health Score</span>
-                    <span>{repo.health}/100</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-border/80">
-                    <div
-                      className={`h-full rounded-full ${repo.health > 85 ? "bg-emerald-500" : "bg-amber-500"}`}
-                      style={{ width: `${repo.health}%` }}
-                    />
-                  </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Connect GitHub or GitLab, open a repository, and add it to your
+                  organization—or upload a project zip.
+                </p>
+                <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                  <Link
+                    href="/dashboard/organization"
+                    className="inline-flex items-center justify-center rounded-lg border border-primary/40 bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  >
+                    Set up organization
+                  </Link>
+                  <Link
+                    href="/dashboard/upload"
+                    className="dash-btn-secondary inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  >
+                    Upload a project
+                  </Link>
+                  <Link
+                    href="/dashboard"
+                    className="inline-flex items-center justify-center rounded-lg border border-border bg-transparent px-4 py-2.5 text-sm font-medium text-muted-foreground transition hover:border-border hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  >
+                    Back to dashboard
+                  </Link>
                 </div>
-              </button>
-            ))}
-          </div>
-          {repositories.length > 0 && filteredRepos.length === 0 && (
-            <div className="rounded-lg border border-dashed border-border/55 bg-muted/40 p-6 text-center text-sm text-muted">
-              No repositories match your current filters. Try resetting filters
-              or search.
-            </div>
+              </div>
+            )
           )}
 
-          <div className="overflow-hidden rounded-xl border border-border/60 bg-card/90 shadow-xl shadow-black/25">
+          {!showDiscoverableList && (
+            <>
+              <div className="stagger-grid grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {filteredRepos.map((repo) => (
+                  <button
+                    key={repo.id}
+                    onClick={() => setSelectedRepoId(repo.id)}
+                    className="stagger-item magnetic-card rounded-xl border border-border/50 bg-card/90 p-6 text-left shadow-md shadow-slate-200/60 dark:shadow-xl dark:shadow-black/30 transition duration-300 hover:border-primary/35 hover:bg-muted/80"
+                  >
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="text-lg font-semibold tracking-tight text-foreground">
+                        {repo.name}
+                      </span>
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${repoStatusBadge(repo.status).className}`}
+                      >
+                        {repoStatusBadge(repo.status).label}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {repo.unit} • {repo.tech}
+                    </p>
+                    <div className="mt-4">
+                      <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+                        <span>Health Score</span>
+                        <span>{repo.health}/100</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-border/80">
+                        <div
+                          className={`h-full rounded-full ${repo.health > 85 ? "bg-emerald-500" : "bg-amber-500"}`}
+                          style={{ width: `${repo.health}%` }}
+                        />
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              {repositories.length > 0 && filteredRepos.length === 0 && (
+                <div className="rounded-lg border border-dashed border-border/55 bg-muted/40 p-6 text-center text-sm text-muted-foreground">
+                  No repositories match your current filters. Try resetting filters
+                  or search.
+                </div>
+              )}
+            </>
+          )}
+
+          <div className="overflow-hidden rounded-xl border border-border/60 bg-card/90 shadow-md shadow-slate-200/60 dark:shadow-xl dark:shadow-black/25">
             <div className="flex items-center justify-between border-b border-border/60 bg-muted/50 p-4">
               <h3 className="text-lg font-semibold tracking-tight text-foreground">
                 Detailed Registry
               </h3>
             </div>
             <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase tracking-wider text-muted">
+              <thead className="text-left text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3">Repository</th>
                   <th className="px-4 py-3">Business Function</th>
@@ -807,11 +965,44 @@ export function DashboardTabsView({
                 </tr>
               </thead>
               <tbody>
-                {filteredRepos.length === 0 ? (
+                {showDiscoverableList ? (
+                  filteredDiscoverable.length === 0 ? (
+                    <tr className="border-t border-border/50">
+                      <td
+                        colSpan={6}
+                        className="px-4 py-8 text-center text-muted-foreground"
+                      >
+                        No registry entries to display for the current filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredDiscoverable.map((repo) => (
+                      <tr
+                        key={`reg-${repo.id}`}
+                        className="group border-t border-border/50 transition hover:bg-accent/10"
+                      >
+                        <td className="px-4 py-3 font-medium text-foreground">
+                          <Link
+                            href={repo.detailHref}
+                            className="inline-flex items-center transition hover:text-primary"
+                          >
+                            {repo.name}
+                            <span className="ml-2 h-0.5 w-0 rounded-full bg-primary transition-all duration-300 group-hover:w-5" />
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">{repo.unit}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{repo.tech}</td>
+                        <td className="px-4 py-3 text-muted-foreground">—</td>
+                        <td className="px-4 py-3 text-muted-foreground">Track to assess</td>
+                        <td className="px-4 py-3 text-muted-foreground">—</td>
+                      </tr>
+                    ))
+                  )
+                ) : filteredRepos.length === 0 ? (
                   <tr className="border-t border-border/50">
                     <td
                       colSpan={6}
-                      className="px-4 py-8 text-center text-muted"
+                      className="px-4 py-8 text-center text-muted-foreground"
                     >
                       No registry entries to display for the current filter.
                     </td>
@@ -831,8 +1022,8 @@ export function DashboardTabsView({
                           <span className="ml-2 h-0.5 w-0 rounded-full bg-primary transition-all duration-300 group-hover:w-5" />
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-muted">{repo.unit}</td>
-                      <td className="px-4 py-3 text-muted">{repo.tech}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{repo.unit}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{repo.tech}</td>
                       <td className="px-4 py-3">{repo.health}</td>
                       <td className="px-4 py-3">
                         {repo.busFactor <= 1
@@ -841,7 +1032,7 @@ export function DashboardTabsView({
                             ? "At Risk"
                             : "Distributed"}
                       </td>
-                      <td className="px-4 py-3 text-muted">
+                      <td className="px-4 py-3 text-muted-foreground">
                         {repo.lastDeploy}
                       </td>
                     </tr>
@@ -865,13 +1056,13 @@ export function DashboardTabsView({
           </div>
 
           <div className="stagger-grid grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="stagger-item rounded-xl border border-border/60 bg-card/85 p-6 shadow-xl shadow-black/25 backdrop-blur-sm lg:col-span-2">
+            <div className="stagger-item rounded-xl border border-border/60 bg-card/85 p-6 shadow-md shadow-slate-200/60 dark:shadow-xl dark:shadow-black/25 backdrop-blur-sm lg:col-span-2">
               <div className="mb-6 flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-semibold tracking-tight text-foreground">
                     Team Composition
                   </h3>
-                  <p className="text-sm text-muted">
+                  <p className="text-sm text-muted-foreground">
                     Active contributors and their domain expertise
                   </p>
                 </div>
@@ -884,7 +1075,7 @@ export function DashboardTabsView({
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {team.length === 0 ? (
-                  <p className="rounded-sm border border-border/50 bg-muted/50 p-4 text-sm text-muted md:col-span-2">
+                  <p className="rounded-sm border border-border/50 bg-muted/50 p-4 text-sm text-muted-foreground md:col-span-2">
                     Team access entries will appear here after collaborators are
                     added.
                   </p>
@@ -903,10 +1094,10 @@ export function DashboardTabsView({
                             <p className="text-sm font-medium text-foreground">
                               {m.name}
                             </p>
-                            <p className="text-xs text-muted">{m.role}</p>
+                            <p className="text-xs text-muted-foreground">{m.role}</p>
                           </div>
                         </div>
-                        <span className="rounded-sm border border-border/50 px-2 py-1 text-xs text-muted">
+                        <span className="rounded-sm border border-border/50 px-2 py-1 text-xs text-muted-foreground">
                           {m.access}
                         </span>
                       </div>
@@ -914,7 +1105,7 @@ export function DashboardTabsView({
                         {m.domains.map((d) => (
                           <span
                             key={`${m.name}-${d}`}
-                            className="rounded-sm border border-border/50 px-2 py-0.5 text-xs text-muted"
+                            className="rounded-sm border border-border/50 px-2 py-0.5 text-xs text-muted-foreground"
                           >
                             {d}
                           </span>
@@ -927,7 +1118,7 @@ export function DashboardTabsView({
             </div>
 
             <div className="stagger-item space-y-6">
-              <div className="rounded-xl border border-border/60 bg-card/85 p-6 shadow-xl shadow-black/25 backdrop-blur-sm">
+              <div className="rounded-xl border border-border/60 bg-card/85 p-6 shadow-md shadow-slate-200/60 dark:shadow-xl dark:shadow-black/25 backdrop-blur-sm">
                 <h3 className="mb-4 text-lg font-semibold tracking-tight text-foreground">
                   Access Distribution
                 </h3>
@@ -954,7 +1145,7 @@ export function DashboardTabsView({
                     <h4 className="text-sm font-medium text-foreground">
                       Security Alert
                     </h4>
-                    <p className="mt-1 text-sm text-muted">
+                    <p className="mt-1 text-sm text-muted-foreground">
                       {accessReviewUrgent
                         ? `${securityEventsCount} recent security-related access event${securityEventsCount === 1 ? "" : "s"} need review.`
                         : "No active security alerts detected from recent activity."}
@@ -974,12 +1165,12 @@ export function DashboardTabsView({
           </div>
 
           <div className="stagger-grid grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <div className="stagger-item rounded-xl border border-border/60 bg-card/85 p-6 shadow-xl shadow-black/25 backdrop-blur-sm">
+            <div className="stagger-item rounded-xl border border-border/60 bg-card/85 p-6 shadow-md shadow-slate-200/60 dark:shadow-xl dark:shadow-black/25 backdrop-blur-sm">
               <div className="mb-6 flex items-center justify-between">
                 <h3 className="text-xl font-semibold tracking-tight text-foreground">
                   Activity Log
                 </h3>
-                <div className="flex items-center gap-2 text-muted">
+                <div className="flex items-center gap-2 text-muted-foreground">
                   <button
                     onClick={() =>
                       setActivityWindowIndex((idx) => Math.max(0, idx - 1))
@@ -1007,7 +1198,7 @@ export function DashboardTabsView({
               </div>
               <div className="space-y-3">
                 {operationsActivities.length === 0 ? (
-                  <p className="rounded-sm border border-border/50 bg-muted/50 p-3 text-sm text-muted">
+                  <p className="rounded-sm border border-border/50 bg-muted/50 p-3 text-sm text-muted-foreground">
                     No activity for this period yet.
                   </p>
                 ) : (
@@ -1020,7 +1211,7 @@ export function DashboardTabsView({
                         {a.type === "deploy" ? (
                           <IconRocket className="h-4 w-4 text-emerald-300" />
                         ) : a.type === "merge" ? (
-                          <IconGitPullRequest className="h-4 w-4 text-muted" />
+                          <IconGitPullRequest className="h-4 w-4 text-muted-foreground" />
                         ) : a.type === "docs" ? (
                           <IconSearch className="h-4 w-4 text-primary" />
                         ) : a.type === "security" ? (
@@ -1037,7 +1228,7 @@ export function DashboardTabsView({
                               {a.action}
                             </Link>
                           </p>
-                          <p className="text-xs text-muted">
+                          <p className="text-xs text-muted-foreground">
                             {a.repo} • {a.user} • {a.time}
                           </p>
                         </div>
@@ -1048,59 +1239,32 @@ export function DashboardTabsView({
               </div>
             </div>
 
-            <div className="stagger-item rounded-xl border border-border/60 bg-card/85 p-6 shadow-xl shadow-black/25 backdrop-blur-sm">
-              <div className="mb-6 flex items-center justify-between">
-                <h3 className="text-xl font-semibold tracking-tight text-foreground">
-                  Knowledge Risk Matrix
-                </h3>
-                <IconChartBar className="h-4 w-4 text-muted" />
-              </div>
-              {repositories.length === 0 ? (
-                <p className="rounded-sm border border-dashed border-border/50 bg-muted/30 p-6 text-center text-sm text-muted">
-                  Track repositories to map contributor spread and health risk.
-                </p>
-              ) : (
-              <svg viewBox="0 0 320 190" className="h-64 w-full">
-                <line
-                  x1="30"
-                  y1="160"
-                  x2="300"
-                  y2="160"
-                  stroke="var(--border)"
+            <div className="stagger-item rounded-xl border border-border/60 bg-card/85 p-6 shadow-md shadow-slate-200/60 dark:shadow-xl dark:shadow-black/25 backdrop-blur-sm">
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-xl font-semibold tracking-tight text-foreground">
+                    Knowledge Risk Matrix
+                  </h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Where knowledge is concentrated vs. spread across collaborators
+                  </p>
+                </div>
+                <IconChartBar
+                  className="mt-1 h-4 w-4 shrink-0 text-muted-foreground"
+                  aria-hidden
                 />
-                <line x1="30" y1="20" x2="30" y2="160" stroke="var(--border)" />
-                {repositories.slice(0, 8).map((r, i) => {
-                  const x = 30 + Math.min(8, r.contributors) * 30;
-                  const y =
-                    160 - (Math.max(70, Math.min(100, r.health)) - 70) * 4.2;
-                  const color =
-                    r.busFactor <= 1
-                      ? "var(--accent)"
-                      : r.health < 85
-                        ? "#f59e0b"
-                        : "#10b981";
-                  return (
-                    <circle
-                      key={`risk-${r.id}-${i}`}
-                      cx={x}
-                      cy={y}
-                      r="5.5"
-                      fill={color}
-                    />
-                  );
-                })}
-              </svg>
-              )}
+              </div>
+              <KnowledgeRiskMatrixChart repositories={repositories} />
             </div>
           </div>
 
-          <div className="stagger-item rounded-xl border border-border/60 bg-card/85 p-6 shadow-xl shadow-black/25 backdrop-blur-sm">
+          <div className="stagger-item rounded-xl border border-border/60 bg-card/85 p-6 shadow-md shadow-slate-200/60 dark:shadow-xl dark:shadow-black/25 backdrop-blur-sm">
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h3 className="text-xl font-semibold tracking-tight text-foreground">
                   Recent access changes
                 </h3>
-                <p className="text-sm text-muted">
+                <p className="text-sm text-muted-foreground">
                   Collaborators added from your activity log
                 </p>
               </div>
@@ -1113,7 +1277,7 @@ export function DashboardTabsView({
             </div>
             <div className="space-y-3">
               {onboarding.length === 0 ? (
-                <p className="rounded-sm border border-border/50 bg-muted/50 p-4 text-sm text-muted">
+                <p className="rounded-sm border border-border/50 bg-muted/50 p-4 text-sm text-muted-foreground">
                   No collaborator additions logged yet.
                 </p>
               ) : (
@@ -1123,7 +1287,7 @@ export function DashboardTabsView({
                     className="rounded-sm border border-border/50 bg-muted/50 p-4"
                   >
                     <p className="text-sm font-medium text-foreground">{o.name}</p>
-                    <p className="mt-1 text-xs text-muted">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {o.role} • {o.repo} • {o.startDate}
                     </p>
                   </div>
@@ -1142,7 +1306,7 @@ export function DashboardTabsView({
                 <h3 className="text-2xl font-semibold tracking-tight text-foreground">
                   {selectedRepo.name}
                 </h3>
-                <p className="text-sm text-muted">
+                <p className="text-sm text-muted-foreground">
                   {selectedRepo.unit} • {selectedRepo.tech}
                 </p>
               </div>
@@ -1150,11 +1314,11 @@ export function DashboardTabsView({
                 onClick={() => setSelectedRepoId(null)}
                 className="rounded-md p-2 transition hover:bg-muted/80"
               >
-                <IconX className="h-5 w-5 text-muted" />
+                <IconX className="h-5 w-5 text-muted-foreground" />
               </button>
             </div>
             <div className="p-6">
-              <p className="text-sm leading-relaxed text-muted">
+              <p className="text-sm leading-relaxed text-muted-foreground">
                 {selectedRepo.description}
               </p>
               <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -1302,15 +1466,40 @@ export function DashboardTabsView({
   );
 }
 
+function DiscoverableRepoRow({ repo }: { repo: SearchableRepo }) {
+  const isGitlab = repo.tech.toLowerCase().includes("gitlab");
+  const SourceIcon = isGitlab ? IconBrandGitlab : IconBrandGithub;
+  return (
+    <div className="dash-surface flex flex-col gap-3 p-4 transition hover:border-primary/30 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border/80 bg-muted/40">
+          <SourceIcon className="h-5 w-5 text-muted-foreground" aria-hidden />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-foreground">{repo.name}</p>
+          <p className="truncate text-sm text-muted-foreground">{repo.fullName}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {repo.unit} · {repo.tech}
+          </p>
+        </div>
+      </div>
+      <Link
+        href={repo.detailHref}
+        className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-medium text-primary transition hover:bg-primary/20"
+      >
+        Open hub
+        <IconExternalLink className="h-3.5 w-3.5" aria-hidden />
+      </Link>
+    </div>
+  );
+}
+
 function OverviewRepoRow({ repo }: { repo: DashboardRepoView }) {
   const isGitlab = repo.tech.toLowerCase().includes("gitlab");
   const SourceIcon = isGitlab ? IconBrandGitlab : IconBrandGithub;
-  const statusClass =
-    repo.status === "healthy"
-      ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-200"
-      : "border-amber-500/35 bg-amber-500/10 text-amber-200";
+  const statusBadge = repoStatusBadge(repo.status);
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-border/70 bg-[#0a101c]/90 p-4 transition hover:border-primary/30 sm:flex-row sm:items-center sm:justify-between">
+    <div className="dash-surface flex flex-col gap-4 p-4 transition hover:border-primary/30 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border/80 bg-muted/40">
           <SourceIcon className="h-5 w-5 text-muted-foreground" aria-hidden />
@@ -1319,9 +1508,9 @@ function OverviewRepoRow({ repo }: { repo: DashboardRepoView }) {
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-semibold text-foreground">{repo.name}</p>
             <span
-              className={`rounded-md border px-2 py-0.5 text-[11px] font-medium ${statusClass}`}
+              className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusBadge.className}`}
             >
-              {repo.status === "healthy" ? "Healthy" : "Review"}
+              {statusBadge.label}
             </span>
           </div>
           <p className="truncate text-sm text-muted-foreground">{repo.fullName}</p>
@@ -1378,8 +1567,8 @@ function PremiumSignalBadge({
     tone === "cyan"
       ? "border-primary/40 bg-primary/12 text-primary"
       : tone === "violet"
-        ? "border-violet-300/40 bg-violet-400/15 text-violet-50"
-        : "border-amber-300/40 bg-amber-400/15 text-amber-50";
+        ? "border-violet-400/35 bg-violet-500/10 text-violet-800 dark:border-violet-300/40 dark:bg-violet-400/15 dark:text-violet-50"
+        : "border-amber-400/35 bg-amber-500/10 text-amber-900 dark:border-amber-300/40 dark:bg-amber-400/15 dark:text-amber-50";
   return (
     <span
       className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs ${toneClass}`}
@@ -1431,15 +1620,17 @@ function StatCard({
   }, [numericValue, canAnimate]);
 
   return (
-    <div className="rounded-xl border border-border/70 bg-[#0e1728]/80 p-4 shadow-sm transition duration-200 hover:border-primary/30">
-      <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted">
+    <div className="dash-stat-card rounded-xl p-4 transition duration-200 hover:border-primary/30">
+      <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
         {title}
       </p>
       <div className="mt-2 flex items-baseline gap-1">
         <span className="text-3xl font-semibold tracking-tight text-foreground">
           {canAnimate ? displayValue : value}
         </span>
-        {suffix ? <span className="text-sm text-muted">{suffix}</span> : null}
+        {suffix ? (
+          <span className="text-sm text-muted-foreground">{suffix}</span>
+        ) : null}
       </div>
       <p className="mt-2 text-xs text-muted-foreground">{hint}</p>
     </div>
@@ -1459,7 +1650,7 @@ function ProgressRow({
   return (
     <div className="mb-3">
       <div className="mb-1 flex justify-between text-sm">
-        <span className="text-muted">{label}</span>
+        <span className="text-muted-foreground">{label}</span>
         <span className="text-foreground">{value} members</span>
       </div>
       <div className="h-2 rounded-full bg-border/80">
@@ -1475,7 +1666,9 @@ function ProgressRow({
 function MetricBox({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-border/60 bg-muted/90 p-4">
-      <p className="text-xs uppercase tracking-wider text-muted">{label}</p>
+      <p className="text-xs uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
       <p className="mt-1 text-3xl font-semibold tracking-tight text-foreground">{value}</p>
     </div>
   );

@@ -43,7 +43,7 @@ export default async function CommitDetailPage({ params }: PageProps) {
       <div className="space-y-6">
         <Link
           href={backHref}
-          className="text-sm font-medium text-cyan-100/70 hover:text-cyan-200"
+          className="text-sm font-medium text-muted-foreground hover:text-primary"
         >
           ← Back to repository
         </Link>
