@@ -146,6 +146,7 @@ const AUTH_PATHS = new Set([
 
 const AI_API_PREFIX = "/api/dashboard/ai/";
 const AI_INSIGHT_PATH = "/api/dashboard/repo/commit/insight";
+const ADMIN_API_PREFIX = "/api/admin/";
 
 export function isAuthRateLimitPath(pathname: string): boolean {
   return AUTH_PATHS.has(pathname);
@@ -153,6 +154,10 @@ export function isAuthRateLimitPath(pathname: string): boolean {
 
 export function isAiRateLimitPath(pathname: string): boolean {
   return pathname.startsWith(AI_API_PREFIX) || pathname === AI_INSIGHT_PATH;
+}
+
+export function isAdminRateLimitPath(pathname: string): boolean {
+  return pathname.startsWith(ADMIN_API_PREFIX);
 }
 
 export async function applyAuthRateLimit(
@@ -173,6 +178,18 @@ export async function applyAiRateLimit(
   return rateLimit(identifier, {
     name: "ai",
     limit: 40,
+    window: "1 m",
+  });
+}
+
+export async function applyAdminRateLimit(
+  request: NextRequest,
+  userId: string | null,
+): Promise<RateLimitResult> {
+  const identifier = userId ?? getClientIp(request);
+  return rateLimit(identifier, {
+    name: "admin",
+    limit: 120,
     window: "1 m",
   });
 }

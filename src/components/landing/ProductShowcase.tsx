@@ -1,5 +1,6 @@
 "use client";
 
+import { aosAttrs, useAosReady } from "@/components/AosProvider";
 import {
   IconBrandGithub,
   IconBrandGitlab,
@@ -572,14 +573,14 @@ function SidebarItem({
 /* ─── Section ─── */
 
 export function ProductShowcase() {
+  const aosReady = useAosReady();
   return (
     <section className="border-b border-border bg-surface/20 overflow-hidden">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 sm:py-28">
         {/* Heading */}
         <div
           className="text-center mb-12"
-          data-aos="fade-up"
-          data-aos-duration="500"
+          {...aosAttrs(aosReady, "fade-up")}
         >
           <p className="font-mono text-[10px] tracking-[0.22em] uppercase text-accent mb-3">
             Your Dashboard
@@ -596,9 +597,7 @@ export function ProductShowcase() {
 
         {/* Mockup */}
         <div
-          data-aos="fade-up"
-          data-aos-duration="600"
-          data-aos-delay="80"
+          {...aosAttrs(aosReady, "fade-up", { delay: 80, duration: 600 })}
           className="relative"
         >
           {/* Subtle glow behind the mockup */}

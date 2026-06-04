@@ -74,7 +74,6 @@ export async function fetchRepoTree(
       }
     );
     if (!branchRes.ok) {
-      const text = await branchRes.text();
       return { totalFolders: 0, byCategory: [], error: "Could not load branch." };
     }
     const branchData = (await branchRes.json()) as { commit?: { sha?: string } };

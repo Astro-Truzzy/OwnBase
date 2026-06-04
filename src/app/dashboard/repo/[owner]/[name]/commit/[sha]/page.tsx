@@ -58,8 +58,6 @@ export default async function CommitDetailPage({ params }: PageProps) {
 
   return (
     <CommitDetailClient
-      owner={owner}
-      name={name}
       repoLabel={repoLabel}
       backHref={backHref}
       initialCommit={detail}

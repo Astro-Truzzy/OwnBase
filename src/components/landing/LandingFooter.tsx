@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { aosAttrs, useAosReady } from "@/components/AosProvider";
 import { Logo } from "@/components/Logo";
 
 const PRODUCT_LINKS = [
@@ -48,6 +51,7 @@ function FooterColumn({
 }
 
 export function LandingFooter() {
+  const aosReady = useAosReady();
   const year = new Date().getFullYear();
 
   return (
@@ -80,8 +84,7 @@ export function LandingFooter() {
           {/* Brand column */}
           <div
             className="sm:col-span-2 lg:col-span-2"
-            data-aos="fade-up"
-            data-aos-duration="500"
+            {...aosAttrs(aosReady, "fade-up")}
           >
             <Link
               href="/"
@@ -104,17 +107,17 @@ export function LandingFooter() {
           </div>
 
           {/* Product */}
-          <div data-aos="fade-up" data-aos-duration="500" data-aos-delay="50">
+          <div {...aosAttrs(aosReady, "fade-up", { delay: 50 })}>
             <FooterColumn title="Product" links={PRODUCT_LINKS} />
           </div>
 
           {/* Company */}
-          <div data-aos="fade-up" data-aos-duration="500" data-aos-delay="100">
+          <div {...aosAttrs(aosReady, "fade-up", { delay: 100 })}>
             <FooterColumn title="Company" links={COMPANY_LINKS} />
           </div>
 
           {/* Legal */}
-          <div data-aos="fade-up" data-aos-duration="500" data-aos-delay="150">
+          <div {...aosAttrs(aosReady, "fade-up", { delay: 150 })}>
             <FooterColumn title="Legal" links={LEGAL_LINKS} />
           </div>
         </div>
@@ -122,9 +125,7 @@ export function LandingFooter() {
         {/* Bottom bar */}
         <div
           className="mt-12 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4"
-          data-aos="fade-up"
-          data-aos-duration="500"
-          data-aos-delay="100"
+          {...aosAttrs(aosReady, "fade-up", { delay: 100 })}
         >
           <p className="font-mono text-xs text-muted-foreground/60">
             © {year} Ownbase. Your Software. Your Base.

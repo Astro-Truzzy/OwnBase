@@ -57,7 +57,7 @@ export function EncryptedText({
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   const [revealCount, setRevealCount] = useState(0);
-  const [flipTick, setFlipTick] = useState(0);
+  const [, setFlipTick] = useState(0);
   const animationFrameRef = useRef<number | null>(null);
   const startTimeRef = useRef(0);
   const lastFlipTimeRef = useRef(0);

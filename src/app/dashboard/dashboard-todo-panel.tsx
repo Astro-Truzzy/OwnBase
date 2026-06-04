@@ -49,7 +49,6 @@ function TodoRow({ todo }: { todo: DashboardTodoItem }) {
         href={todo.href}
         onClick={(event) => {
           const handled = applyDashboardTodoNavigation({
-            href: todo.href,
             dashboardTab: todo.dashboardTab,
             portfolioFilter: todo.portfolioFilter,
             pathname,

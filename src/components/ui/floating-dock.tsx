@@ -36,22 +36,16 @@ export const FloatingDock = ({
         activeHref={activeHref}
         className={desktopClassName}
       />
-      <FloatingDockMobile
-        items={items}
-        activeHref={activeHref}
-        className={mobileClassName}
-      />
+      <FloatingDockMobile items={items} className={mobileClassName} />
     </>
   );
 };
 
 const FloatingDockMobile = ({
   items,
-  activeHref = null,
   className,
 }: {
   items: { title: string; icon: ReactNode; href: string }[];
-  activeHref?: string | null;
   className?: string;
 }) => {
   const [open, setOpen] = useState(false);
@@ -111,7 +105,7 @@ const FloatingDockDesktop = ({
   activeHref?: string | null;
   className?: string;
 }) => {
-  let mouseX = useMotionValue(Infinity);
+  const mouseX = useMotionValue(Infinity);
   return (
     <motion.div
       onMouseMove={(e) => mouseX.set(e.pageX)}
@@ -146,10 +140,10 @@ function IconContainer({
   href: string;
   isActive?: boolean;
 }) {
-  let ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
 
-  let distance = useTransform(mouseX, (val) => {
-    let bounds = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 };
+  const distance = useTransform(mouseX, (val) => {
+    const bounds = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 };
 
     return val - bounds.x - bounds.width / 2;
   });
@@ -164,45 +158,45 @@ function IconContainer({
     (vals: number[]) => (vals[1]! > 0.5 ? 0 : vals[0]!),
   ) as MotionValue<number>;
 
-  let widthTransform = useTransform(
+  const widthTransform = useTransform(
     effectiveDistance,
     [-150, 0, 150],
     [40, 80, 40],
   );
-  let heightTransform = useTransform(
+  const heightTransform = useTransform(
     effectiveDistance,
     [-150, 0, 150],
     [40, 80, 40],
   );
 
-  let widthTransformIcon = useTransform(
+  const widthTransformIcon = useTransform(
     effectiveDistance,
     [-150, 0, 150],
     [20, 40, 20],
   );
-  let heightTransformIcon = useTransform(
+  const heightTransformIcon = useTransform(
     effectiveDistance,
     [-150, 0, 150],
     [20, 40, 20],
   );
 
-  let width = useSpring(widthTransform, {
+  const width = useSpring(widthTransform, {
     mass: 0.1,
     stiffness: 150,
     damping: 12,
   });
-  let height = useSpring(heightTransform, {
+  const height = useSpring(heightTransform, {
     mass: 0.1,
     stiffness: 150,
     damping: 12,
   });
 
-  let widthIcon = useSpring(widthTransformIcon, {
+  const widthIcon = useSpring(widthTransformIcon, {
     mass: 0.1,
     stiffness: 150,
     damping: 12,
   });
-  let heightIcon = useSpring(heightTransformIcon, {
+  const heightIcon = useSpring(heightTransformIcon, {
     mass: 0.1,
     stiffness: 150,
     damping: 12,

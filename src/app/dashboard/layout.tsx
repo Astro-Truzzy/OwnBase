@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Logo } from "@/components/Logo";
 import { ensureTrialForNewAccount } from "@/lib/profiles/ensure-trial";
-import { getUsageSnapshot } from "@/lib/usage-stats";
 import { createClient } from "../../lib/supabase/server";
 import { DashboardMobileNavProvider } from "./dashboard-mobile-nav";
 import { DashboardRepoConnectGate } from "./dashboard-repo-connect-gate";
@@ -102,7 +101,6 @@ export default async function DashboardLayout({
     ).toUpperCase() ||
     (user.email?.slice(0, 2).toUpperCase() ?? "OB");
 
-  const usage = await getUsageSnapshot(supabase, user.id);
   const hasConnectedProvider =
     user.identities?.some(
       (identity) =>

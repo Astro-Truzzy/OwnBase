@@ -124,9 +124,8 @@ export function DashboardOrganizationPanel({
   }, [discoverableRepos, trackedRepos, localTracked]);
 
   const filteredRepos = useMemo(() => {
-    const searchable = mergedRepos.map(({ isTracked: _t, ...repo }) => repo);
     const matchedIds = new Set(
-      filterSearchableRepos(searchable, query).map((repo) => repo.id),
+      filterSearchableRepos(mergedRepos, query).map((repo) => repo.id),
     );
     let list = mergedRepos.filter((repo) => matchedIds.has(repo.id));
     if (view === "available") {

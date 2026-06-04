@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AosProvider } from "@/components/AosProvider";
 import { EncryptedText } from "@/components/ui/encrypted-text";
 import { LandingNav } from "../components/landing/LandingNav";
 import { HeroWithIcons } from "../components/landing/HeroWithIcons";
@@ -16,6 +17,7 @@ const LOGIN_DASHBOARD_REDIRECT = "/login?redirectTo=%2Fdashboard";
 
 export default function HomePage() {
   return (
+    <AosProvider>
     <div className="relative min-h-screen max-w-full bg-background flex flex-col">
       <HeroBands />
 
@@ -124,5 +126,6 @@ export default function HomePage() {
 
       <LandingFooter />
     </div>
+    </AosProvider>
   );
 }

@@ -51,13 +51,12 @@ export function dispatchPortfolioFilter(filter: PortfolioFilterKey): void {
 }
 
 export function applyDashboardTodoNavigation(options: {
-  href: string;
   dashboardTab?: DashboardTabKey;
   portfolioFilter?: PortfolioFilterKey;
   pathname: string;
   push: (url: string) => void;
 }): boolean {
-  const { href, dashboardTab, portfolioFilter, pathname, push } = options;
+  const { dashboardTab, portfolioFilter, pathname, push } = options;
   if (!dashboardTab) return false;
 
   const target = buildDashboardTodoHref({

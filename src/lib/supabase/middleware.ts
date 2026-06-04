@@ -4,11 +4,14 @@ import {
   sanitizeAuthRedirect,
 } from "@/lib/auth/redirects";
 import {
+  applyAdminRateLimit,
   applyAiRateLimit,
   applyAuthRateLimit,
+  isAdminRateLimitPath,
   isAiRateLimitPath,
   isAuthRateLimitPath,
 } from "@/lib/security/rate-limit";
+import { ADMIN_COOKIE, verifyAdminToken } from "@/lib/admin/session";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -34,7 +37,7 @@ export async function updateSession(request: NextRequest) {
     if (!limited.ok) return limited.response;
   }
 
-  let supabaseResponse = NextResponse.next({
+  const supabaseResponse = NextResponse.next({
     request,
   });
 
@@ -71,16 +74,63 @@ export async function updateSession(request: NextRequest) {
     if (!limited.ok) return limited.response;
   }
 
+  if (isAdminRateLimitPath(pathname)) {
+    const limited = await applyAdminRateLimit(request, user?.id ?? null);
+    if (!limited.ok) return limited.response;
+  }
+
   const isDashboard = pathname.startsWith("/dashboard");
+  const isAdmin = pathname.startsWith("/admin");
   const isAuthCallback = pathname.startsWith("/auth/callback");
   const isAuthRoute = pathname.startsWith("/auth/");
   const isHome = pathname === "/";
 
-  if (user && isHtmlNavigation && !isDashboard && !isAuthRoute) {
+  if (user && isHtmlNavigation && !isDashboard && !isAdmin && !isAuthRoute) {
     // Security policy: leaving dashboard ends the current authenticated session.
     await supabase.auth.signOut();
     user = null;
   }
+
+  // ── Admin gate (cookie-based, independent of Supabase auth) ────────────────
+  const isAdminLogin = pathname === "/admin/login";
+  const isAdminUnauthorized = pathname === "/admin/unauthorized";
+
+  if (isAdmin && !isAdminLogin && !isAdminUnauthorized) {
+    const adminToken = request.cookies.get(ADMIN_COOKIE)?.value;
+    const adminSession = await verifyAdminToken(adminToken);
+
+    if (!adminSession) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin/login";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+
+    // Check email still in allowlist (guards against env change after token issue)
+    const adminEmails = (process.env.ADMIN_ALLOWED_EMAILS ?? "")
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+    if (adminEmails.length > 0 && !adminEmails.includes(adminSession.email.toLowerCase())) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin/unauthorized";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // Redirect already-authenticated admin away from login page
+  if (isAdminLogin) {
+    const adminToken = request.cookies.get(ADMIN_COOKIE)?.value;
+    const adminSession = await verifyAdminToken(adminToken);
+    if (adminSession) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+  }
+  // ── End admin gate ──────────────────────────────────────────────────────────
 
   const oauthErrorCode =
     request.nextUrl.searchParams.get("error_code") ??

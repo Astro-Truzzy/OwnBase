@@ -29,6 +29,7 @@ If `20260420103000_set_existing_users_pro_for_testing.sql` already ran in your e
 | `UPSTASH_REDIS_REST_URL` | Rate limiting (recommended for production) |
 | `UPSTASH_REDIS_REST_TOKEN` | Rate limiting (recommended for production) |
 | `CRON_SECRET` | Bearer token for `/api/cron/report-digest` |
+| `ADMIN_ALLOWED_EMAILS` | Comma-separated emails for `/admin` access; **never** `NEXT_PUBLIC_`; account must exist in Supabase Auth |
 
 ## GitHub token encryption
 
@@ -58,6 +59,7 @@ Middleware applies limits via [Upstash Redis](https://upstash.com/docs/redis/ove
 |-------|--------|-------|
 | Auth | `/login`, `/signup`, `/forgot-password`, `/reset-password`, `/auth/callback` | 30 / 10 min per IP |
 | AI | `/api/dashboard/ai/*`, commit insight API | 40 / min per user (or IP if unsigned) |
+| Admin API | `/api/admin/*` | 120 / min per user (or IP) |
 
 1. Create a free Upstash Redis database.
 2. Add `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` to Vercel.

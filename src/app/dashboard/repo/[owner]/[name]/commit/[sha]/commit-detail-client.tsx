@@ -19,16 +19,12 @@ import { cn } from "@/lib/utils";
 type ChatTurn = { role: "user" | "assistant"; content: string };
 
 type CommitDetailClientProps = {
-  owner: string;
-  name: string;
   repoLabel: string;
   backHref: string;
   initialCommit: CommitDetail;
 };
 
 export function CommitDetailClient({
-  owner,
-  name,
   repoLabel,
   backHref,
   initialCommit,

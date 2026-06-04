@@ -38,6 +38,7 @@ import {
   IconUsersGroup,
 } from "@tabler/icons-react";
 import { motion, useInView } from "motion/react";
+import { aosAttrs, useAosReady } from "@/components/AosProvider";
 import { useHtmlDark } from "@/hooks/useHtmlDark";
 import { Tabs } from "@/components/ui/tabs";
 import { BentoFeatures } from "./BentoFeatures";
@@ -48,11 +49,11 @@ const LOGIN_DASHBOARD_REDIRECT = "/login?redirectTo=%2Fdashboard";
 /* ─── Shared sub-components ─── */
 
 function SectionEyebrow({ children }: { children: React.ReactNode }) {
+  const aosReady = useAosReady();
   return (
     <p
       className="text-center font-mono text-[10px] tracking-[0.22em] uppercase text-accent mb-3"
-      data-aos="fade-up"
-      data-aos-duration="500"
+      {...aosAttrs(aosReady, "fade-up")}
     >
       {children}
     </p>
@@ -60,12 +61,11 @@ function SectionEyebrow({ children }: { children: React.ReactNode }) {
 }
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
+  const aosReady = useAosReady();
   return (
     <h2
       className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl text-center"
-      data-aos="fade-up"
-      data-aos-delay="40"
-      data-aos-duration="500"
+      {...aosAttrs(aosReady, "fade-up", { delay: 40 })}
     >
       {children}
     </h2>
@@ -73,12 +73,11 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 }
 
 function SectionSubheading({ children }: { children: React.ReactNode }) {
+  const aosReady = useAosReady();
   return (
     <p
       className="mt-4 text-muted text-center max-w-2xl mx-auto leading-relaxed text-sm sm:text-base"
-      data-aos="fade-up"
-      data-aos-delay="70"
-      data-aos-duration="500"
+      {...aosAttrs(aosReady, "fade-up", { delay: 70 })}
     >
       {children}
     </p>
@@ -504,6 +503,7 @@ function BrandGrid() {
 /* ─── Main exported component ─── */
 
 export function LandingSections() {
+  const aosReady = useAosReady();
   const howItWorksTabs = useMemo(
     () => [
       {
@@ -623,9 +623,7 @@ export function LandingSections() {
             ].map((card) => (
               <div
                 key={card.title}
-                data-aos="fade-up"
-                data-aos-delay={card.delay}
-                data-aos-duration="500"
+                {...aosAttrs(aosReady, "fade-up", { delay: card.delay })}
               >
                 <ProblemCard
                   icon={card.icon}
@@ -650,9 +648,7 @@ export function LandingSections() {
           <div className="mt-12 grid gap-10 lg:grid-cols-2 lg:gap-16 lg:items-center">
             <ul
               className="space-y-3"
-              data-aos="fade-right"
-              data-aos-delay="80"
-              data-aos-duration="500"
+              {...aosAttrs(aosReady, "fade-right", { delay: 80 })}
             >
               {[
                 "Store repositories securely under your organization.",
@@ -675,9 +671,7 @@ export function LandingSections() {
 
             {/* Repo mockup */}
             <div
-              data-aos="fade-left"
-              data-aos-delay="120"
-              data-aos-duration="500"
+              {...aosAttrs(aosReady, "fade-left", { delay: 120 })}
               className="relative overflow-hidden rounded-xl border border-border bg-surface/60 backdrop-blur-sm"
             >
               {/* Accent top line */}
@@ -707,9 +701,7 @@ export function LandingSections() {
             {/* Left: summary */}
             <div
               className="space-y-4"
-              data-aos="fade-right"
-              data-aos-duration="500"
-              data-aos-delay="80"
+              {...aosAttrs(aosReady, "fade-right", { delay: 80 })}
             >
               <p className="text-muted leading-relaxed text-sm sm:text-base">
                 Ownbase puts you in control of your codebase in four clear
@@ -752,9 +744,7 @@ export function LandingSections() {
             {/* Right: interactive tabs */}
             <div
               className="rounded-2xl border border-border bg-background/70 p-5 sm:p-7 min-h-[320px] flex flex-col backdrop-blur-sm"
-              data-aos="fade-left"
-              data-aos-duration="500"
-              data-aos-delay="120"
+              {...aosAttrs(aosReady, "fade-left", { delay: 120 })}
             >
               <Tabs
                 tabs={howItWorksTabs}
@@ -779,9 +769,7 @@ export function LandingSections() {
             {/* Hero feature */}
             <div
               className="relative overflow-hidden rounded-2xl border border-border bg-surface/60 p-7 sm:p-9"
-              data-aos="fade-up"
-              data-aos-duration="500"
-              data-aos-delay="60"
+              {...aosAttrs(aosReady, "fade-up", { delay: 60 })}
             >
               <div
                 className="pointer-events-none absolute inset-x-0 top-0 h-px"
@@ -843,9 +831,7 @@ export function LandingSections() {
               ].map((f) => (
                 <div
                   key={f.title}
-                  data-aos="fade-up"
-                  data-aos-duration="500"
-                  data-aos-delay={f.delay}
+                  {...aosAttrs(aosReady, "fade-up", { delay: f.delay })}
                 >
                   <FeatureCard
                     icon={f.icon}
@@ -879,6 +865,7 @@ export function LandingSections() {
 /* ─── Live Dashboard Section ─── */
 
 function LiveDashboardSection() {
+  const aosReady = useAosReady();
   return (
     <section
       id="live-dashboard"
@@ -906,7 +893,7 @@ function LiveDashboardSection() {
 
       <div className="relative mx-auto grid max-w-6xl gap-12 px-4 py-20 sm:px-6 sm:py-24 lg:grid-cols-2 lg:items-center lg:gap-16">
         {/* Copy */}
-        <div data-aos="fade-right" data-aos-duration="500">
+        <div {...aosAttrs(aosReady, "fade-right")}>
           <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-accent">
             Live Dashboard
           </span>
@@ -939,7 +926,7 @@ function LiveDashboardSection() {
         </div>
 
         {/* Mock dashboard card */}
-        <div data-aos="fade-left" data-aos-duration="500" data-aos-delay="80">
+        <div {...aosAttrs(aosReady, "fade-left", { delay: 80 })}>
           <div className="rounded-2xl border border-border bg-surface/60 p-1 shadow-2xl shadow-black/30 backdrop-blur-sm">
             <div className="relative overflow-hidden rounded-xl border border-border/60 bg-background/90 p-5">
               {/* Accent top bar */}
