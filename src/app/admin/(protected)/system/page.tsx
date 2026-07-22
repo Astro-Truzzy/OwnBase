@@ -49,6 +49,11 @@ export default async function AdminSystemPage() {
     { label: "UPSTASH_REDIS_REST_TOKEN", set: !!process.env.UPSTASH_REDIS_REST_TOKEN },
     { label: "CRON_SECRET", set: !!process.env.CRON_SECRET },
     { label: "ADMIN_ALLOWED_EMAILS", set: !!process.env.ADMIN_ALLOWED_EMAILS },
+    { label: "RESEND_API_KEY", set: !!process.env.RESEND_API_KEY },
+    { label: "RESEND_FROM_EMAIL", set: !!process.env.RESEND_FROM_EMAIL },
+    { label: "GOOGLE_PLACES_API_KEY", set: !!process.env.GOOGLE_PLACES_API_KEY },
+    { label: "HUNTER_API_KEY", set: !!process.env.HUNTER_API_KEY },
+    { label: "RESEND_WEBHOOK_SECRET", set: !!process.env.RESEND_WEBHOOK_SECRET },
   ];
 
   const criticalMissing = envChecks.filter(

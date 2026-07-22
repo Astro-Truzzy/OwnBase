@@ -1091,7 +1091,7 @@ function TrustSection() {
               again.
             </p>
             <footer className="mt-4 pl-10 sm:pl-12 text-sm text-muted not-italic">
-              — Startup Founder
+              — Williams Trust, Founder Ridely
             </footer>
             <div
               className="absolute left-0 top-6 bottom-6 w-[3px] rounded-r-full"

@@ -8,6 +8,7 @@ import {
   IconCreditCard,
   IconLayoutDashboard,
   IconLogout,
+  IconMailForward,
   IconServer,
   IconUsers,
 } from "@tabler/icons-react";
@@ -36,6 +37,12 @@ const NAV_ITEMS = [
     href: "/admin/product",
     label: "Product",
     icon: <IconChartBar className="h-4 w-4" />,
+    exact: false,
+  },
+  {
+    href: "/admin/outreach",
+    label: "Outreach",
+    icon: <IconMailForward className="h-4 w-4" />,
     exact: false,
   },
   {

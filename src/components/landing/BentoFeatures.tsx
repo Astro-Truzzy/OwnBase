@@ -383,13 +383,13 @@ export function BentoFeatures() {
                 </p>
                 <footer className="mt-4 flex items-center gap-3">
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent/15 font-semibold text-sm text-accent">
-                    SC
+                    WT
                   </span>
                   <div>
                     <p className="text-sm font-semibold text-foreground">
-                      Sarah Chen
+                      Williams Trust
                     </p>
-                    <p className="text-xs text-muted">CTO at TechFlow</p>
+                    <p className="text-xs text-muted">Founder at Ridely</p>
                   </div>
                 </footer>
               </blockquote>

@@ -28,6 +28,7 @@
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^16.1.1",
     "remark-gfm": "^4.0.1",
+    "svix": "^1.96.1",
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
