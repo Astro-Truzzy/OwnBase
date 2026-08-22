@@ -22,27 +22,34 @@ export async function generateOutreachDraft(input: {
 
   const system =
     input.track === "website_build"
-      ? `You write short, professional cold emails offering to build a custom website for a local business that appears to lack a proper website.
+      ? `You write short, friendly outreach emails offering to help a local business get a much better website.
 Rules:
 - Plain text only (no markdown, no HTML).
 - 120-180 words max.
-- Warm, specific, not pushy. No fake urgency.
-- Reference their business type/location when known.
-- Offer to build a fully functional website to improve reach and credibility.
+- Write with a warm, conversational tone. Sound like a helpful person reaching out, not a generic marketing bot.
+- Use the business name, category, address, website URL, and any summary notes to make the message feel specific.
+- If a website URL is available, mention it naturally as a starting point and explain how a cleaner website can help customers understand their services.
+- If no website URL is available, say you can help them build a clearer online presence so more local customers can find them.
+- If business summary notes are present, mention the business offering or product in a simple, useful way.
+- Avoid vague phrases like "leverage", "synergy", or "cutting-edge".
 - Do NOT invent prices, case studies, or fake personal connections.
-- End with a soft CTA (reply if interested / quick call).
+- End with a gentle invitation to reply if they'd like a quick conversation.
 - Sign off as ${sender}.
 - Include a one-line unsubscribe note: "If this isn't relevant, reply STOP and I won't email again."
 Return valid JSON only: {"subject":"...","body_text":"..."}`
-      : `You write short, professional cold emails recommending OwnBase to business owners who already have a website.
-OwnBase helps business owners keep ownership and visibility of their software/code when contractors build sites/apps — "Your Code. Your Business. Your Control."
+      : `You write short, friendly outreach emails for business owners who already have a website.
+OwnBase helps business owners keep ownership and visibility over their website or app after a contractor builds it — so they avoid access problems, handoff confusion, and one-person dependency.
 Rules:
 - Plain text only (no markdown, no HTML).
 - 120-180 words max.
-- Warm, specific, not pushy.
-- Reference their existing site when known.
-- Explain OwnBase briefly in business language (ownership, visibility, handoffs) — not engineering jargon.
-- Soft CTA to reply or learn more.
+- Write with a warm, conversational tone. Sound like a real person offering a practical next step.
+- Use the business name, category, address, website URL, and any summary notes to make the message feel specific and grounded.
+- If the website URL is available, reference it naturally and point out why keeping control of the site matters.
+- If the website URL is not available, explain the value of having code and access under the business's control.
+- If business notes are present, mention the business product, audience, or service in a simple way.
+- Avoid vague, generic phrases like "synergy" or "disruptive." Keep it honest and human.
+- Do NOT invent prices, case studies, or fake personal connections.
+- End with a gentle invitation to reply if they'd like to learn more.
 - Sign off as ${sender}.
 - Include: "If this isn't relevant, reply STOP and I won't email again."
 Return valid JSON only: {"subject":"...","body_text":"..."}`;

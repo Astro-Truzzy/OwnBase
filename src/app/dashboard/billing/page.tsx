@@ -8,8 +8,10 @@ import {
   IconCheck,
   IconRocket,
 } from "@tabler/icons-react";
+import { getUsageSnapshot } from "@/lib/usage-stats";
 import { SubscribeButton } from "./subscribe-button";
 import { ManageSubscriptionButton } from "./manage-subscription-button";
+import { PlanUsageMeters } from "../plan-usage-meters";
 
 export const metadata = {
   title: "Billing",
@@ -30,6 +32,8 @@ export default async function BillingPage() {
     )
     .eq("user_id", user.id)
     .single();
+
+  const usage = await getUsageSnapshot(supabase, user.id);
 
   const trialEndsAt = profile?.trial_ends_at
     ? new Date(profile.trial_ends_at)
@@ -60,7 +64,9 @@ export default async function BillingPage() {
       </div>
 
       <div className="dash-panel p-6 sm:p-8">
-        <h2 className="text-lg font-semibold text-foreground">Current status</h2>
+        <h2 className="text-lg font-semibold text-foreground">
+          Current status
+        </h2>
         <div className="mt-4 space-y-4">
           {hasActiveSubscription && (
             <div className="flex items-center gap-3 rounded-lg border border-emerald-500/35 bg-emerald-500/10 p-4">
@@ -69,7 +75,9 @@ export default async function BillingPage() {
                 aria-hidden
               />
               <div>
-                <p className="font-medium text-foreground">Active subscription</p>
+                <p className="font-medium text-foreground">
+                  Active subscription
+                </p>
                 <p className="text-sm text-muted-foreground">
                   Your subscription is active until{" "}
                   {subscriptionEndsAt?.toLocaleDateString(undefined, {
@@ -115,6 +123,8 @@ export default async function BillingPage() {
           )}
         </div>
       </div>
+
+      <PlanUsageMeters usage={usage} />
 
       {(!hasActiveSubscription || trialExpired) && (
         <div className="dash-panel p-6 sm:p-8">

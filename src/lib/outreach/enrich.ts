@@ -25,6 +25,10 @@ export async function findEmailForDomain(websiteUrl: string): Promise<{
 
   const res = await fetch(url.toString());
   if (!res.ok) {
+    const responseText = await res.text().catch(() => "<unable to read response>");
+    console.error(
+      `[outreach][hunter] failed to enrich email for domain=${domain} status=${res.status} ${res.statusText} response=${responseText}`,
+    );
     return { email: null, confidence: null };
   }
 

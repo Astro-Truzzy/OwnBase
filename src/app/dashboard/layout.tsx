@@ -168,19 +168,6 @@ export default async function DashboardLayout({
             </Suspense>
 
             <div className="app-scrollbar dash-page relative flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
-              <div className="dash-ambient z-0" aria-hidden />
-              <div
-                className="pointer-events-none absolute inset-0 z-10 opacity-[0.025]"
-                style={{
-                  backgroundImage:
-                    "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")",
-                }}
-                aria-hidden
-              />
-              <div
-                className="dash-grid-overlay pointer-events-none absolute inset-0 z-1 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-size-[48px_48px]"
-                aria-hidden
-              />
               <div className="relative z-2 min-w-0 w-full max-w-full">
                 {children}
               </div>

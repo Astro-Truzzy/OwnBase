@@ -472,8 +472,9 @@ export function OutreachDashboard() {
           <div className="flex items-start gap-2 text-sm text-muted-foreground">
             <IconSearch className="mt-0.5 h-4 w-4 shrink-0" />
             <p>
-              Uses Google Places Text Search. Requires{" "}
-              <code className="font-mono text-xs">GOOGLE_PLACES_API_KEY</code>. No real website →
+              Uses Google Places Text Search (server-side). Requires{" "}
+              <code className="font-mono text-xs">GOOGLE_PLACES_API_KEY</code> with no HTTP-referrer
+              restriction. No real website →
               Build site; otherwise OwnBase. Optional Hunter enrichment with{" "}
               <code className="font-mono text-xs">HUNTER_API_KEY</code>.
             </p>

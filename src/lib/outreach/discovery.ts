@@ -65,6 +65,15 @@ export async function discoverPlaces(opts: {
 
     if (!res.ok) {
       const errText = await res.text();
+      if (
+        res.status === 403 &&
+        (errText.includes("API_KEY_HTTP_REFERRER_BLOCKED") ||
+          errText.includes("referer <empty>"))
+      ) {
+        throw new Error(
+          "Google Places API key is restricted to HTTP referrers, but discovery runs on the server (no referrer). In Google Cloud Console → Credentials, edit this key and set Application restrictions to None or IP addresses — not Websites.",
+        );
+      }
       throw new Error(`Google Places error (${res.status}): ${errText.slice(0, 400)}`);
     }
 

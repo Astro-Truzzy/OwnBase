@@ -1,3 +1,13 @@
+function isResendDomainVerificationError(status: number, body: string): boolean {
+  const text = body.toLowerCase();
+  return (
+    status === 403 &&
+    (text.includes("domain is not verified") ||
+      text.includes("not verified") ||
+      text.includes("validation_error"))
+  );
+}
+
 export async function sendOutreachEmail(opts: {
   to: string;
   subject: string;
@@ -5,36 +15,52 @@ export async function sendOutreachEmail(opts: {
   replyTo?: string;
 }): Promise<{ id: string }> {
   const resendKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
-  if (!resendKey || !from) {
-    throw new Error("RESEND_API_KEY and RESEND_FROM_EMAIL are required to send outreach email");
+  if (!resendKey) {
+    throw new Error("RESEND_API_KEY is required to send outreach email");
   }
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to: [opts.to],
-      subject: opts.subject,
-      text: opts.text,
-      reply_to: opts.replyTo || process.env.RESEND_OUTREACH_REPLY_TO || undefined,
-    }),
-  });
+  const configuredFrom = process.env.RESEND_FROM_EMAIL?.trim();
+  const fromCandidates = [configuredFrom, "OwnBase Outreach <onboarding@resend.dev>"].filter(
+    (value): value is string => Boolean(value),
+  );
 
-  if (!res.ok) {
+  let lastError: string | null = null;
+  for (let index = 0; index < fromCandidates.length; index += 1) {
+    const from = fromCandidates[index];
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${resendKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to: [opts.to],
+        subject: opts.subject,
+        text: opts.text,
+        reply_to: opts.replyTo || process.env.RESEND_OUTREACH_REPLY_TO || undefined,
+      }),
+    });
+
+    if (res.ok) {
+      const data = (await res.json()) as { id?: string };
+      if (!data.id) {
+        throw new Error("Resend did not return an email id");
+      }
+      return { id: data.id };
+    }
+
     const errText = await res.text();
-    throw new Error(`Resend send failed (${res.status}): ${errText.slice(0, 400)}`);
+    lastError = `Resend send failed (${res.status}): ${errText.slice(0, 400)}`;
+
+    if (isResendDomainVerificationError(res.status, errText) && index < fromCandidates.length - 1) {
+      continue;
+    }
+
+    throw new Error(lastError);
   }
 
-  const data = (await res.json()) as { id?: string };
-  if (!data.id) {
-    throw new Error("Resend did not return an email id");
-  }
-  return { id: data.id };
+  throw new Error(lastError ?? "Resend send failed");
 }
 
 export async function fetchReceivedEmail(emailId: string): Promise<{

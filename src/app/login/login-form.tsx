@@ -1,6 +1,7 @@
 "use client";
 
 import { authInputClassName } from "@/lib/auth/auth-input";
+import { launchOAuthAuthorizeUrl } from "@/lib/auth/oauth-return";
 import {
   DEFAULT_POST_AUTH_PATH,
   getAuthCallbackUrl,
@@ -65,11 +66,12 @@ export function LoginForm({ redirectTo, error, signedOut, passwordReset }: Login
   async function signInWithGoogle() {
     setMessage(null);
     const supabase = createClient();
-    const { error: err } = await supabase.auth.signInWithOAuth({
+    const { data, error: err } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: getAuthCallbackUrl(next),
         queryParams: { prompt: "select_account" },
+        skipBrowserRedirect: true,
       },
     });
     if (err) {
@@ -81,6 +83,7 @@ export function LoginForm({ redirectTo, error, signedOut, passwordReset }: Login
       });
       return;
     }
+    if (data?.url) launchOAuthAuthorizeUrl(data.url);
   }
 
   async function signInWithGitHub() {
@@ -105,19 +108,20 @@ export function LoginForm({ redirectTo, error, signedOut, passwordReset }: Login
       return;
     }
     if (data?.url) {
-      window.location.assign(data.url);
+      launchOAuthAuthorizeUrl(data.url);
     }
   }
 
   async function signInWithGitLab() {
     setMessage(null);
     const supabase = createClient();
-    const { error: err } = await supabase.auth.signInWithOAuth({
+    const { data, error: err } = await supabase.auth.signInWithOAuth({
       provider: "gitlab",
       options: {
         redirectTo: getAuthCallbackUrl(next),
         scopes: "read_api read_repository",
         queryParams: { prompt: "login" },
+        skipBrowserRedirect: true,
       },
     });
     if (err) {
@@ -129,6 +133,7 @@ export function LoginForm({ redirectTo, error, signedOut, passwordReset }: Login
       });
       return;
     }
+    if (data?.url) launchOAuthAuthorizeUrl(data.url);
   }
 
   return (

@@ -1,16 +1,18 @@
 import { redirect } from "next/navigation";
 import { fetchRepoCollaborators } from "../../../lib/github/fetch-collaborators";
-import { fetchUserRepos } from "../../../lib/github/fetch-repos";
 import { getGitHubAccessToken } from "@/lib/supabase/github-token";
 import {
   buildPortfolioRiskSnapshot,
   normalizeSummary,
 } from "../../../lib/dashboard/org-risk-assessment";
+import { fetchSearchableReposForUser } from "@/lib/dashboard/searchable-repos";
+import { getUsageSnapshot } from "@/lib/usage-stats";
 import { createClient } from "../../../lib/supabase/server";
 import { isReportDeliveryPreferencesTableMissing } from "../../../lib/report-delivery-preferences-schema";
 import { OrganizationHashScroll } from "./organization-hash-scroll";
 import { OrganizationPageClient } from "./organization-page-client";
 import type { ReportScheduleInitial } from "./organization-report-types";
+import type { OrganizationTrackedRepo } from "../dashboard-organization-panel";
 
 const MAX_GITHUB_COLLAB_FETCH = 22;
 const COLLAB_FETCH_TIMEOUT_MS = 2500;
@@ -86,20 +88,37 @@ export default async function OrganizationPage() {
 
   const tracked = trackedRepos ?? [];
 
-  let availableGithubRepos: Array<{
-    full_name: string;
-    name: string;
-    private: boolean;
-  }> = [];
-
-  if (tracked.length === 0 && provider !== "gitlab" && providerToken) {
-    const { repos } = await fetchUserRepos(providerToken);
-    availableGithubRepos = repos.slice(0, 30).map((repo) => ({
-      full_name: repo.full_name,
-      name: repo.name,
-      private: repo.private,
-    }));
+  function repoDetailHref(fullName: string): string {
+    const [owner, ...rest] = fullName.split("/");
+    const name = rest.join("/") || fullName;
+    return `/dashboard/repo/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`;
   }
+
+  const hasGitHubIdentity =
+    user.identities?.some((identity) => identity.provider === "github") ??
+    false;
+  const hasGitLabIdentity =
+    user.identities?.some((identity) => identity.provider === "gitlab") ??
+    false;
+  const hasGitProvider =
+    Boolean(providerToken) || hasGitHubIdentity || hasGitLabIdentity;
+
+  const [discoverableRepos, usage] = await Promise.all([
+    fetchSearchableReposForUser({ provider, providerToken }),
+    getUsageSnapshot(supabase, user.id),
+  ]);
+
+  const organizationTracked: OrganizationTrackedRepo[] = tracked.map((row) => {
+    const isGitlab = row.repo_owner === "gitlab";
+    const fullName = row.full_name;
+    return {
+      fullName,
+      name: row.repo_name,
+      detailHref: repoDetailHref(fullName),
+      tech: isGitlab ? "GitLab" : "GitHub",
+      addedAt: row.added_at,
+    };
+  });
 
   const summariesByRepo = new Map<
     string,
@@ -210,7 +229,10 @@ export default async function OrganizationPage() {
         snapshot={snapshot}
         custodyFetchNote={custodyFetchNote}
         tracked={tracked}
-        availableGithubRepos={availableGithubRepos}
+        discoverableRepos={discoverableRepos}
+        organizationTracked={organizationTracked}
+        trackedLimit={usage.limits.maxTrackedRepos ?? 5}
+        hasGitProvider={hasGitProvider}
         businessName={businessName}
         viewerEmail={user.email ?? null}
         reportScheduleInitial={reportScheduleInitial}

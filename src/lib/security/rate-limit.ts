@@ -78,14 +78,23 @@ export async function rateLimit(
 
   const upstash = getUpstashLimiter(name, limit, window);
   if (upstash) {
-    const { success, reset } = await upstash.limit(key);
-    if (!success) {
-      return {
-        ok: false,
-        response: rateLimitResponse(reset),
-      };
+    try {
+      const { success, reset } = await upstash.limit(key);
+      if (!success) {
+        return {
+          ok: false,
+          response: rateLimitResponse(reset),
+        };
+      }
+      return { ok: true };
+    } catch (error) {
+      console.error(`[rate-limit] Upstash request failed for "${name}"`, error);
+      if (process.env.NODE_ENV === "production") {
+        console.warn(
+          `[rate-limit] Fallback to in-memory limiter for "${name}" because Upstash is unavailable.`,
+        );
+      }
     }
-    return { ok: true };
   }
 
   if (process.env.NODE_ENV === "production") {

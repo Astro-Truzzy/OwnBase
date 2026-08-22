@@ -1,6 +1,7 @@
 "use client";
 
 import { authInputClassName } from "@/lib/auth/auth-input";
+import { launchOAuthAuthorizeUrl } from "@/lib/auth/oauth-return";
 import {
   DEFAULT_POST_AUTH_PATH,
   getAuthCallbackUrl,
@@ -32,10 +33,15 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
   const [step, setStep] = useState<"register" | "verify">("register");
   const [pendingEmail, setPendingEmail] = useState("");
   const [otp, setOtp] = useState("");
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const [verifyPhase, setVerifyPhase] = useState<"idle" | "verifying" | "redirecting">("idle");
+  const [verifyPhase, setVerifyPhase] = useState<
+    "idle" | "verifying" | "redirecting"
+  >("idle");
   const [businessSector, setBusinessSector] = useState("");
   const isVerifyingRef = useRef(false);
   const verifyFormRef = useRef<HTMLFormElement>(null);
@@ -53,12 +59,25 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
     const password = data.get("password") as string;
     const confirmPassword = data.get("confirmPassword") as string;
 
-    if (!firstName || !lastName || !businessName || !businessSector || !email || !password) {
-      setMessage({ type: "error", text: "Please fill in all required fields." });
+    if (
+      !firstName ||
+      !lastName ||
+      !businessName ||
+      !businessSector ||
+      !email ||
+      !password
+    ) {
+      setMessage({
+        type: "error",
+        text: "Please fill in all required fields.",
+      });
       return;
     }
     if (password.length < 8) {
-      setMessage({ type: "error", text: "Password must be at least 8 characters." });
+      setMessage({
+        type: "error",
+        text: "Password must be at least 8 characters.",
+      });
       return;
     }
     if (password !== confirmPassword) {
@@ -68,19 +87,21 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
 
     setIsPending(true);
     const supabase = createClient();
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: getAuthCallbackUrl(next),
-        data: {
-          first_name: firstName,
-          last_name: lastName,
-          business_name: businessName,
-          business_sector: businessSector,
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp(
+      {
+        email,
+        password,
+        options: {
+          emailRedirectTo: getAuthCallbackUrl(next),
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            business_name: businessName,
+            business_sector: businessSector,
+          },
         },
       },
-    });
+    );
 
     if (signUpError) {
       setMessage({ type: "error", text: signUpError.message });
@@ -164,7 +185,8 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
       });
       window.location.assign(next);
     } catch (err) {
-      const isTimeout = err instanceof Error && err.message === "VERIFY_TIMEOUT";
+      const isTimeout =
+        err instanceof Error && err.message === "VERIFY_TIMEOUT";
       setMessage({
         type: "error",
         text: isTimeout
@@ -205,11 +227,12 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
 
   async function signInWithGoogle() {
     const supabase = createClient();
-    const { error: err } = await supabase.auth.signInWithOAuth({
+    const { data, error: err } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: getAuthCallbackUrl(next),
         queryParams: { prompt: "select_account" },
+        skipBrowserRedirect: true,
       },
     });
     if (err) {
@@ -221,6 +244,7 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
       });
       return;
     }
+    if (data?.url) launchOAuthAuthorizeUrl(data.url);
   }
 
   async function signInWithGitHub() {
@@ -243,17 +267,18 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
       });
       return;
     }
-    if (data?.url) window.location.assign(data.url);
+    if (data?.url) launchOAuthAuthorizeUrl(data.url);
   }
 
   async function signInWithGitLab() {
     const supabase = createClient();
-    const { error: err } = await supabase.auth.signInWithOAuth({
+    const { data, error: err } = await supabase.auth.signInWithOAuth({
       provider: "gitlab",
       options: {
         redirectTo: getAuthCallbackUrl(next),
         scopes: "read_api read_repository",
         queryParams: { prompt: "login" },
+        skipBrowserRedirect: true,
       },
     });
     if (err) {
@@ -265,6 +290,7 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
       });
       return;
     }
+    if (data?.url) launchOAuthAuthorizeUrl(data.url);
   }
 
   const labelClass = "block text-sm font-medium text-foreground mb-1";
@@ -284,12 +310,18 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
           </p>
         )}
         <div className="text-center space-y-1">
-          <p className="text-sm font-medium text-foreground">Verify your email</p>
+          <p className="text-sm font-medium text-foreground">
+            Verify your email
+          </p>
           <p className="text-sm text-muted-foreground">
             Code sent to <span className="text-foreground">{pendingEmail}</span>
           </p>
         </div>
-        <form ref={verifyFormRef} onSubmit={handleVerifyOtp} className="space-y-4">
+        <form
+          ref={verifyFormRef}
+          onSubmit={handleVerifyOtp}
+          className="space-y-4"
+        >
           <div>
             <label htmlFor="otp" className={labelClass}>
               {EMAIL_OTP_LENGTH}-digit verification code{" "}
@@ -306,14 +338,20 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
               value={otp}
               pattern={`[0-9]{${EMAIL_OTP_LENGTH}}`}
               onChange={(e) => {
-                setOtp(e.target.value.replace(/\D/g, "").slice(0, EMAIL_OTP_LENGTH));
+                setOtp(
+                  e.target.value.replace(/\D/g, "").slice(0, EMAIL_OTP_LENGTH),
+                );
               }}
               className={`${authInputClassName} text-center text-lg tracking-[0.35em] font-mono max-w-[12rem] mx-auto block`}
               placeholder={"0".repeat(EMAIL_OTP_LENGTH)}
               aria-describedby="otp-hint"
             />
-            <p id="otp-hint" className="mt-2 text-xs text-center text-muted-foreground">
-              Enter the {EMAIL_OTP_LENGTH}-digit code from your confirmation email.
+            <p
+              id="otp-hint"
+              className="mt-2 text-xs text-center text-muted-foreground"
+            >
+              Enter the {EMAIL_OTP_LENGTH}-digit code from your confirmation
+              email.
             </p>
           </div>
           <button
@@ -412,7 +450,9 @@ export function SignupForm({ redirectTo, error }: SignupFormProps) {
           <span className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted">Or sign up with email</span>
+          <span className="bg-background px-2 text-muted">
+            Or sign up with email
+          </span>
         </div>
       </div>
 
@@ -559,7 +599,12 @@ function GoogleIcon({ className }: { className?: string }) {
 
 function GitHubIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <svg
+      className={className}
+      fill="currentColor"
+      viewBox="0 0 24 24"
+      aria-hidden
+    >
       <path
         fillRule="evenodd"
         d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
@@ -571,7 +616,12 @@ function GitHubIcon({ className }: { className?: string }) {
 
 function GitLabIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden
+    >
       <path d="M23.955 13.587l-1.342-4.135-2.664-8.189a.455.455 0 00-.867 0L16.418 9.45H7.582L4.919 1.263C4.783.84 4.252.84 4.116 1.263L1.452 9.449.11 13.587a.924.924 0 00.331 1.023L12 23.054l11.559-8.444a.92.92 0 00.396-1.023z" />
     </svg>
   );

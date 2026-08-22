@@ -4,12 +4,10 @@ import Link from "next/link";
 import { useLayoutEffect, useState } from "react";
 import {
   IconBuilding,
-  IconFolder,
-  IconPlus,
   IconUpload,
-  IconArrowRight,
 } from "@tabler/icons-react";
 import { getTrackedRepoKind } from "@/lib/dashboard/tracked-repo-kind";
+import type { SearchableRepo } from "@/lib/dashboard/searchable-repos";
 import type { PortfolioRiskSnapshot } from "@/lib/dashboard/org-risk-assessment";
 import type { ReportScheduleInitial } from "./organization-report-types";
 import { OrganizationReportsHub } from "./organization-reports-hub";
@@ -17,6 +15,10 @@ import {
   ReportsQuickSection,
   RiskAssessmentSection,
 } from "./risk-assessment-section";
+import {
+  DashboardOrganizationPanel,
+  type OrganizationTrackedRepo,
+} from "../dashboard-organization-panel";
 
 export type TrackedRepoRow = {
   full_name: string;
@@ -43,17 +45,14 @@ function readOrgHashView(): OrgHashView {
   return "full";
 }
 
-export type AvailableGithubRepo = {
-  full_name: string;
-  name: string;
-  private: boolean;
-};
-
 export function OrganizationPageClient(props: {
   snapshot: PortfolioRiskSnapshot;
   custodyFetchNote: string | null;
   tracked: TrackedRepoRow[];
-  availableGithubRepos?: AvailableGithubRepo[];
+  discoverableRepos: SearchableRepo[];
+  organizationTracked: OrganizationTrackedRepo[];
+  trackedLimit: number;
+  hasGitProvider: boolean;
   businessName: string | null;
   viewerEmail: string | null;
   reportScheduleInitial: ReportScheduleInitial;
@@ -62,7 +61,10 @@ export function OrganizationPageClient(props: {
     snapshot,
     custodyFetchNote,
     tracked,
-    availableGithubRepos = [],
+    discoverableRepos,
+    organizationTracked,
+    trackedLimit,
+    hasGitProvider,
     businessName,
     viewerEmail,
     reportScheduleInitial,
@@ -171,13 +173,32 @@ export function OrganizationPageClient(props: {
               <p className="mt-1 text-lg text-foreground/90">{businessName}</p>
             )}
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Your organization is where you keep repositories and projects
-              under your control. Create it by adding repos from GitHub or
-              GitLab, or by uploading a project.
+              Add repositories, then review risk and reports in one place.
             </p>
           </div>
         </div>
       </div>
+
+      <DashboardOrganizationPanel
+        discoverableRepos={discoverableRepos}
+        trackedRepos={organizationTracked}
+        trackedCount={snapshot.trackedCount}
+        trackedLimit={trackedLimit}
+        businessName={businessName}
+        hasGitProvider={hasGitProvider}
+        embedded
+      />
+
+      <p className="text-sm text-muted-foreground">
+        Code not on GitHub or GitLab?{" "}
+        <Link
+          href="/dashboard/upload"
+          className="inline-flex items-center gap-1 font-medium text-primary underline-offset-2 hover:underline"
+        >
+          <IconUpload className="h-4 w-4" aria-hidden />
+          Upload a project zip
+        </Link>
+      </p>
 
       <ReportsQuickSection
         trackedCount={snapshot.trackedCount}
@@ -189,138 +210,6 @@ export function OrganizationPageClient(props: {
         repoDetailHref={repoDetailHref}
         custodyFetchNote={custodyFetchNote}
       />
-
-      <section className="dash-panel p-6 sm:p-8">
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
-          <IconPlus className="h-5 w-5 text-primary" aria-hidden />
-          Create or set up your organization
-        </h2>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          You don’t need a separate account — your organization is built from
-          the repos and projects you add. Choose one of the options below to add
-          your first (or next) repo.
-        </p>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <Link
-            href="/dashboard"
-            className="group flex items-center gap-4 rounded-xl border border-border dash-surface-inset p-5 transition-colors hover:border-primary/35 hover:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
-              <IconFolder className="h-5 w-5" aria-hidden />
-            </div>
-            <div className="min-w-0 flex-1">
-              <span className="block font-medium text-foreground">
-                Add repos from GitHub or GitLab
-              </span>
-              <span className="mt-0.5 block text-sm text-muted-foreground">
-                Go to the dashboard, open a repo, then click &quot;Add to my
-                organization&quot;.
-              </span>
-            </div>
-            <IconArrowRight
-              className="h-5 w-5 shrink-0 text-muted-foreground/80 transition-colors group-hover:text-primary"
-              aria-hidden
-            />
-          </Link>
-          <Link
-            href="/dashboard/upload"
-            className="group flex items-center gap-4 rounded-xl border border-border dash-surface-inset p-5 transition-colors hover:border-primary/35 hover:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
-              <IconUpload className="h-5 w-5" aria-hidden />
-            </div>
-            <div className="min-w-0 flex-1">
-              <span className="block font-medium text-foreground">
-                Upload a project
-              </span>
-              <span className="mt-0.5 block text-sm text-muted-foreground">
-                Upload a zip of your project. It’s stored in your environment
-                and appears in your organization.
-              </span>
-            </div>
-            <IconArrowRight
-              className="h-5 w-5 shrink-0 text-muted-foreground/80 transition-colors group-hover:text-primary"
-              aria-hidden
-            />
-          </Link>
-        </div>
-      </section>
-
-      {tracked.length === 0 && availableGithubRepos.length > 0 && (
-        <section className="dash-panel p-6 sm:p-8">
-          <h2 className="text-lg font-semibold text-foreground">
-            Your GitHub repositories
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Open a repository, then choose{" "}
-            <span className="font-medium text-foreground">
-              Add to my organization
-            </span>{" "}
-            to include it in your portfolio.
-          </p>
-          <ul className="mt-6 space-y-2" role="list">
-            {availableGithubRepos.map((repo) => (
-              <li key={repo.full_name}>
-                <Link
-                  href={repoDetailHref(repo.full_name)}
-                  className="inline-flex w-full items-center gap-2 rounded-lg border border-border dash-surface-inset px-4 py-3 text-sm text-foreground transition-colors hover:border-primary/35 hover:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background sm:w-auto"
-                >
-                  <IconFolder
-                    className="h-4 w-4 shrink-0 text-primary"
-                    aria-hidden
-                  />
-                  <span className="font-medium">{repo.full_name}</span>
-                  <span className="ml-1 text-xs text-muted-foreground/80">
-                    {repo.private ? "Private" : "Public"}
-                  </span>
-                  <IconArrowRight
-                    className="ml-auto h-4 w-4 shrink-0 text-muted-foreground/80"
-                    aria-hidden
-                  />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <section className="dash-panel p-6 sm:p-8">
-        <h2 className="text-lg font-semibold text-foreground">
-          Repos in your organization
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Repositories and projects you’ve added. Click one to manage access,
-          view activity, or export the audit log.
-        </p>
-        {tracked.length === 0 ? (
-          <p className="mt-6 text-sm text-muted-foreground">
-            {availableGithubRepos.length > 0
-              ? "No repos tracked yet. Pick one from your GitHub list above."
-              : "No repos yet. Use the options above to add repos from the dashboard or upload a project."}
-          </p>
-        ) : (
-          <ul className="mt-6 space-y-2" role="list">
-            {tracked.map((row) => (
-              <li key={row.full_name}>
-                <Link
-                  href={repoDetailHref(row.full_name)}
-                  className="inline-flex w-full items-center gap-2 rounded-lg border border-border dash-surface-inset px-4 py-3 text-sm text-foreground transition-colors hover:border-primary/35 hover:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background sm:w-auto"
-                >
-                  <IconFolder
-                    className="h-4 w-4 shrink-0 text-primary"
-                    aria-hidden
-                  />
-                  <span className="font-medium">{row.full_name}</span>
-                  <IconArrowRight
-                    className="ml-auto h-4 w-4 shrink-0 text-muted-foreground/80"
-                    aria-hidden
-                  />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
   );
 }

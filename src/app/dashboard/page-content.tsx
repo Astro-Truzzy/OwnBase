@@ -24,7 +24,6 @@ import {
 } from "@/lib/dashboard/portfolio-data";
 import {
   type DashboardActivityView,
-  type DashboardOnboardingView,
   type DashboardRepoView,
   type DashboardTeamView,
   DashboardTabsView,
@@ -41,18 +40,6 @@ function formatRelativeTime(iso: string): string {
   if (hours < 24) return `${hours} hours ago`;
   const days = Math.floor(hours / 24);
   return `${days} days ago`;
-}
-
-function formatCompactRelativeTime(iso: string): string {
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "unknown";
-  const diffMs = Date.now() - then;
-  const mins = Math.floor(diffMs / (1000 * 60));
-  if (mins < 60) return `${Math.max(mins, 1)}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
 }
 
 function repoDetailHref(fullName: string): string {
@@ -122,21 +109,26 @@ export default async function DashboardPageContent() {
       ? await supabase
           .from("profiles")
           .select(
-            "onboarding_checklist_dismissed_at, dashboard_walkthrough_completed_at, first_name, last_name, plan, business_name",
+            "onboarding_checklist_dismissed_at, dashboard_walkthrough_completed_at, first_name, last_name",
           )
           .eq("user_id", user.id)
           .maybeSingle()
       : { data: null };
 
   const trendSince = new Date();
-  trendSince.setUTCMonth(trendSince.getUTCMonth() - (ACTIVITY_TREND_MONTHS - 1));
+  trendSince.setUTCMonth(
+    trendSince.getUTCMonth() - (ACTIVITY_TREND_MONTHS - 1),
+  );
   trendSince.setUTCDate(1);
   trendSince.setUTCHours(0, 0, 0, 0);
 
   const [{ data: summaryRows }, { data: activityRowsRaw }] =
     user != null
       ? await Promise.all([
-          supabase.from("repo_summaries").select("full_name").eq("user_id", user.id),
+          supabase
+            .from("repo_summaries")
+            .select("full_name")
+            .eq("user_id", user.id),
           supabase
             .from("activity_log")
             .select("full_name, action_type, details, created_at")
@@ -167,17 +159,13 @@ export default async function DashboardPageContent() {
       .trim() ||
     user?.email?.split("@")[0] ||
     "there";
-  const viewerPlan =
-    typeof profileExtras?.plan === "string" && profileExtras.plan.length > 0
-      ? profileExtras.plan
-      : null;
 
   const onboardingSteps: OnboardingStep[] = [
     {
       id: "track",
       title: "Add a repository to your organization",
       description:
-        "Track a repo from the dashboard so it appears under Organization.",
+        "Track a repo from Organization so it appears in your workspace.",
       done: trackedDone,
       href: "/dashboard/organization",
     },
@@ -206,9 +194,7 @@ export default async function DashboardPageContent() {
   const githubToken =
     user != null ? await getGitHubAccessToken(supabase, user) : null;
   const providerToken =
-    provider === "gitlab"
-      ? (session?.provider_token ?? null)
-      : githubToken;
+    provider === "gitlab" ? (session?.provider_token ?? null) : githubToken;
 
   const githubResult =
     provider === "gitlab" || !githubToken
@@ -262,10 +248,7 @@ export default async function DashboardPageContent() {
 
   const collaboratorCountByFullName = new Map<string, number>();
   for (const entry of collaboratorsByRepo) {
-    collaboratorCountByFullName.set(
-      entry.fullName,
-      entry.collaborators.length,
-    );
+    collaboratorCountByFullName.set(entry.fullName, entry.collaborators.length);
   }
 
   const githubByFullName = new Map(
@@ -273,8 +256,7 @@ export default async function DashboardPageContent() {
   );
   const gitlabByFullName = new Map(
     gitlabProjects.map(
-      (project) =>
-        [`gitlab/${project.path_with_namespace}`, project] as const,
+      (project) => [`gitlab/${project.path_with_namespace}`, project] as const,
     ),
   );
 
@@ -301,40 +283,13 @@ export default async function DashboardPageContent() {
       : []),
   ];
 
-  const organizationTracked = tracked.map((row) => {
-    const isGitlab = row.repo_owner === "gitlab";
-    const fullName = row.full_name;
-    const githubRepo = githubByFullName.get(fullName);
-    const gitlabProject = isGitlab
-      ? gitlabByFullName.get(
-          fullName.startsWith("gitlab/")
-            ? fullName
-            : `gitlab/${row.repo_name}`,
-        )
-      : undefined;
-
-    return {
-      fullName,
-      name: row.repo_name,
-      detailHref: repoDetailHref(fullName),
-      tech: isGitlab
-        ? `GitLab • ${gitlabProject?.visibility === "private" ? "Private" : "Public"}`
-        : githubRepo
-          ? `GitHub • ${githubRepo.private ? "Private" : "Public"}`
-          : "Tracked repository",
-      addedAt: row.added_at,
-    };
-  });
-
   const repositories: DashboardRepoView[] = tracked.map((row) => {
     const isGitlab = row.repo_owner === "gitlab";
     const fullName = row.full_name;
     const githubRepo = githubByFullName.get(fullName);
     const gitlabProject = isGitlab
       ? gitlabByFullName.get(
-          fullName.startsWith("gitlab/")
-            ? fullName
-            : `gitlab/${row.repo_name}`,
+          fullName.startsWith("gitlab/") ? fullName : `gitlab/${row.repo_name}`,
         )
       : undefined;
     const collabCount = collaboratorCountByFullName.get(fullName) ?? 0;
@@ -347,9 +302,7 @@ export default async function DashboardPageContent() {
     const health = calcHealthScore(lastActivityIso);
     const detailHref = isGitlab
       ? repoDetailHref(
-          fullName.startsWith("gitlab/")
-            ? fullName
-            : `gitlab/${row.repo_name}`,
+          fullName.startsWith("gitlab/") ? fullName : `gitlab/${row.repo_name}`,
         )
       : repoDetailHref(fullName);
 
@@ -366,7 +319,7 @@ export default async function DashboardPageContent() {
           : "Tracked repository",
       health,
       contributors: collabCount,
-      lastDeploy: formatRelativeTime(lastActivityIso),
+      lastActivity: formatRelativeTime(lastActivityIso),
       status: repoStatus(health, busFactor),
       busFactor,
       description:
@@ -516,31 +469,6 @@ export default async function DashboardPageContent() {
       status: member.status,
     }));
 
-  const onboarding: DashboardOnboardingView[] = recentActivityRows
-    .filter((row) => row.action_type === "collaborator_added")
-    .slice(0, 5)
-    .map((row) => {
-      const details = row.details as Record<string, unknown> | null;
-      const username =
-        typeof details?.username === "string"
-          ? details.username
-          : "New collaborator";
-      const permission =
-        typeof details?.permission === "string" ? details.permission : "push";
-      const accessLabel =
-        permission === "admin"
-          ? "Admin access"
-          : permission === "pull"
-            ? "Read access"
-            : "Write access";
-      return {
-        name: username,
-        role: accessLabel,
-        startDate: formatCompactRelativeTime(row.created_at),
-        repo: row.full_name,
-      };
-    });
-
   const avgHealth =
     repositories.length > 0
       ? Math.round(
@@ -562,10 +490,7 @@ export default async function DashboardPageContent() {
     repositories.map((r) => ({ fullName: r.fullName, health: r.health })),
     activityRows,
   );
-  const newWorkspace = isNewWorkspace(
-    tracked.length,
-    usage?.uploads ?? 0,
-  );
+  const newWorkspace = isNewWorkspace(tracked.length, usage?.uploads ?? 0);
   const hasTrendData =
     !newWorkspace &&
     repositories.length > 0 &&
@@ -583,7 +508,9 @@ export default async function DashboardPageContent() {
   const firstWithoutSummary = repositories.find(
     (repo) => !summarizedFullNames.has(repo.fullName),
   );
-  const firstSingleContributor = repositories.find((repo) => repo.busFactor <= 1);
+  const firstSingleContributor = repositories.find(
+    (repo) => repo.busFactor <= 1,
+  );
   const firstLowHealth = repositories.find((repo) => repo.health < 85);
   const firstSecurityActivity = activities.find((a) => a.type === "security");
 
@@ -615,16 +542,16 @@ export default async function DashboardPageContent() {
       access: "/dashboard/devs#team",
     },
   });
+  const showOnboardingChecklist = !onboardingDismissed && !allOnboardingDone;
   const hasPortfolioData = tracked.length > 0;
 
   return (
-    <>
+    <div className="mx-auto w-full max-w-5xl space-y-10">
       {usage && (
         <DashboardActivation
           usage={usage}
           onboardingSteps={onboardingSteps}
-          onboardingDismissed={onboardingDismissed}
-          allOnboardingDone={allOnboardingDone}
+          showChecklist={showOnboardingChecklist}
         />
       )}
       {showDashboardWalkthrough && (
@@ -633,17 +560,7 @@ export default async function DashboardPageContent() {
       <DashboardTabsView
         repositories={repositories}
         discoverableRepos={discoverableRepos}
-        organizationTracked={organizationTracked}
-        trackedLimit={usage?.limits.maxTrackedRepos ?? 5}
-        businessName={profileExtras?.business_name?.trim() ?? null}
-        hasGitProvider={Boolean(providerToken) || hasGitHubIdentity}
         activities={activities}
-        team={team}
-        onboarding={onboarding}
-        viewer={{
-          displayName: viewerDisplayName,
-          plan: viewerPlan,
-        }}
         summary={{
           healthScore: newWorkspace ? null : avgHealth,
           totalSystems: tracked.length,
@@ -653,12 +570,13 @@ export default async function DashboardPageContent() {
         isNewWorkspace={newWorkspace}
         hasPortfolioData={hasPortfolioData}
         hasTrendData={hasTrendData}
+        showTodos={!showOnboardingChecklist}
         todos={todos}
         trendMonthLabels={healthTrend.monthLabels}
         currentTrendValues={hasTrendData ? healthTrend.values : []}
         previousQuarterValues={[]}
         industryAverageValues={[]}
       />
-    </>
+    </div>
   );
 }

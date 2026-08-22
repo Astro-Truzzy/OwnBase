@@ -69,6 +69,7 @@ export function DashboardOrganizationPanel({
   trackedLimit,
   businessName,
   hasGitProvider,
+  embedded = false,
 }: {
   discoverableRepos: SearchableRepo[];
   trackedRepos: OrganizationTrackedRepo[];
@@ -76,6 +77,8 @@ export function DashboardOrganizationPanel({
   trackedLimit: number;
   businessName?: string | null;
   hasGitProvider: boolean;
+  /** When true, skip the page title — parent already provides it. */
+  embedded?: boolean;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -198,29 +201,33 @@ export function DashboardOrganizationPanel({
     <div data-tour="organization-panel" className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-            Organization
-          </h2>
-          {businessName && (
-            <p className="mt-1 text-base text-foreground/90">{businessName}</p>
+          {!embedded && (
+            <>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                Organization
+              </h2>
+              {businessName && (
+                <p className="mt-1 text-base text-foreground/90">{businessName}</p>
+              )}
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                Add repositories from your connected provider in one place. Tracked
+                repos unlock health signals, access maps, and AI summaries across
+                Ownbase.
+              </p>
+            </>
           )}
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Add repositories from your connected provider in one place. Tracked
-            repos unlock health signals, access maps, and AI summaries across
-            Ownbase.
-          </p>
+          {embedded && (
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Add repositories from your connected provider. Tracked repos unlock
+              health signals, access maps, and AI summaries.
+            </p>
+          )}
         </div>
         <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
           <span className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-1.5 text-sm font-medium text-foreground">
             <IconBuilding className="h-4 w-4 text-primary" aria-hidden />
             {effectiveTrackedCount} / {trackedLimit} tracked
           </span>
-          <Link
-            href="/dashboard/organization"
-            className="text-sm font-medium text-primary underline-offset-2 hover:underline"
-          >
-            Risk & reports →
-          </Link>
         </div>
       </div>
 
@@ -362,9 +369,6 @@ function RepoOrganizationRow({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-semibold text-foreground">{repo.name}</p>
-            <span className="rounded-md border border-border/60 bg-muted/50 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-              {repo.unit}
-            </span>
             {repo.isTracked && (
               <span className={inOrganizationBadgeClass}>
                 <IconCheck className="h-3 w-3 shrink-0" aria-hidden />

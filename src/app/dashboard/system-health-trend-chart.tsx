@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { DashboardSelect } from "@/components/dashboard/dashboard-select";
 
 type CompareOption = "previous_quarter" | "industry_average";
@@ -104,7 +104,10 @@ function areaForRun(
   if (indices.length === 0) return "";
 
   const linePoints = indices
-    .map((index) => `${xAt(index, values.length)},${yAt(values[index], yMin, yMax)}`)
+    .map(
+      (index) =>
+        `${xAt(index, values.length)},${yAt(values[index], yMin, yMax)}`,
+    )
     .join(" ");
   const baseY = PAD.top + PLOT_H;
   const firstX = xAt(indices[0], values.length);
@@ -122,15 +125,6 @@ export function SystemHealthTrendChart({
   emptyMessage = "No trend data yet.",
 }: SystemHealthTrendChartProps) {
   const [compareTo, setCompareTo] = useState<CompareOption>("previous_quarter");
-  const [reducedMotion, setReducedMotion] = useState(false);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const sync = () => setReducedMotion(mediaQuery.matches);
-    sync();
-    mediaQuery.addEventListener("change", sync);
-    return () => mediaQuery.removeEventListener("change", sync);
-  }, []);
 
   const compareValues =
     compareTo === "previous_quarter"
@@ -149,13 +143,11 @@ export function SystemHealthTrendChart({
       ...compareValues.filter(hasValue),
     ]);
 
-    const currentRuns = contiguousRuns(
-      currentValues.length,
-      (index) => hasValue(currentValues[index]),
+    const currentRuns = contiguousRuns(currentValues.length, (index) =>
+      hasValue(currentValues[index]),
     );
-    const compareRuns = contiguousRuns(
-      compareValues.length,
-      (index) => hasValue(compareValues[index]),
+    const compareRuns = contiguousRuns(compareValues.length, (index) =>
+      hasValue(compareValues[index]),
     );
 
     const latestIndex = currentValues.reduce(
@@ -168,74 +160,51 @@ export function SystemHealthTrendChart({
       currentRuns,
       compareRuns,
       latestIndex,
-      latestValue: latestIndex >= 0 ? currentValues[latestIndex] : 0,
     };
-  }, [
-    activePointCount,
-    compareValues,
-    currentValues,
-    empty,
-  ]);
+  }, [activePointCount, compareValues, currentValues, empty]);
 
   const canCompare =
-    !empty &&
-    compareValues.filter(hasValue).length >= 2 &&
-    chart != null;
+    !empty && compareValues.filter(hasValue).length >= 2 && chart != null;
 
   if (!chart) {
     return (
-      <div className="dash-chart-empty flex min-h-[12rem] flex-col items-center justify-center rounded-xl px-6 py-10 text-center">
-        <p className="max-w-md text-sm leading-relaxed">{emptyMessage}</p>
-      </div>
+      <p className="border-y border-border py-8 text-sm text-muted-foreground">
+        {emptyMessage}
+      </p>
     );
   }
 
-  const { yDomain, currentRuns, compareRuns, latestIndex, latestValue } = chart;
+  const { yDomain, currentRuns, compareRuns, latestIndex } = chart;
 
   return (
-    <div className="dash-chart-panel rounded-xl p-3 sm:p-4 backdrop-blur-sm">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-semibold tabular-nums text-foreground">
-            {latestValue}
-          </span>
-          <span className="text-xs text-muted-foreground">latest score</span>
+    <div className="rounded-lg border border-border">
+      {canCompare ? (
+        <div className="flex items-center justify-end gap-2 border-b border-border px-3 py-2">
+          <span className="text-xs text-muted-foreground">Compare</span>
+          <DashboardSelect
+            value={compareTo}
+            onChange={(value) => setCompareTo(value as CompareOption)}
+            options={[
+              { value: "previous_quarter", label: "Previous quarter" },
+              { value: "industry_average", label: "Industry average" },
+            ]}
+            size="compact"
+            className="min-w-[10.5rem]"
+            id="compare-to"
+          />
         </div>
-
-        {canCompare ? (
-          <div className="flex items-center gap-2">
-            <span className="text-xs uppercase tracking-wider text-muted-foreground">
-              Compare to:
-            </span>
-            <DashboardSelect
-              value={compareTo}
-              onChange={(value) => setCompareTo(value as CompareOption)}
-              options={[
-                { value: "previous_quarter", label: "Previous Quarter" },
-                { value: "industry_average", label: "Industry Average" },
-              ]}
-              size="compact"
-              className="min-w-[10.5rem]"
-              id="compare-to"
-            />
-          </div>
-        ) : null}
-      </div>
+      ) : null}
 
       <svg
         viewBox={`0 0 ${CHART_W} ${CHART_H}`}
-        className="h-[13.5rem] w-full"
-        aria-label="System health trend chart"
+        className="h-[13.5rem] w-full text-foreground"
+        aria-label="Activity recency trend chart"
         role="img"
       >
         <defs>
           <linearGradient id="healthAreaGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.32" />
-            <stop offset="100%" stopColor="#a78bfa" stopOpacity="0.02" />
-          </linearGradient>
-          <linearGradient id="healthLineGradient" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#22d3ee" />
-            <stop offset="100%" stopColor="#c084fc" />
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.16" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
           </linearGradient>
         </defs>
 
@@ -248,7 +217,8 @@ export function SystemHealthTrendChart({
                 y1={y}
                 x2={CHART_W - PAD.right}
                 y2={y}
-                stroke="rgba(130, 151, 190, 0.22)"
+                stroke="currentColor"
+                className="text-border"
                 strokeWidth="1"
               />
               <text
@@ -269,9 +239,6 @@ export function SystemHealthTrendChart({
             key={`area-${runIndex}`}
             points={areaForRun(run, currentValues, yDomain.min, yDomain.max)}
             fill="url(#healthAreaGradient)"
-            style={{
-              animation: reducedMotion ? "none" : "fadeArea 0.9s ease-out",
-            }}
           />
         ))}
 
@@ -286,12 +253,12 @@ export function SystemHealthTrendChart({
                   yDomain.max,
                 )}
                 fill="none"
-                stroke="#6b7280"
+                stroke="currentColor"
                 strokeWidth="2"
                 strokeDasharray="5 5"
                 strokeLinejoin="round"
                 strokeLinecap="round"
-                className="opacity-75"
+                className="text-muted-foreground opacity-75"
               />
             ))
           : null}
@@ -306,13 +273,10 @@ export function SystemHealthTrendChart({
               yDomain.max,
             )}
             fill="none"
-            stroke="url(#healthLineGradient)"
-            strokeWidth="2.5"
+            stroke="currentColor"
+            strokeWidth="2"
             strokeLinejoin="round"
             strokeLinecap="round"
-            style={{
-              animation: reducedMotion ? "none" : "drawLine 1s ease-out",
-            }}
           />
         ))}
 
@@ -329,17 +293,17 @@ export function SystemHealthTrendChart({
                   cx={cx}
                   cy={cy}
                   r="7"
-                  fill="#22d3ee"
-                  fillOpacity="0.14"
+                  fill="currentColor"
+                  className="text-foreground"
+                  fillOpacity="0.12"
                 />
               ) : null}
               <circle
                 cx={cx}
                 cy={cy}
-                r={isLatest ? 3.5 : 2.8}
-                fill="#67e8f9"
-                stroke="#050914"
-                strokeWidth="1.2"
+                r={isLatest ? 3.5 : 2.5}
+                fill="currentColor"
+                className="text-foreground"
               />
             </g>
           );
@@ -362,27 +326,6 @@ export function SystemHealthTrendChart({
           </text>
         ))}
       </svg>
-
-      <style jsx>{`
-        @keyframes drawLine {
-          from {
-            opacity: 0;
-            transform: translateY(8px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes fadeArea {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-      `}</style>
     </div>
   );
 }

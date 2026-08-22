@@ -191,7 +191,7 @@ export function DashboardSearchInput({
                       {repo.name}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
-                      {repo.fullName} · {repo.unit}
+                      {repo.fullName}
                     </p>
                   </Link>
                 </li>

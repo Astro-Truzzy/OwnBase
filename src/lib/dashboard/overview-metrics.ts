@@ -69,8 +69,7 @@ export function buildDashboardTodos(options: {
         id: "connect",
         title: "Connect GitHub or GitLab",
         desc: "Link your account so you can browse and track repositories.",
-        href: "/dashboard#organization",
-        dashboardTab: "organization",
+        href: "/dashboard/organization",
       });
     }
 
@@ -78,10 +77,9 @@ export function buildDashboardTodos(options: {
       id: "track-repo",
       title: "Track your first repository",
       desc: hasGitProvider
-        ? "Open the Organization tab and add repos in one click."
-        : "After connecting a provider, use the Organization tab to add repos.",
-      href: "/dashboard#organization",
-      dashboardTab: "organization",
+        ? "Open Organization and add repos in one click."
+        : "After connecting a provider, use Organization to add repos.",
+      href: "/dashboard/organization",
     });
 
     if (uploads === 0) {
@@ -98,8 +96,7 @@ export function buildDashboardTodos(options: {
         id: "summary",
         title: "Generate an AI overview",
         desc: "Available after you track a repo or upload a project.",
-        href: targets.summary ?? "/dashboard#organization",
-        dashboardTab: targets.summary ? undefined : "organization",
+        href: targets.summary ?? "/dashboard/organization",
       });
     }
 
@@ -113,8 +110,7 @@ export function buildDashboardTodos(options: {
       id: "track-repo",
       title: "Add a repo to your organization",
       desc: "Tracked repos unlock health signals, access maps, and summaries.",
-      href: "/dashboard#organization",
-      dashboardTab: "organization",
+      href: "/dashboard/organization",
     });
   }
 
@@ -123,8 +119,7 @@ export function buildDashboardTodos(options: {
       id: "summary",
       title: "Generate your first AI summary",
       desc: "Open a repository hub and create an executive overview.",
-      href: targets.summary ?? "/dashboard#organization",
-      dashboardTab: targets.summary ? undefined : "organization",
+      href: targets.summary ?? "/dashboard/organization",
     });
   }
 
@@ -164,8 +159,7 @@ export function buildDashboardTodos(options: {
       id: "security",
       title: "Review access changes",
       desc: "Recent collaborator or permission changes need a quick audit.",
-      href: targets.security ?? "/dashboard#operations",
-      dashboardTab: targets.security ? undefined : "operations",
+      href: targets.security ?? "/dashboard/devs",
     });
   }
 
@@ -182,9 +176,10 @@ export function buildDashboardTodos(options: {
     return [
       {
         id: "explore",
-        title: "Portfolio looks healthy",
+        title: "Workspace looks healthy",
         desc: "Open a repository hub to run summaries or review recent activity.",
         href: "/dashboard#portfolio",
+        dashboardTab: "portfolio",
       },
     ];
   }

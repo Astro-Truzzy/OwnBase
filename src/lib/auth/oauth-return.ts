@@ -15,6 +15,22 @@ export function stashAuthNext(path: string): void {
   }
 }
 
+/**
+ * Open a Supabase authorize URL, forcing `redirect_to` to this origin.
+ * Prevents `NEXT_PUBLIC_APP_URL=https://ownbase.cloud` from sending local
+ * sign-in to the hosted dashboard.
+ */
+export function launchOAuthAuthorizeUrl(url: string): void {
+  const callback = `${window.location.origin}/auth/callback`;
+  try {
+    const parsed = new URL(url);
+    parsed.searchParams.set("redirect_to", callback);
+    window.location.assign(parsed.toString());
+  } catch {
+    window.location.assign(url);
+  }
+}
+
 export function consumeAuthNext(): string {
   if (typeof window === "undefined") return DEFAULT_POST_AUTH_PATH;
   try {
