@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   IconArrowRight,
+  IconChevronLeft,
+  IconChevronRight,
   IconFile,
   IconGitCommit,
   IconShield,
@@ -29,6 +31,10 @@ interface ActivitySectionProps {
 }
 
 type ActivityFilter = "all" | "code" | "access";
+
+const INITIAL_VISIBLE = 3;
+const SEE_MORE_INCREMENT = 4;
+const PAGE_SIZE = INITIAL_VISIBLE + SEE_MORE_INCREMENT;
 
 function auditDetailText(
   entry: Extract<RepoActivityTimelineItem, { kind: "audit" }>,
@@ -123,14 +129,21 @@ function CommitGroupRow({
                 key={action}
                 className="rounded-md border border-border bg-primary/5 px-2 py-0.5"
               >
-                {count} {fileTouchActionLabel(action as import("@/lib/repo-activity").FileTouchAction)}
+                {count}{" "}
+                {fileTouchActionLabel(
+                  action as import("@/lib/repo-activity").FileTouchAction,
+                )}
               </span>
             ))}
             {(group.totalAdditions > 0 || group.totalDeletions > 0) && (
               <span className="rounded-md border border-border bg-primary/5 px-2 py-0.5">
-                <span className="text-emerald-300/90">+{group.totalAdditions}</span>
+                <span className="text-emerald-300/90">
+                  +{group.totalAdditions}
+                </span>
                 {" / "}
-                <span className="text-red-600/90 dark:text-red-300/90">−{group.totalDeletions}</span>
+                <span className="text-red-600/90 dark:text-red-300/90">
+                  −{group.totalDeletions}
+                </span>
               </span>
             )}
           </div>
@@ -141,7 +154,10 @@ function CommitGroupRow({
                 key={file.id}
                 className="flex items-center gap-2 font-mono text-xs text-muted-foreground"
               >
-                <IconFile className="h-3 w-3 shrink-0 text-primary/80" aria-hidden />
+                <IconFile
+                  className="h-3 w-3 shrink-0 text-primary/80"
+                  aria-hidden
+                />
                 <span className="truncate">{file.file}</span>
                 <span className="shrink-0 text-muted-foreground/70">
                   {fileTouchActionLabel(file.action)}
@@ -150,7 +166,8 @@ function CommitGroupRow({
             ))}
             {remaining > 0 && (
               <li className="text-xs text-muted-foreground/80">
-                +{remaining} more file{remaining === 1 ? "" : "s"} in this commit
+                +{remaining} more file{remaining === 1 ? "" : "s"} in this
+                commit
               </li>
             )}
           </ul>
@@ -213,6 +230,13 @@ export function ActivitySection({
   fileActivityError,
 }: ActivitySectionProps) {
   const [filter, setFilter] = useState<ActivityFilter>("all");
+  const [expanded, setExpanded] = useState(false);
+  const [page, setPage] = useState(0);
+
+  useEffect(() => {
+    setExpanded(false);
+    setPage(0);
+  }, [filter]);
 
   const timeline = useMemo(
     () => buildGroupedActivityTimeline(fileEvents, auditEntries),
@@ -229,6 +253,13 @@ export function ActivitySection({
 
   const commitCount = timeline.filter((i) => i.kind === "commit").length;
   const accessCount = auditEntries.length;
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const visibleItems = expanded
+    ? filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+    : filtered.slice(0, INITIAL_VISIBLE);
+  const showSeeMore = !expanded && filtered.length > INITIAL_VISIBLE;
+  const showPagination = expanded && filtered.length > PAGE_SIZE;
 
   return (
     <section id="activity" className="dash-panel p-6 sm:p-8">
@@ -260,7 +291,9 @@ export function ActivitySection({
             >
               {label}
               {count > 0 && (
-                <span className="ml-1.5 text-muted-foreground/70">({count})</span>
+                <span className="ml-1.5 text-muted-foreground/70">
+                  ({count})
+                </span>
               )}
             </button>
           ))}
@@ -285,20 +318,70 @@ export function ActivitySection({
       )}
 
       {filtered.length > 0 && (
-        <ul className="mt-6 space-y-3" role="list">
-          {filtered.map((item) =>
-            item.kind === "commit" ? (
-              <CommitGroupRow
-                key={item.id}
-                group={item}
-                owner={owner}
-                name={name}
-              />
-            ) : (
-              <AuditActivityRow key={item.id} entry={item} />
-            ),
+        <>
+          <ul className="mt-6 space-y-3" role="list">
+            {visibleItems.map((item) =>
+              item.kind === "commit" ? (
+                <CommitGroupRow
+                  key={item.id}
+                  group={item}
+                  owner={owner}
+                  name={name}
+                />
+              ) : (
+                <AuditActivityRow key={item.id} entry={item} />
+              ),
+            )}
+          </ul>
+
+          {showSeeMore && (
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setExpanded(true)}
+                className="rounded-lg border border-border bg-muted/40 px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted/60"
+              >
+                See more
+                <span className="ml-1.5 text-muted-foreground">
+                  (
+                  {Math.min(
+                    SEE_MORE_INCREMENT,
+                    filtered.length - INITIAL_VISIBLE,
+                  )}{" "}
+                  more)
+                </span>
+              </button>
+            </div>
           )}
-        </ul>
+
+          {showPagination && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4 text-sm">
+              <span className="text-muted-foreground">
+                Page {page + 1} of {totalPages} · {filtered.length} events
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={page === 0}
+                  onClick={() => setPage((p) => p - 1)}
+                  className="flex h-8 items-center gap-1 rounded-lg border border-border px-3 text-muted-foreground transition hover:bg-muted disabled:pointer-events-none disabled:opacity-40"
+                >
+                  <IconChevronLeft className="h-4 w-4" aria-hidden />
+                  Prev
+                </button>
+                <button
+                  type="button"
+                  disabled={page >= totalPages - 1}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="flex h-8 items-center gap-1 rounded-lg border border-border px-3 text-muted-foreground transition hover:bg-muted disabled:pointer-events-none disabled:opacity-40"
+                >
+                  Next
+                  <IconChevronRight className="h-4 w-4" aria-hidden />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </section>
   );

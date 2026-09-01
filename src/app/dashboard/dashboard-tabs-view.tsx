@@ -3,14 +3,27 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
+  IconAlertTriangle,
   IconBrandGithub,
   IconBrandGitlab,
   IconDownload,
+  IconFileText,
   IconFilter,
+  IconGitBranch,
+  IconActivity,
+  IconUsers,
 } from "@tabler/icons-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { MetricCard, type MetricTone } from "@/components/dashboard/metric-card";
+import { StatusPill } from "@/components/dashboard/status-pill";
+import { TimelineRow } from "@/components/dashboard/timeline-row";
 import { DashboardTodoPanel } from "./dashboard-todo-panel";
 import { SystemHealthTrendChart } from "./system-health-trend-chart";
+import {
+  KnowledgeRiskMatrixChart,
+  type KnowledgeRiskRepo,
+} from "./knowledge-risk-matrix-chart";
 import {
   applyPortfolioCategoryFilter,
   filterSearchableRepos,
@@ -60,6 +73,14 @@ function statusMeta(status: DashboardRepoView["status"]): {
   }
 }
 
+/** Semantic tone for the average-activity metric (null = no data yet). */
+function healthTone(score: number | null): MetricTone {
+  if (score == null) return "default";
+  if (score >= 85) return "success";
+  if (score >= 60) return "warning";
+  return "danger";
+}
+
 export interface DashboardActivityView {
   action: string;
   repo: string;
@@ -67,6 +88,22 @@ export interface DashboardActivityView {
   time: string;
   type: "deploy" | "merge" | "docs" | "security" | "audit";
 }
+
+/**
+ * Maps the dashboard's activity view type back to a `TimelineRow` category key
+ * (which mirrors `ActivityActionType`) so the timeline shows the right icon.
+ * Keeps the server-side prop contract in `page-content.tsx` unchanged.
+ */
+const ACTIVITY_TIMELINE_CATEGORY: Record<
+  DashboardActivityView["type"],
+  string
+> = {
+  docs: "repo_tracked",
+  audit: "repo_untracked",
+  merge: "collaborator_added",
+  security: "collaborator_removed",
+  deploy: "default",
+};
 
 export interface DashboardTeamView {
   name: string;
@@ -269,6 +306,34 @@ export function DashboardTabsView({
   const recentActivity = activities.slice(0, 5);
   const showTrendChart = hasTrendData && !isNewWorkspace;
 
+  // Interim continuity signal — derived from the custody inputs already on each
+  // repo row (collaborator spread + activity health). The exact 5-factor
+  // Continuity Score lands in a later phase; this callout is labelled as interim
+  // so it is never mistaken for the final score.
+  const singleMaintainerRepos = repositories.filter(
+    (r) => r.busFactor <= 1,
+  ).length;
+  const lowHealthRepos = repositories.filter((r) => r.health < 85).length;
+  const showContinuityCallout =
+    !isNewWorkspace &&
+    repositories.length > 0 &&
+    (singleMaintainerRepos > 0 || lowHealthRepos > 0);
+
+  const knowledgeRiskRepos: KnowledgeRiskRepo[] = useMemo(
+    () =>
+      overviewRepos.map((repo) => ({
+        id: repo.id,
+        name: repo.name,
+        fullName: repo.fullName,
+        detailHref: repo.detailHref,
+        health: repo.health,
+        contributors: repo.contributors,
+        busFactor: repo.busFactor,
+      })),
+    [overviewRepos],
+  );
+  const showKnowledgeRisk = !isNewWorkspace && repositories.length > 0;
+
   function exportPortfolioCsv() {
     const csvEscape = (value: string | number) => {
       const text = String(value).replace(/"/g, '""');
@@ -318,30 +383,142 @@ export function DashboardTabsView({
             Overview
           </h1>
 
-          <dl className="grid grid-cols-2 gap-x-8 gap-y-5 border-y border-border py-5 lg:grid-cols-4">
-            <Stat
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
               label="Activity"
+              icon={IconActivity}
+              tone={healthTone(summary.healthScore)}
               value={
-                summary.healthScore != null ? `${summary.healthScore}` : "—"
+                summary.healthScore != null ? (
+                  <>
+                    {summary.healthScore}
+                    <span className="ml-1 text-sm font-normal text-muted-foreground">
+                      /100
+                    </span>
+                  </>
+                ) : (
+                  "—"
+                )
               }
-              hint={summary.healthScore != null ? "/100" : undefined}
+              hint={
+                summary.healthScore != null
+                  ? "Average across tracked repos"
+                  : "Track a repo to start scoring"
+              }
             />
-            <Stat
+            <MetricCard
               label="Repos"
+              icon={IconGitBranch}
               value={isNewWorkspace ? "—" : `${summary.totalSystems}`}
+              hint={isNewWorkspace ? "Nothing tracked yet" : "In your organization"}
             />
-            <Stat
+            <MetricCard
               label="Team"
+              icon={IconUsers}
               value={isNewWorkspace ? "—" : `${summary.teamMembers}`}
-            />
-            <Stat
-              label="Docs"
-              value={
-                summary.docsCoverage != null ? `${summary.docsCoverage}` : "—"
+              hint={
+                isNewWorkspace
+                  ? "No collaborators yet"
+                  : "Developers with repo access"
               }
-              hint={summary.docsCoverage != null ? "%" : undefined}
             />
-          </dl>
+            <MetricCard
+              label="Docs"
+              icon={IconFileText}
+              tone="ai"
+              value={
+                summary.docsCoverage != null ? (
+                  <>
+                    {summary.docsCoverage}
+                    <span className="ml-1 text-sm font-normal text-muted-foreground">
+                      %
+                    </span>
+                  </>
+                ) : (
+                  "—"
+                )
+              }
+              hint={
+                summary.docsCoverage != null
+                  ? "Repos with an AI summary"
+                  : "Generate a summary to begin"
+              }
+            />
+          </div>
+
+          {showContinuityCallout && (
+            <section
+              aria-labelledby="continuity-callout-heading"
+              className="dash-panel flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6"
+            >
+              <div className="flex min-w-0 items-start gap-3">
+                <span
+                  className={cn(
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border",
+                    singleMaintainerRepos > 0
+                      ? "border-danger-border bg-danger-subtle text-danger"
+                      : "border-warning-border bg-warning-subtle text-warning",
+                  )}
+                >
+                  <IconAlertTriangle className="h-5 w-5" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2
+                      id="continuity-callout-heading"
+                      className="text-base font-semibold text-foreground"
+                    >
+                      Continuity risk
+                    </h2>
+                    <StatusPill tone="neutral">Interim signal</StatusPill>
+                  </div>
+                  <p className="mt-1.5 text-sm text-muted-foreground">
+                    {singleMaintainerRepos > 0 ? (
+                      <>
+                        <span className="font-medium text-foreground">
+                          {singleMaintainerRepos}{" "}
+                          {singleMaintainerRepos === 1 ? "repo" : "repos"}
+                        </span>{" "}
+                        {singleMaintainerRepos === 1 ? "depends" : "depend"} on a
+                        single maintainer
+                        {lowHealthRepos > 0 ? (
+                          <>
+                            {" "}
+                            and{" "}
+                            <span className="font-medium text-foreground">
+                              {lowHealthRepos}
+                            </span>{" "}
+                            {lowHealthRepos === 1 ? "shows" : "show"} low activity
+                          </>
+                        ) : null}
+                        . Spread access so no one person is a single point of
+                        failure.
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-medium text-foreground">
+                          {lowHealthRepos}{" "}
+                          {lowHealthRepos === 1 ? "repo shows" : "repos show"}
+                        </span>{" "}
+                        low recent activity. Review whether they are still owned
+                        and maintained.
+                      </>
+                    )}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Based on collaborator spread and recent activity. The full
+                    continuity score arrives in a later release.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/dashboard/devs"
+                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm font-medium text-foreground transition hover:bg-muted/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:self-center"
+              >
+                Review access
+              </Link>
+            </section>
+          )}
 
           {showTodos && (
             <DashboardTodoPanel
@@ -406,32 +583,51 @@ export function DashboardTabsView({
           </section>
 
           {recentActivity.length > 0 && (
-            <section>
-              <h2 className="mb-3 text-sm font-medium text-muted-foreground">
+            <section aria-labelledby="recent-activity-heading">
+              <h2
+                id="recent-activity-heading"
+                className="mb-3 text-sm font-medium text-muted-foreground"
+              >
                 Recent activity
               </h2>
               <ul className="divide-y divide-border border-y border-border">
                 {recentActivity.map((entry, idx) => (
-                  <li key={`${entry.action}-${idx}`}>
-                    <Link
-                      href={detailHrefFromRepo(entry.repo)}
-                      className="flex items-baseline justify-between gap-4 rounded-lg py-3 transition hover:bg-muted/50 sm:px-2"
-                    >
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium text-foreground">
-                          {entry.action}
-                        </span>
-                        <span className="mt-0.5 block truncate text-sm text-muted-foreground">
-                          {entry.repo}
-                        </span>
-                      </span>
-                      <span className="shrink-0 text-sm text-muted-foreground">
-                        {entry.time}
-                      </span>
-                    </Link>
-                  </li>
+                  <TimelineRow
+                    key={`${entry.action}-${idx}`}
+                    action={entry.action}
+                    target={
+                      <Link
+                        href={detailHrefFromRepo(entry.repo)}
+                        className="rounded underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                      >
+                        {entry.repo}
+                      </Link>
+                    }
+                    at={entry.time}
+                    category={ACTIVITY_TIMELINE_CATEGORY[entry.type]}
+                  />
                 ))}
               </ul>
+            </section>
+          )}
+
+          {showKnowledgeRisk && (
+            <section aria-labelledby="knowledge-risk-heading">
+              <div className="mb-3 flex items-baseline justify-between gap-3">
+                <h2
+                  id="knowledge-risk-heading"
+                  className="text-sm font-medium text-muted-foreground"
+                >
+                  Knowledge risk
+                </h2>
+                <Link
+                  href="/dashboard/devs"
+                  className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
+                >
+                  Manage access
+                </Link>
+              </div>
+              <KnowledgeRiskMatrixChart repositories={knowledgeRiskRepos} />
             </section>
           )}
 
@@ -552,30 +748,6 @@ export function DashboardTabsView({
         </div>
       )}
     </>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  hint,
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-}) {
-  return (
-    <div className="min-w-0">
-      <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-foreground">
-        {value}
-        {hint ? (
-          <span className="ml-1 text-sm font-normal text-muted-foreground">
-            {hint}
-          </span>
-        ) : null}
-      </dd>
-    </div>
   );
 }
 

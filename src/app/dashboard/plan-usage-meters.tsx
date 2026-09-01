@@ -16,9 +16,9 @@ function Meter({
     ratio == null
       ? ""
       : ratio >= 100
-        ? "bg-red-500"
+        ? "bg-danger"
         : ratio >= 80
-          ? "bg-amber-500"
+          ? "bg-warning"
           : "bg-linear-to-r from-cyan-400 to-violet-400";
 
   return (

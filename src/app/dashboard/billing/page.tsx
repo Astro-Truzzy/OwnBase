@@ -9,8 +9,10 @@ import {
   IconRocket,
 } from "@tabler/icons-react";
 import { getUsageSnapshot } from "@/lib/usage-stats";
+import { normalizePlan } from "@/lib/plan-limits";
 import { SubscribeButton } from "./subscribe-button";
 import { ManageSubscriptionButton } from "./manage-subscription-button";
+import { PlanComparisonTable } from "./plan-comparison-table";
 import { PlanUsageMeters } from "../plan-usage-meters";
 
 export const metadata = {
@@ -45,6 +47,7 @@ export default async function BillingPage() {
     subscriptionEndsAt != null && subscriptionEndsAt > new Date();
   const trialExpired = trialEndsAt != null && trialEndsAt <= new Date();
   const onTrial = trialEndsAt != null && trialEndsAt > new Date();
+  const currentPlan = normalizePlan(profile?.plan);
 
   return (
     <div className="space-y-8">
@@ -69,9 +72,9 @@ export default async function BillingPage() {
         </h2>
         <div className="mt-4 space-y-4">
           {hasActiveSubscription && (
-            <div className="flex items-center gap-3 rounded-lg border border-emerald-500/35 bg-emerald-500/10 p-4">
+            <div className="flex items-center gap-3 rounded-lg border border-success-border bg-success-subtle p-4">
               <IconCheck
-                className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                className="h-5 w-5 shrink-0 text-success"
                 aria-hidden
               />
               <div>
@@ -107,9 +110,9 @@ export default async function BillingPage() {
             </div>
           )}
           {trialExpired && !hasActiveSubscription && (
-            <div className="flex items-center gap-3 rounded-lg border border-amber-500/40 bg-amber-500/12 p-4">
+            <div className="flex items-center gap-3 rounded-lg border border-warning-border bg-warning-subtle p-4">
               <IconRocket
-                className="h-5 w-5 shrink-0 text-amber-700 dark:text-amber-400"
+                className="h-5 w-5 shrink-0 text-warning"
                 aria-hidden
               />
               <div>
@@ -125,6 +128,8 @@ export default async function BillingPage() {
       </div>
 
       <PlanUsageMeters usage={usage} />
+
+      <PlanComparisonTable currentPlan={currentPlan} />
 
       {(!hasActiveSubscription || trialExpired) && (
         <div className="dash-panel p-6 sm:p-8">

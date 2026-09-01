@@ -2,9 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { IconUpload } from "@tabler/icons-react";
+import { FeatureLockOverlay } from "@/components/dashboard/feature-lock";
+import { useAccessStatus } from "../access-status-context";
 import { uploadProjectAction } from "./actions";
 
 export function UploadForm() {
+  const locked = useAccessStatus().trialExpired;
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -13,6 +16,7 @@ export function UploadForm() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (locked) return;
     setMessage(null);
     const form = e.currentTarget;
     const fileInput =
@@ -63,7 +67,8 @@ export function UploadForm() {
       <p className="mt-1 text-sm text-muted-foreground">
         Max 50 MB. Your code is stored in an environment owned by your business.
       </p>
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+      <FeatureLockOverlay locked={locked} feature="Uploads" className="mt-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label
             htmlFor="upload-name"
@@ -78,7 +83,7 @@ export function UploadForm() {
             placeholder="e.g. my-app"
             required
             className="dash-input w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
-            disabled={isPending}
+            disabled={isPending || locked}
           />
         </div>
         <div>
@@ -94,7 +99,7 @@ export function UploadForm() {
             type="file"
             accept=".zip,application/zip,application/x-zip-compressed"
             className="dash-input w-full rounded-lg px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary/12 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
-            disabled={isPending}
+            disabled={isPending || locked}
           />
         </div>
         {message && (
@@ -107,13 +112,14 @@ export function UploadForm() {
         )}
         <button
           type="submit"
-          disabled={isPending}
+          disabled={isPending || locked}
           className="inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition hover:brightness-105 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
         >
           <IconUpload className="h-4 w-4" aria-hidden />
           {isPending ? "Uploading…" : "Upload"}
         </button>
-      </form>
+        </form>
+      </FeatureLockOverlay>
     </section>
   );
 }

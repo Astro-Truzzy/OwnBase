@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { IconBuilding, IconBuildingOff } from "@tabler/icons-react";
+import { FeatureLockedNotice } from "@/components/dashboard/feature-lock";
+import { useAccessStatus } from "../../../access-status-context";
 import { addTrackedRepoAction, removeTrackedRepoAction } from "../../actions";
 
 interface TrackSectionProps {
@@ -11,6 +13,7 @@ interface TrackSectionProps {
 }
 
 export function TrackSection({ owner, name, isTracked }: TrackSectionProps) {
+  const locked = useAccessStatus().trialExpired;
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<{
     type: "success" | "error";
@@ -18,6 +21,7 @@ export function TrackSection({ owner, name, isTracked }: TrackSectionProps) {
   } | null>(null);
 
   const handleAdd = () => {
+    if (locked) return;
     setMessage(null);
     startTransition(async () => {
       const result = await addTrackedRepoAction(owner, name);
@@ -91,15 +95,23 @@ export function TrackSection({ owner, name, isTracked }: TrackSectionProps) {
             </button>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={handleAdd}
-            disabled={isPending}
-            className="inline-flex items-center gap-2 rounded-lg border border-primary/35 bg-linear-to-r from-cyan-500/90 to-violet-600/85 px-4 py-2 text-sm font-medium text-white shadow-[0_8px_24px_rgba(34,211,238,0.2)] transition hover:brightness-110 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
-          >
-            <IconBuilding className="h-4 w-4" aria-hidden />
-            {isPending ? "Adding…" : "Add to my organization"}
-          </button>
+          <>
+            {locked && (
+              <FeatureLockedNotice
+                feature="Repository storage"
+                className="mb-4"
+              />
+            )}
+            <button
+              type="button"
+              onClick={handleAdd}
+              disabled={isPending || locked}
+              className="inline-flex items-center gap-2 rounded-lg border border-primary/35 bg-linear-to-r from-cyan-500/90 to-violet-600/85 px-4 py-2 text-sm font-medium text-white shadow-[0_8px_24px_rgba(34,211,238,0.2)] transition hover:brightness-110 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+            >
+              <IconBuilding className="h-4 w-4" aria-hidden />
+              {isPending ? "Adding…" : "Add to my organization"}
+            </button>
+          </>
         )}
       </div>
       {message && (

@@ -9,6 +9,7 @@ import { fetchProjectByPath } from "../../../../../lib/gitlab/fetch-projects";
 import { getGitHubAccessToken } from "../../../../../lib/supabase/github-token";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { summaryFreshness } from "@/lib/ai/insights-overview";
 import type { ActivityLogRow } from "../../../../../lib/db/types";
 
 const FolderStructureSection = dynamic(
@@ -182,6 +183,12 @@ export default async function RepoDetailPage({ params }: PageProps) {
 
   const summary = existingSummary?.summary_json ?? null;
   const summaryUpdatedAt = existingSummary?.updated_at ?? null;
+  // Banded on the server: SummarySection is a client component, so a
+  // browser-side clock here would desync from the SSR'd markup.
+  const { freshness: summaryBand, ageDays: summaryAgeDays } = summaryFreshness(
+    summaryUpdatedAt,
+    Date.now(),
+  );
 
   const { collaborators, error: collaboratorsError } = githubToken
     ? await fetchRepoCollaborators(owner, name, githubToken)
@@ -267,6 +274,8 @@ export default async function RepoDetailPage({ params }: PageProps) {
         name={name}
         initialSummary={summary}
         summaryUpdatedAt={summaryUpdatedAt}
+        summaryBand={summaryBand}
+        summaryAgeDays={summaryAgeDays}
       />
 
       <TrackSection owner={owner} name={name} isTracked={isTracked} />

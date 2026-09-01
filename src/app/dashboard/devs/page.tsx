@@ -12,6 +12,11 @@ import { createClient } from "../../../lib/supabase/server";
 import { fetchRepoCollaborators } from "../../../lib/github/fetch-collaborators";
 import { getGitHubAccessToken } from "@/lib/supabase/github-token";
 import type { GitHubCollaborator } from "../../../lib/github/types";
+import {
+  buildAccessMatrix,
+  type OrgMemberRow,
+  type RepoAccessRow,
+} from "@/lib/access/access-matrix";
 import { DevsPageClient } from "./devs-page-client";
 
 type RepoWithCollabs = {
@@ -39,24 +44,44 @@ export default async function DevsPage() {
       ? (session?.provider_token ?? null)
       : await getGitHubAccessToken(supabase, user);
 
-  const [{ data: trackedRows }, { data: summaryRows }, { data: auditRows }] =
-    await Promise.all([
-      supabase
-        .from("tracked_repos")
-        .select("full_name, repo_owner, repo_name")
-        .eq("user_id", user.id)
-        .order("added_at", { ascending: false }),
-      supabase
-        .from("repo_summaries")
-        .select("full_name, summary_json")
-        .eq("user_id", user.id),
-      supabase
-        .from("activity_log")
-        .select("id, full_name, action_type, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(120),
-    ]);
+  const [
+    { data: trackedRows },
+    { data: summaryRows },
+    { data: auditRows },
+    { data: memberRows },
+    { data: accessRows },
+  ] = await Promise.all([
+    supabase
+      .from("tracked_repos")
+      .select("full_name, repo_owner, repo_name")
+      .eq("user_id", user.id)
+      .order("added_at", { ascending: false }),
+    supabase
+      .from("repo_summaries")
+      .select("full_name, summary_json")
+      .eq("user_id", user.id),
+    supabase
+      .from("activity_log")
+      .select("id, full_name, action_type, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(120),
+    // org_members / repo_access may not exist until the migration is applied;
+    // Supabase returns { data: null, error } (no throw), so the matrix simply
+    // degrades to the live-GitHub view below. Safe by construction.
+    supabase
+      .from("org_members")
+      .select(
+        "id, provider, login, email, display_name, avatar_url, html_url, org_role, status, notes",
+      )
+      .eq("user_id", user.id),
+    supabase
+      .from("repo_access")
+      .select(
+        "id, member_id, full_name, provider, login, access_level, granted_by, granted_at, expires_at",
+      )
+      .eq("user_id", user.id),
+  ]);
 
   const githubRepos = (trackedRows ?? []).filter(
     (r) => r.repo_owner !== "gitlab",
@@ -141,6 +166,43 @@ export default async function DevsPage() {
     })),
   );
 
+  // People × repos access matrix: live GitHub collaborators reconciled with the
+  // owner-native access model. GitHub repos are editable columns; GitLab repos
+  // are advisory (managed on GitLab), rendered read-only.
+  const githubMatrixRepos = githubRepos.map((r) => {
+    const live = reposWithCollabs.find((x) => x.fullName === r.full_name);
+    const unavailable = Boolean(
+      live?.error && (live?.collaborators.length ?? 0) === 0,
+    );
+    return {
+      fullName: r.full_name,
+      owner: r.repo_owner,
+      name: r.repo_name,
+      provider: "github" as const,
+      unavailable,
+      error: live?.error,
+    };
+  });
+  const gitlabMatrixRepos = gitlabRepos.map((r) => ({
+    fullName: r.full_name,
+    owner: "gitlab",
+    name: r.full_name.replace(/^gitlab\//, ""),
+    provider: "gitlab" as const,
+    unavailable: true,
+    error: "Members are managed on GitLab.",
+  }));
+
+  const accessMatrix = buildAccessMatrix({
+    trackedRepos: [...githubMatrixRepos, ...gitlabMatrixRepos],
+    liveCollaboratorsByRepo: reposWithCollabs.map((r) => ({
+      fullName: r.fullName,
+      collaborators: r.collaborators,
+    })),
+    members: (memberRows ?? []) as OrgMemberRow[],
+    repoAccessRows: (accessRows ?? []) as RepoAccessRow[],
+    now: Date.now(),
+  });
+
   return (
     <div className="space-y-10 sm:space-y-12">
       <div>
@@ -161,6 +223,7 @@ export default async function DevsPage() {
         hasProviderToken={Boolean(providerToken)}
         githubTrackedCount={githubRepos.length}
         reposWithCollabs={reposWithCollabs}
+        accessMatrix={accessMatrix}
       />
     </div>
   );

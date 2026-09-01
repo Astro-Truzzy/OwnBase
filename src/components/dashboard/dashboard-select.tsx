@@ -11,6 +11,8 @@ export type DashboardSelectOption = {
 
 type DashboardSelectProps = {
   label?: string;
+  /** Accessible name when there is no visible `label` (e.g. dense grid cells). */
+  ariaLabel?: string;
   value: string;
   onChange: (value: string) => void;
   options: DashboardSelectOption[];
@@ -27,6 +29,7 @@ type DashboardSelectProps = {
 
 export function DashboardSelect({
   label,
+  ariaLabel,
   value,
   onChange,
   options,
@@ -42,6 +45,7 @@ export function DashboardSelect({
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const listboxId = useId();
+  const labelId = useId();
 
   const selected = options.find((option) => option.value === value);
 
@@ -72,6 +76,7 @@ export function DashboardSelect({
 
       {label ? (
         <span
+          id={labelId}
           className={cn(
             "mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground",
             labelClassName,
@@ -87,6 +92,8 @@ export function DashboardSelect({
         role="combobox"
         aria-expanded={open}
         aria-controls={listboxId}
+        aria-labelledby={label ? labelId : undefined}
+        aria-label={label ? undefined : ariaLabel}
         disabled={disabled}
         onClick={() => setOpen((isOpen) => !isOpen)}
         className={cn(

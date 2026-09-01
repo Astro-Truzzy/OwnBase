@@ -10,6 +10,8 @@ import {
   type ManageAccessResult,
 } from "../../actions";
 import { DashboardSelect } from "@/components/dashboard/dashboard-select";
+import { FeatureLockedNotice } from "@/components/dashboard/feature-lock";
+import { useAccessStatus } from "../../../access-status-context";
 
 interface AccessSectionProps {
   owner: string;
@@ -36,6 +38,7 @@ export function AccessSection({
   collaborators,
   error,
 }: AccessSectionProps) {
+  const locked = useAccessStatus().trialExpired;
   const [username, setUsername] = useState("");
   const [permission, setPermission] = useState<"pull" | "push" | "admin">(
     "push",
@@ -51,6 +54,7 @@ export function AccessSection({
 
   const handleInvite = (e: React.FormEvent) => {
     e.preventDefault();
+    if (locked) return;
     clearMessage();
     const value = username.trim().replace(/^@/, "");
     if (!value) {
@@ -77,6 +81,7 @@ export function AccessSection({
   };
 
   const handleRemove = (login: string) => {
+    if (locked) return;
     if (
       !confirm(`Remove ${login} from this repository? They will lose access.`)
     )
@@ -126,6 +131,13 @@ export function AccessSection({
         click—no need to leave this page.
       </p>
 
+      {locked && (
+        <FeatureLockedNotice
+          feature="Collaborator management"
+          className="mt-6"
+        />
+      )}
+
       {/* In-app invite form */}
       <form
         onSubmit={handleInvite}
@@ -146,7 +158,7 @@ export function AccessSection({
             onChange={(e) => setUsername(e.target.value)}
             onFocus={clearMessage}
             className="dash-input w-full rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
-            disabled={isAddPending}
+            disabled={isAddPending || locked}
             autoComplete="username"
           />
         </div>
@@ -167,13 +179,13 @@ export function AccessSection({
               value: opt.value,
               label: opt.label,
             }))}
-            disabled={isAddPending}
+            disabled={isAddPending || locked}
             triggerClassName="dash-input shadow-none"
           />
         </div>
         <button
           type="submit"
-          disabled={isAddPending}
+          disabled={isAddPending || locked}
           className="inline-flex items-center gap-2 rounded-lg border border-border dash-surface-inset px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-primary/35 hover:bg-muted/60 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
         >
           <IconUserPlus className="h-4 w-4" aria-hidden />
@@ -239,7 +251,7 @@ export function AccessSection({
                     <button
                       type="button"
                       onClick={() => handleRemove(collab.login)}
-                      disabled={removingLogin === collab.login}
+                      disabled={removingLogin === collab.login || locked}
                       className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-background"
                       aria-label={`Revoke access for ${collab.login}`}
                       title="Revoke access in one click"

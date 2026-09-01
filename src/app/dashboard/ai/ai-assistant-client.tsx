@@ -16,8 +16,10 @@ import {
 import { FileFullViewModal } from "@/components/dashboard/file-full-view-modal";
 import { FileTypeIcon } from "@/components/dashboard/file-type-icon";
 import { DashboardSelect } from "@/components/dashboard/dashboard-select";
+import { FeatureLockedNotice } from "@/components/dashboard/feature-lock";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import { cn } from "@/lib/utils";
+import { useAccessStatus } from "../access-status-context";
 
 const CodeViewer = dynamic(
   () =>
@@ -50,6 +52,7 @@ interface AiAssistantClientProps {
 }
 
 export function AiAssistantClient({ initialRepos }: AiAssistantClientProps) {
+  const locked = useAccessStatus().trialExpired;
   const [repos] = useState(initialRepos);
   const [fullName, setFullName] = useState<string>(initialRepos[0]?.full_name ?? "");
   const [branch, setBranch] = useState("");
@@ -233,6 +236,7 @@ export function AiAssistantClient({ initialRepos }: AiAssistantClientProps) {
   async function sendChat() {
     const text = input.trim();
     if (!text || chatLoading) return;
+    if (locked) return;
     setChatError(null);
     const nextMessages: ChatTurn[] = [...messages, { role: "user", content: text }];
     setMessages(nextMessages);
@@ -510,6 +514,8 @@ export function AiAssistantClient({ initialRepos }: AiAssistantClientProps) {
           </p>
         )}
 
+        {locked && <FeatureLockedNotice feature="Ask AI" className="mb-3" />}
+
         <div className="flex gap-2">
           <textarea
             value={input}
@@ -521,12 +527,17 @@ export function AiAssistantClient({ initialRepos }: AiAssistantClientProps) {
               }
             }}
             rows={3}
-            placeholder="Ask about this repo, its structure, or attached files…"
-            className="min-h-[88px] flex-1 resize-y rounded-xl border border-border bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
+            disabled={locked}
+            placeholder={
+              locked
+                ? "Subscribe to ask the AI about this repo."
+                : "Ask about this repo, its structure, or attached files…"
+            }
+            className="min-h-[88px] flex-1 resize-y rounded-xl border border-border bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50"
           />
           <button
             type="button"
-            disabled={chatLoading || !input.trim()}
+            disabled={chatLoading || !input.trim() || locked}
             onClick={() => void sendChat()}
             className="self-end rounded-xl border border-primary/40 bg-primary/20 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/30 disabled:opacity-40"
           >

@@ -52,3 +52,14 @@ export async function getUserPlanTier(
 export function formatLimit(value: number | null): string {
   return value == null ? "unlimited" : String(value);
 }
+
+export interface PlanDisplay {
+  name: string;
+  priceLabel: string;
+}
+
+/** Paid tiers only — "trial" has no price of its own, it mirrors Pro limits. */
+export const PLAN_DISPLAY: Record<"starter" | "pro", PlanDisplay> = {
+  starter: { name: "Starter", priceLabel: "₦6,500/mo" },
+  pro: { name: "Pro", priceLabel: "₦15,000/mo" },
+};

@@ -26,6 +26,19 @@ export interface ExecutiveSummary {
   handoffNextSteps?: string[];
   /** One short paragraph naming stack inferred from repo (languages, major libs). */
   techStackOverview?: string;
+  /**
+   * Plain-language description of each root-level file/folder, so a
+   * non-technical owner can see what the codebase is made of without opening
+   * a single file. Empty when the AI found nothing at the repo root.
+   */
+  moduleMap?: ModuleMapEntry[];
+}
+
+export interface ModuleMapEntry {
+  /** Root-level path, e.g. "src/" or "package.json" — trailing slash means folder. */
+  path: string;
+  /** One sentence: what this part of the codebase is or does. */
+  description: string;
 }
 
 export interface RepoSummaryRow {
@@ -36,6 +49,16 @@ export interface RepoSummaryRow {
   summary_json: ExecutiveSummary;
   created_at: string;
   updated_at: string;
+}
+
+/** One past version of a repo's AI summary — append-only, never edited. */
+export interface RepoSummaryHistoryRow {
+  id: string;
+  user_id: string;
+  repo_id: number;
+  full_name: string;
+  summary_json: ExecutiveSummary;
+  created_at: string;
 }
 
 /** Tracked repo: repository added to user's organization for secure visibility. */
@@ -52,9 +75,15 @@ export interface TrackedRepoRow {
 export type ActivityActionType =
   | "collaborator_added"
   | "collaborator_removed"
+  | "collaborator_access_changed"
+  | "member_role_changed"
   | "repo_tracked"
   | "repo_untracked"
-  | "summary_generated";
+  | "summary_generated"
+  | "access_review_completed"
+  | "member_offboarded"
+  | "access_expiry_extended"
+  | "access_expiry_notified";
 
 export interface ActivityLogRow {
   id: string;

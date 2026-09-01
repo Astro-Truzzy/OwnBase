@@ -49,9 +49,15 @@ export type RepoActivityTimelineItem = RepoCommitGroup | RepoAuditActivityEvent;
 const AUDIT_LABELS: Record<string, string> = {
   collaborator_added: "Access granted",
   collaborator_removed: "Access revoked",
+  collaborator_access_changed: "Access level changed",
+  member_role_changed: "Team role changed",
   repo_tracked: "Added to organization",
   repo_untracked: "Removed from organization",
   summary_generated: "AI summary generated",
+  access_review_completed: "Access review completed",
+  member_offboarded: "Developer offboarded",
+  access_expiry_extended: "Access expiry extended",
+  access_expiry_notified: "Expiring access notice sent",
 };
 
 export function auditActivityLabel(actionType: string): string {

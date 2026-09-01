@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { runRepoAssistantChat } from "@/lib/ai/repo-assistant-chat";
+import { verifyFeatureAccess } from "@/lib/subscription-access";
 
 type Body = {
   messages?: { role: string; content: string }[];
@@ -14,6 +15,15 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const access = await verifyFeatureAccess(
+    supabase,
+    user.id,
+    "the AI assistant",
+  );
+  if (!access.allowed) {
+    return NextResponse.json({ error: access.error }, { status: 402 });
   }
 
   let body: Body;

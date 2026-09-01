@@ -3,12 +3,12 @@
  * Uses only env OPENAI_API_KEY; no secrets in code.
  */
 
-import type { ExecutiveSummary } from "../db/types";
+import type { ExecutiveSummary, ModuleMapEntry } from "../db/types";
 import type { FetchedFile } from "../github/fetch-repo-content";
 import OpenAI from "openai";
 
 const MODEL = "gpt-4o-mini";
-const MAX_OUTPUT_TOKENS = 2048;
+const MAX_OUTPUT_TOKENS = 2560;
 
 function buildContext(files: FetchedFile[], rootListing: string[]): string {
   const fileSections = files.map(
@@ -33,7 +33,8 @@ Given repository file contents and root folder listing, produce an executive sum
   "techStackOverview": "One short paragraph naming the primary languages, frameworks, and runtime you infer from manifests and source (e.g. Next.js + TypeScript + Postgres). If unclear, say what is missing.",
   "localSetup": "Plain text, 5 to 10 sentences with numbered steps where helpful: how to clone this repository, install dependencies, which env vars are typically needed (name the integration, never invent secret values), how to run the dev server, and how to run tests. Base only on files you saw; if something is undocumented, say so explicitly.",
   "operationalFlows": ["3 to 6 short bullets describing main user journeys or system flows (e.g. sign-up, checkout, background job)."],
-  "handoffNextSteps": ["6 to 10 actionable bullets for an engineer or owner taking over: access, secrets rotation, deployment, monitoring, docs to update, stakeholders to notify."]
+  "handoffNextSteps": ["6 to 10 actionable bullets for an engineer or owner taking over: access, secrets rotation, deployment, monitoring, docs to update, stakeholders to notify."],
+  "moduleMap": [{"path": "one entry from the root folder listing, e.g. 'src/' or 'package.json'", "description": "one plain-language sentence: what this file or folder is or does in this project"}]
 }
 
 Rules:
@@ -41,6 +42,7 @@ Rules:
 - Infer from file names, README, and dependency lists. If something is unclear, say so in summary or omit from lists.
 - riskIndicators: basic logic only (missing docs, many deps, payment code, etc.). Do not perform security scanning.
 - localSetup, operationalFlows, handoffNextSteps, and techStackOverview must be specific to THIS repository, not generic SaaS advice.
+- moduleMap: one entry per item in "Root folder contents" (skip dotfiles and lockfiles unless notable). "path" must match the root listing exactly, including any trailing "/" for folders. Never invent paths that were not in the listing.
 - Never include secret values, API keys, tokens, or .env contents.`;
 
 export interface GenerateSummaryInput {
@@ -106,6 +108,20 @@ export function normalizeSummary(raw: unknown): ExecutiveSummary {
     const t = v.trim();
     return t.length > 0 ? t : undefined;
   };
+  const moduleMap = (v: unknown): ModuleMapEntry[] =>
+    Array.isArray(v)
+      ? v
+          .filter(
+            (x): x is Record<string, unknown> =>
+              typeof x === "object" && x !== null,
+          )
+          .map((x) => ({
+            path: typeof x.path === "string" ? x.path.trim() : "",
+            description:
+              typeof x.description === "string" ? x.description.trim() : "",
+          }))
+          .filter((x) => x.path.length > 0 && x.description.length > 0)
+      : [];
   return {
     summary: str(o.summary),
     keyComponents: arr(o.keyComponents),
@@ -117,6 +133,7 @@ export function normalizeSummary(raw: unknown): ExecutiveSummary {
     localSetup: optStr(o.localSetup),
     operationalFlows: arr(o.operationalFlows),
     handoffNextSteps: arr(o.handoffNextSteps),
+    moduleMap: moduleMap(o.moduleMap),
   };
 }
 
@@ -132,5 +149,6 @@ function fallbackSummary(fullName: string): ExecutiveSummary {
     localSetup: undefined,
     operationalFlows: [],
     handoffNextSteps: [],
+    moduleMap: [],
   };
 }

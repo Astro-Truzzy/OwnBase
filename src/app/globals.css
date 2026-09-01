@@ -37,6 +37,26 @@
   --error-border: rgba(220, 38, 38, 0.25);
   --error-text: #dc2626;
 
+  /* Semantic status — success / warning / danger (added Phase 1; mapped to hues already in use) */
+  --success: #059669;
+  --success-foreground: #ffffff;
+  --success-subtle: rgba(5, 150, 105, 0.1);
+  --success-border: rgba(5, 150, 105, 0.28);
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+  --warning-subtle: rgba(217, 119, 6, 0.1);
+  --warning-border: rgba(217, 119, 6, 0.28);
+  --danger: #dc2626;
+  --danger-foreground: #ffffff;
+  --danger-subtle: rgba(220, 38, 38, 0.08);
+  --danger-border: rgba(220, 38, 38, 0.28);
+
+  /* AI surfaces — distinct teal accent, kept separate from the cyan brand */
+  --accent-ai: #46dcbe;
+  --accent-ai-foreground: #04231d;
+  --accent-ai-subtle: rgba(70, 220, 190, 0.1);
+  --accent-ai-border: rgba(70, 220, 190, 0.3);
+
   /* Hero / section gradients */
   --gradient-hero: radial-gradient(
     ellipse 80% 50% at 50% -20%,
@@ -100,6 +120,22 @@
   --error-bg: rgba(185, 28, 28, 0.15);
   --error-border: rgba(185, 28, 28, 0.4);
   --error-text: #fca5a5;
+  --success: #34d399;
+  --success-foreground: #04140d;
+  --success-subtle: rgba(52, 211, 153, 0.14);
+  --success-border: rgba(52, 211, 153, 0.34);
+  --warning: #fbbf24;
+  --warning-foreground: #1f1300;
+  --warning-subtle: rgba(251, 191, 36, 0.14);
+  --warning-border: rgba(251, 191, 36, 0.34);
+  --danger: #f87171;
+  --danger-foreground: #1f0808;
+  --danger-subtle: rgba(248, 113, 113, 0.16);
+  --danger-border: rgba(248, 113, 113, 0.36);
+  --accent-ai: #2dd4bf;
+  --accent-ai-foreground: #04231d;
+  --accent-ai-subtle: rgba(45, 212, 191, 0.15);
+  --accent-ai-border: rgba(45, 212, 191, 0.36);
   --gradient-hero: radial-gradient(
     ellipse 80% 50% at 50% -20%,
     rgba(34, 211, 238, 0.1),
@@ -182,6 +218,22 @@
   --color-surface: var(--surface);
   --color-surface-elevated: var(--surface-elevated);
   --color-error-text: var(--error-text);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-border: var(--success-border);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-border: var(--warning-border);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-danger-subtle: var(--danger-subtle);
+  --color-danger-border: var(--danger-border);
+  --color-accent-ai: var(--accent-ai);
+  --color-accent-ai-foreground: var(--accent-ai-foreground);
+  --color-accent-ai-subtle: var(--accent-ai-subtle);
+  --color-accent-ai-border: var(--accent-ai-border);
   --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono:
     var(--font-mono), ui-monospace, "Cascadia Code", "Fira Code", monospace;
@@ -501,6 +553,7 @@ body {
   border: 1px solid rgb(226 232 240);
   background-color: rgb(255 255 255 / 0.96);
   box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 

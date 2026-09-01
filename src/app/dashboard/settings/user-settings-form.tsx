@@ -91,10 +91,11 @@ export function UserSettingsForm({
     <div className="space-y-8">
       {message && (
         <div
+          role={message.type === "error" ? "alert" : undefined}
           className={
             message.type === "success"
-              ? "rounded-lg border border-emerald-500/35 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100"
-              : "rounded-lg border border-rose-500/35 bg-rose-500/10 px-4 py-3 text-sm text-rose-100"
+              ? "rounded-lg border border-success-border bg-success-subtle px-4 py-3 text-sm text-success"
+              : "rounded-lg border border-danger-border bg-danger-subtle px-4 py-3 text-sm text-danger"
           }
         >
           {message.text}

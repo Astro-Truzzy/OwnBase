@@ -2,6 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { AiSummaryCard } from "@/components/dashboard/ai-summary-card";
+import { ExecutiveSummaryBody } from "@/components/dashboard/executive-summary-body";
+import { FeatureLockedNotice } from "@/components/dashboard/feature-lock";
+import { SummaryFreshnessPill } from "@/components/dashboard/summary-freshness-pill";
+import { SummaryHistoryPanel } from "@/components/dashboard/summary-history-panel";
+import type { SummaryFreshness } from "@/lib/ai/insights-overview";
+import { useAccessStatus } from "../../../access-status-context";
 import { generateRepoSummary } from "../../actions";
 import type { ExecutiveSummary } from "../../../../../lib/db/types";
 
@@ -12,6 +19,9 @@ interface SummarySectionProps {
   name: string;
   initialSummary: ExecutiveSummary | null;
   summaryUpdatedAt: string | null;
+  /** Freshness band, computed on the server to stay hydration-safe. */
+  summaryBand: SummaryFreshness;
+  summaryAgeDays: number | null;
 }
 
 export function SummarySection({
@@ -21,22 +31,33 @@ export function SummarySection({
   name,
   initialSummary,
   summaryUpdatedAt,
+  summaryBand,
+  summaryAgeDays,
 }: SummarySectionProps) {
   const router = useRouter();
+  const locked = useAccessStatus().trialExpired;
   const [loading, setLoading] = useState(false);
   const [handoffLoading, setHandoffLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<ExecutiveSummary | null>(
     initialSummary,
   );
+  /** Set once regenerated in this session, so the pill and timestamp update. */
+  const [regeneratedAt, setRegeneratedAt] = useState<string | null>(null);
+
+  const updatedAt = regeneratedAt ?? summaryUpdatedAt;
+  const band: SummaryFreshness = regeneratedAt ? "fresh" : summaryBand;
+  const ageDays = regeneratedAt ? 0 : summaryAgeDays;
 
   async function handleGenerate() {
+    if (locked) return;
     setLoading(true);
     setError(null);
     try {
       const result = await generateRepoSummary(repoId, fullName);
       if (result.success && result.summary) {
         setSummary(result.summary);
+        setRegeneratedAt(new Date().toISOString());
         router.refresh();
       } else {
         setError(result.error ?? "Failed to generate summary.");
@@ -80,9 +101,15 @@ export function SummarySection({
       id="summary"
       className="dash-panel scroll-mt-[calc(64px+0.75rem)] p-6 sm:scroll-mt-[calc(56px+0.75rem)] sm:p-8"
     >
-      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-4">
-        <h2 className="text-lg font-medium text-foreground">Overview</h2>
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-lg font-medium text-foreground">Overview</h2>
+          {summary && (
+            <SummaryFreshnessPill freshness={band} ageDays={ageDays} />
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          {summary && <SummaryHistoryPanel fullName={fullName} />}
           {summary && (
             <button
               type="button"
@@ -96,7 +123,7 @@ export function SummarySection({
           <button
             type="button"
             onClick={handleGenerate}
-            disabled={loading}
+            disabled={loading || locked}
             className="rounded-lg border border-primary/35 bg-linear-to-r from-cyan-500/90 to-violet-600/85 px-4 py-2.5 text-sm font-medium text-white shadow-[0_8px_24px_rgba(34,211,238,0.2)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
           >
             {loading
@@ -107,6 +134,8 @@ export function SummarySection({
           </button>
         </div>
       </div>
+
+      {locked && <FeatureLockedNotice feature="AI overview" className="mt-6" />}
 
       {error && (
         <div
@@ -140,79 +169,24 @@ export function SummarySection({
       )}
 
       {!loading && summary && (
-        <div className="mt-8 space-y-8 text-sm">
-          <div>
-            <p className="text-foreground leading-relaxed">{summary.summary}</p>
-            {summaryUpdatedAt && (
-              <p className="mt-3 text-xs text-muted-foreground">
-                Last updated{" "}
-                {new Date(summaryUpdatedAt).toLocaleString(undefined, {
+        <AiSummaryCard
+          className="mt-8"
+          title="Codebase overview"
+          meta={
+            updatedAt
+              ? `Last updated ${new Date(updatedAt).toLocaleString(undefined, {
                   dateStyle: "medium",
                   timeStyle: "short",
-                })}
-              </p>
-            )}
-          </div>
-
-          {summary.keyComponents.length > 0 && (
-            <div>
-              <h3 className="font-medium text-foreground">Main parts</h3>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
-                {summary.keyComponents.map((item: string, i: number) => (
-                  <li key={i}>{item}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {summary.paymentIntegrations.length > 0 && (
-            <div>
-              <h3 className="font-medium text-foreground">Payments</h3>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
-                {summary.paymentIntegrations.map((item: string, i: number) => (
-                  <li key={i}>{item}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {summary.authentication.length > 0 && (
-            <div>
-              <h3 className="font-medium text-foreground">Sign-in & access</h3>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
-                {summary.authentication.map((item: string, i: number) => (
-                  <li key={i}>{item}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {summary.externalServices.length > 0 && (
-            <div>
-              <h3 className="font-medium text-foreground">External services</h3>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
-                {summary.externalServices.map((item: string, i: number) => (
-                  <li key={i}>{item}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {summary.riskIndicators.length > 0 && (
-            <div>
-              <h3 className="font-medium text-foreground">Things to watch</h3>
-              <ul className="mt-2 list-disc space-y-1 text-amber-200/90">
-                {summary.riskIndicators.map((item: string, i: number) => (
-                  <li key={i}>{item}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+                })}`
+              : undefined
+          }
+        >
+          <ExecutiveSummaryBody summary={summary} />
+        </AiSummaryCard>
       )}
 
       {!loading && !summary && !error && (
-        <p className="mt-6 text-sm text-muted-foreground leading-relaxed">
+        <p className="mt-6 text-sm leading-relaxed text-muted-foreground">
           Generate a plain-language overview of what this project does, its main
           parts, payments, access, and things to watch.
         </p>

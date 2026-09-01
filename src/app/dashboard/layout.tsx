@@ -4,12 +4,15 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Logo } from "@/components/Logo";
 import { ensureTrialForNewAccount } from "@/lib/profiles/ensure-trial";
+import { computeAccessStatus } from "@/lib/subscription-access";
 import { createClient } from "../../lib/supabase/server";
+import { AccessStatusProvider } from "./access-status-context";
 import { DashboardMobileNavProvider } from "./dashboard-mobile-nav";
 import { DashboardRepoConnectGate } from "./dashboard-repo-connect-gate";
 import { DashboardSearchProvider } from "./dashboard-search-context";
 import { DashboardSideRail } from "./dashboard-side-rail";
 import { DashboardTopBar } from "./dashboard-top-bar";
+import { TrialCountdownBanner } from "./trial-countdown-banner";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -77,16 +80,7 @@ export default async function DashboardLayout({
     profileRow = created ?? profileRow;
   }
 
-  const trialEndsAt = profileRow?.trial_ends_at
-    ? new Date(profileRow.trial_ends_at)
-    : null;
-  const subscriptionEndsAt = profileRow?.subscription_ends_at
-    ? new Date(profileRow.subscription_ends_at)
-    : null;
-  const hasActiveSubscription =
-    subscriptionEndsAt != null && subscriptionEndsAt > new Date();
-  const trialExpired =
-    trialEndsAt != null && trialEndsAt <= new Date() && !hasActiveSubscription;
+  const accessStatus = computeAccessStatus(profileRow ?? {});
 
   const displayName =
     profileRow?.first_name || profileRow?.last_name
@@ -119,64 +113,55 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-background text-foreground">
-      {trialExpired && (
-        <div className="border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-center text-xs text-amber-800 dark:text-amber-200">
-          Your free trial has ended.{" "}
-          <Link
-            href="/dashboard/billing"
-            className="font-semibold underline underline-offset-2"
-          >
-            Subscribe now
-          </Link>{" "}
-          to keep full access.
-        </div>
-      )}
+    <AccessStatusProvider value={accessStatus}>
+      <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
+        <TrialCountdownBanner />
 
-      <Suspense fallback={null}>
-        <DashboardRepoConnectGate
-          hasConnectedProvider={hasConnectedProvider}
-          walkthroughCompleted={walkthroughCompleted}
-        />
-      </Suspense>
-      <Suspense fallback={null}>
-        <DashboardSearchProvider>
-          <DashboardMobileNavProvider>
-          <div className="flex h-full">
-            <aside className="hidden h-full w-60 shrink-0 flex-col border-r border-border bg-sidebar md:flex lg:w-64">
-            <div className="border-b border-border/80 px-5 py-5">
-              <Link href="/dashboard" className="flex items-center gap-3">
-                <Logo className="h-8 w-8" />
-                <span className="text-lg font-semibold tracking-tight text-foreground">
-                  Ownbase
-                </span>
-              </Link>
-            </div>
+        <Suspense fallback={null}>
+          <DashboardRepoConnectGate
+            hasConnectedProvider={hasConnectedProvider}
+            walkthroughCompleted={walkthroughCompleted}
+          />
+        </Suspense>
+        <Suspense fallback={null}>
+          <DashboardSearchProvider>
+            <DashboardMobileNavProvider>
+              <div className="flex min-h-0 flex-1">
+                <aside className="hidden h-full w-60 shrink-0 flex-col border-r border-border bg-sidebar md:flex lg:w-64">
+                  <div className="border-b border-border/80 px-5 py-5">
+                    <Link href="/dashboard" className="flex items-center gap-3">
+                      <Logo className="h-8 w-8" />
+                      <span className="text-lg font-semibold tracking-tight text-foreground">
+                        Ownbase
+                      </span>
+                    </Link>
+                  </div>
 
-            <DashboardSideRail />
-          </aside>
+                  <DashboardSideRail />
+                </aside>
 
-          <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-background">
-            <Suspense fallback={null}>
-              <DashboardTopBar
-                displayName={displayName}
-                initials={initials}
-                email={user.email ?? null}
-                plan={profileRow?.plan ?? null}
-                avatarUrl={avatarSignedUrl}
-              />
-            </Suspense>
+                <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-background">
+                  <Suspense fallback={null}>
+                    <DashboardTopBar
+                      displayName={displayName}
+                      initials={initials}
+                      email={user.email ?? null}
+                      plan={profileRow?.plan ?? null}
+                      avatarUrl={avatarSignedUrl}
+                    />
+                  </Suspense>
 
-            <div className="app-scrollbar dash-page relative flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
-              <div className="relative z-2 min-w-0 w-full max-w-full">
-                {children}
+                  <div className="app-scrollbar dash-page relative flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+                    <div className="relative z-2 min-w-0 w-full max-w-full">
+                      {children}
+                    </div>
+                  </div>
+                </main>
               </div>
-            </div>
-          </main>
-          </div>
-          </DashboardMobileNavProvider>
-        </DashboardSearchProvider>
-      </Suspense>
-    </div>
+            </DashboardMobileNavProvider>
+          </DashboardSearchProvider>
+        </Suspense>
+      </div>
+    </AccessStatusProvider>
   );
 }

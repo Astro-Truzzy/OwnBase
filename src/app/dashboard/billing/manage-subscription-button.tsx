@@ -34,9 +34,7 @@ export function ManageSubscriptionButton() {
       >
         {pending ? "Opening…" : "Open Paystack subscription management →"}
       </button>
-      {error && (
-        <p className="text-xs text-red-500 dark:text-red-400">{error}</p>
-      )}
+      {error && <p className="text-xs text-error-text">{error}</p>}
     </div>
   );
 }
