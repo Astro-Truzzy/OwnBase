@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Logo } from "@/components/Logo";
 import { ensureTrialForNewAccount } from "@/lib/profiles/ensure-trial";
+import { resolveEffectivePlanTier } from "@/lib/plan-limits";
 import { computeAccessStatus } from "@/lib/subscription-access";
 import { createClient } from "../../lib/supabase/server";
 import { AccessStatusProvider } from "./access-status-context";
@@ -146,7 +147,7 @@ export default async function DashboardLayout({
                       displayName={displayName}
                       initials={initials}
                       email={user.email ?? null}
-                      plan={profileRow?.plan ?? null}
+                      plan={resolveEffectivePlanTier(profileRow)}
                       avatarUrl={avatarSignedUrl}
                     />
                   </Suspense>

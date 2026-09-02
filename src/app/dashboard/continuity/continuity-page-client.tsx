@@ -11,12 +11,10 @@ import {
   IconClipboardCheck,
 } from "@tabler/icons-react";
 import { MetricCard } from "@/components/dashboard/metric-card";
-import { FeatureLockedNotice } from "@/components/dashboard/feature-lock";
 import { KnowledgeRiskMatrixChart } from "../knowledge-risk-matrix-chart";
 import type { AccessMatrix } from "@/lib/access/access-matrix";
 import type { ContinuityScore } from "@/lib/continuity/continuity-score";
 import type { OffboardingRunRow } from "@/lib/continuity/offboarding";
-import { useAccessStatus } from "../access-status-context";
 import { ContinuityScorePanel } from "./continuity-score-panel";
 import {
   ExpiringAccessQueue,
@@ -48,7 +46,9 @@ export function ContinuityPageClient({
   now: number;
 }) {
   const router = useRouter();
-  const locked = useAccessStatus().trialExpired;
+  // Free tier is a permanent, real plan now — nothing is ever fully locked;
+  // per-resource caps (repos/seats/uploads/summaries) do the gating instead.
+  const locked = false;
   const [message, setMessage] = useState<Message | null>(null);
   const [reviewing, setReviewing] = useState(false);
 
@@ -118,8 +118,6 @@ export function ContinuityPageClient({
   return (
     <div className="w-full min-w-0 space-y-8">
       <Header />
-
-      {locked ? <FeatureLockedNotice feature="Continuity tools" /> : null}
 
       {message ? (
         <p

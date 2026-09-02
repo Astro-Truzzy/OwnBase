@@ -10,8 +10,6 @@ import {
   type ManageAccessResult,
 } from "../../actions";
 import { DashboardSelect } from "@/components/dashboard/dashboard-select";
-import { FeatureLockedNotice } from "@/components/dashboard/feature-lock";
-import { useAccessStatus } from "../../../access-status-context";
 
 interface AccessSectionProps {
   owner: string;
@@ -38,7 +36,9 @@ export function AccessSection({
   collaborators,
   error,
 }: AccessSectionProps) {
-  const locked = useAccessStatus().trialExpired;
+  // Free tier is a permanent, real plan now — nothing is ever fully locked;
+  // per-resource caps (repos/seats/uploads/summaries) do the gating instead.
+  const locked = false;
   const [username, setUsername] = useState("");
   const [permission, setPermission] = useState<"pull" | "push" | "admin">(
     "push",
@@ -131,12 +131,6 @@ export function AccessSection({
         click—no need to leave this page.
       </p>
 
-      {locked && (
-        <FeatureLockedNotice
-          feature="Collaborator management"
-          className="mt-6"
-        />
-      )}
 
       {/* In-app invite form */}
       <form

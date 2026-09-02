@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from "react";
+
 export const THEME_STORAGE_KEY = "ownbase-theme";
 
 export type ThemeMode = "light" | "dark";
@@ -10,6 +12,28 @@ const THEME_BG: Record<ThemeMode, string> = {
 export function readThemeMode(): ThemeMode {
   if (typeof document === "undefined") return "light";
   return document.documentElement.classList.contains("dark") ? "dark" : "light";
+}
+
+function subscribeToThemeChange(callback: () => void) {
+  const observer = new MutationObserver(callback);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+  return () => observer.disconnect();
+}
+
+/**
+ * Reactive light/dark read, in sync with the `dark` class toggled by
+ * `applyThemeMode`. SSR-safe: renders "light" on the server and during
+ * hydration to avoid a mismatch, then updates on mount.
+ */
+export function useThemeIsDark(): boolean {
+  return useSyncExternalStore(
+    subscribeToThemeChange,
+    () => readThemeMode() === "dark",
+    () => false,
+  );
 }
 
 export function applyThemeMode(mode: ThemeMode) {

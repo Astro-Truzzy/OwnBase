@@ -4,11 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AiSummaryCard } from "@/components/dashboard/ai-summary-card";
 import { ExecutiveSummaryBody } from "@/components/dashboard/executive-summary-body";
-import { FeatureLockedNotice } from "@/components/dashboard/feature-lock";
 import { SummaryFreshnessPill } from "@/components/dashboard/summary-freshness-pill";
 import { SummaryHistoryPanel } from "@/components/dashboard/summary-history-panel";
 import type { SummaryFreshness } from "@/lib/ai/insights-overview";
-import { useAccessStatus } from "../../../access-status-context";
 import { generateRepoSummary } from "../../actions";
 import type { ExecutiveSummary } from "../../../../../lib/db/types";
 
@@ -35,7 +33,9 @@ export function SummarySection({
   summaryAgeDays,
 }: SummarySectionProps) {
   const router = useRouter();
-  const locked = useAccessStatus().trialExpired;
+  // Free tier is a permanent, real plan now — nothing is ever fully locked;
+  // per-resource caps (repos/seats/uploads/summaries) do the gating instead.
+  const locked = false;
   const [loading, setLoading] = useState(false);
   const [handoffLoading, setHandoffLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -135,7 +135,6 @@ export function SummarySection({
         </div>
       </div>
 
-      {locked && <FeatureLockedNotice feature="AI overview" className="mt-6" />}
 
       {error && (
         <div

@@ -6,6 +6,8 @@ interface PlanBreakdownProps {
   trialCount: number;
   starterCount: number;
   proCount: number;
+  agencyCount: number;
+  freeCount: number;
 }
 
 function PlanBar({
@@ -46,13 +48,22 @@ export function PlanBreakdown({
   trialCount,
   starterCount,
   proCount,
+  agencyCount,
+  freeCount,
 }: PlanBreakdownProps) {
-  const total = trialCount + starterCount + proCount;
+  const total = trialCount + starterCount + proCount + agencyCount + freeCount;
 
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <p className="mb-4 text-sm font-semibold text-foreground">Plan Distribution</p>
       <div className="space-y-4">
+        <PlanBar
+          label="Agency"
+          count={agencyCount}
+          total={total}
+          color="bg-fuchsia-500"
+          price={PLAN_PRICE_NGN.agency}
+        />
         <PlanBar
           label="Pro"
           count={proCount}
@@ -72,6 +83,13 @@ export function PlanBreakdown({
           count={trialCount}
           total={total}
           color="bg-amber-400"
+          price={0}
+        />
+        <PlanBar
+          label="Free"
+          count={freeCount}
+          total={total}
+          color="bg-muted-foreground/40"
           price={0}
         />
       </div>

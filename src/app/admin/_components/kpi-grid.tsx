@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { OverviewMetrics } from "@/lib/admin/metrics";
-import { formatNgn } from "@/lib/admin/metrics";
+import { formatNgn, PLAN_PRICE_NGN } from "@/lib/admin/metrics";
 
 interface KpiCardProps {
   label: string;
@@ -113,6 +113,12 @@ export function KpiGrid({ metrics }: { metrics: OverviewMetrics }) {
           <KpiCard label="Paying Users" value={metrics.paying_users} tone="green" />
           <KpiCard label="Starter Plan" value={metrics.plan_starter} sub="₦6,500/mo" />
           <KpiCard label="Pro Plan" value={metrics.plan_pro} sub="₦15,000/mo" tone="violet" />
+          <KpiCard
+            label="Agency Plan"
+            value={metrics.plan_agency}
+            sub={`${formatNgn(PLAN_PRICE_NGN.agency)}/mo`}
+            tone="violet"
+          />
         </div>
       </div>
 
@@ -122,7 +128,8 @@ export function KpiGrid({ metrics }: { metrics: OverviewMetrics }) {
           Engagement & Trials
         </p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <KpiCard label="On Trial" value={metrics.plan_trial} sub="free tier" tone="amber" />
+          <KpiCard label="On Trial" value={metrics.plan_trial} sub="30-day full trial" tone="amber" />
+          <KpiCard label="Free Plan" value={metrics.plan_free} sub="trial ended, no sub" />
           <KpiCard
             label="Expiring (7d)"
             value={metrics.trials_expiring_7d}

@@ -61,7 +61,8 @@ export default async function AdminRevenuePage() {
             {metrics.paying_users}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {metrics.plan_starter} starter · {metrics.plan_pro} pro
+            {metrics.plan_starter} starter · {metrics.plan_pro} pro ·{" "}
+            {metrics.plan_agency} agency
           </p>
         </div>
         <div className="rounded-xl border border-amber-400/25 bg-amber-500/5 p-5">
@@ -80,7 +81,7 @@ export default async function AdminRevenuePage() {
       {/* Plan pricing reference */}
       <div className="rounded-xl border border-border bg-card p-5 space-y-4">
         <h2 className="text-sm font-semibold text-foreground">Plan Pricing</h2>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3">
           <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-4 py-3">
             <span className="text-sm font-medium text-foreground">Starter</span>
             <div className="text-right">
@@ -107,6 +108,19 @@ export default async function AdminRevenuePage() {
               </p>
             </div>
           </div>
+          <div className="flex items-center justify-between rounded-lg border border-fuchsia-400/25 bg-fuchsia-500/5 px-4 py-3">
+            <span className="text-sm font-medium text-foreground">Agency</span>
+            <div className="text-right">
+              <span className="text-sm font-semibold text-foreground">
+                {formatNgn(PLAN_PRICE_NGN.agency)}
+              </span>
+              <span className="ml-1 text-xs text-muted-foreground">/mo</span>
+              <p className="text-xs text-muted-foreground">
+                {metrics.plan_agency} users ={" "}
+                {formatNgn(metrics.plan_agency * PLAN_PRICE_NGN.agency)}/mo
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -127,12 +141,19 @@ export default async function AdminRevenuePage() {
                   <th className="px-5 py-3 text-right font-medium text-amber-600 dark:text-amber-400">Trial</th>
                   <th className="px-5 py-3 text-right font-medium text-accent">Starter</th>
                   <th className="px-5 py-3 text-right font-medium text-violet-600 dark:text-violet-400">Pro</th>
+                  <th className="px-5 py-3 text-right font-medium text-fuchsia-600 dark:text-fuchsia-400">Agency</th>
+                  <th className="px-5 py-3 text-right font-medium text-muted-foreground">Free</th>
                   <th className="px-5 py-3 text-right font-medium text-muted-foreground">Total</th>
                 </tr>
               </thead>
               <tbody>
                 {planHistory.map((row) => {
-                  const total = row.trial_count + row.starter_count + row.pro_count;
+                  const total =
+                    row.trial_count +
+                    row.starter_count +
+                    row.pro_count +
+                    row.agency_count +
+                    row.free_count;
                   return (
                     <tr key={row.month} className="border-b border-border/50 hover:bg-muted/20">
                       <td className="px-5 py-3 font-medium text-foreground">
@@ -149,6 +170,12 @@ export default async function AdminRevenuePage() {
                       </td>
                       <td className="px-5 py-3 text-right tabular-nums text-violet-600 dark:text-violet-400">
                         {row.pro_count}
+                      </td>
+                      <td className="px-5 py-3 text-right tabular-nums text-fuchsia-600 dark:text-fuchsia-400">
+                        {row.agency_count}
+                      </td>
+                      <td className="px-5 py-3 text-right tabular-nums text-muted-foreground">
+                        {row.free_count}
                       </td>
                       <td className="px-5 py-3 text-right tabular-nums text-foreground font-medium">
                         {total}

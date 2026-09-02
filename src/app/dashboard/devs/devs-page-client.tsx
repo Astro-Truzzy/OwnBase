@@ -23,7 +23,6 @@ import type {
 import type { PortfolioRiskSnapshot } from "@/lib/dashboard/org-risk-assessment";
 import type { AccessMatrix } from "@/lib/access/access-matrix";
 import { cn } from "@/lib/utils";
-import { useAccessStatus } from "../access-status-context";
 import { DevsTeamOverview } from "./devs-team-overview";
 import { DevsInsightsSection } from "./devs-insights-section";
 import { DevsRepoSection } from "./devs-repo-section";
@@ -95,7 +94,9 @@ export function DevsPageClient(props: {
     accessMatrix,
   } = props;
 
-  const locked = useAccessStatus().trialExpired;
+  // Free tier is a permanent, real plan now — nothing is ever fully locked;
+  // per-resource caps (repos/seats/uploads/summaries) do the gating instead.
+  const locked = false;
 
   const gitlabNames = gitlabRepos.map((r) => r.full_name);
   const trackedTotal = snapshot.trackedCount;

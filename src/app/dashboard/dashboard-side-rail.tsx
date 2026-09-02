@@ -15,8 +15,6 @@ import {
   IconUsers,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
-import { FeatureLockedBadge } from "@/components/dashboard/feature-lock";
-import { useAccessStatus } from "./access-status-context";
 import {
   DASHBOARD_TAB_CHANGED,
   isDashboardHomePath,
@@ -32,8 +30,6 @@ type NavItem = {
   navId: string;
   match: string[];
   dashboardTab?: DashboardTabKey;
-  /** Shows a "Locked" badge once the trial has expired. */
-  lockable?: boolean;
 };
 
 const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
@@ -90,7 +86,6 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
         icon: <IconSparkles className="h-4 w-4" />,
         navId: "ai-insights",
         match: ["/dashboard/ai"],
-        lockable: true,
       },
       {
         href: "/dashboard/upload",
@@ -98,7 +93,6 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
         icon: <IconUpload className="h-4 w-4" />,
         navId: "uploads",
         match: ["/dashboard/upload"],
-        lockable: true,
       },
     ],
   },
@@ -118,7 +112,6 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
 
 export function DashboardSideRail({ onItemClick }: { onItemClick?: () => void } = {}) {
   const pathname = usePathname();
-  const locked = useAccessStatus().trialExpired;
   const [hash, setHash] = useState<DashboardTabKey>("dashboard");
 
   useEffect(() => {
@@ -199,9 +192,6 @@ export function DashboardSideRail({ onItemClick }: { onItemClick?: () => void } 
                   {item.icon}
                 </span>
                 <span>{item.label}</span>
-                {locked && item.lockable && (
-                  <FeatureLockedBadge className="ml-auto" />
-                )}
               </Link>
             );
           })}

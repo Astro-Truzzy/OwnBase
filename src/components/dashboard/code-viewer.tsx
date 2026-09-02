@@ -2,7 +2,8 @@
 
 import { useMemo } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { useThemeIsDark } from "@/lib/theme";
 
 type CodeViewerProps = {
   code: string;
@@ -30,6 +31,7 @@ export function CodeViewer({
   maxHeight = "min(50vh, 480px)",
   showFooter = true,
 }: CodeViewerProps) {
+  const isDark = useThemeIsDark();
   const lines = useMemo(() => code.split("\n"), [code]);
   const lang =
     language === "jsx" ? "jsx" : language === "tsx" ? "tsx" : language;
@@ -38,7 +40,7 @@ export function CodeViewer({
     <div className="overflow-hidden rounded-b-xl bg-muted">
       <div className="flex overflow-auto" style={{ maxHeight }}>
         <div
-          className="sticky left-0 shrink-0 select-none border-r border-white/8 bg-[#010409]/90 py-3 pr-3 pl-2 text-right font-mono text-[11px] leading-[1.55] text-slate-500"
+          className="dash-surface-inset sticky left-0 shrink-0 select-none rounded-none border-y-0 border-l-0 py-3 pr-3 pl-2 text-right font-mono text-[11px] leading-[1.55] text-muted-foreground"
           aria-hidden
         >
           {lines.map((_, i) => (
@@ -48,7 +50,7 @@ export function CodeViewer({
         <div className="min-w-0 flex-1 overflow-x-auto py-3 pr-4">
           <SyntaxHighlighter
             language={lang}
-            style={oneDark}
+            style={isDark ? oneDark : oneLight}
             customStyle={customStyle}
             showLineNumbers={false}
             wrapLongLines={false}
@@ -60,11 +62,9 @@ export function CodeViewer({
         </div>
       </div>
       {showFooter && (truncated || path) && (
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/8 bg-[#010409]/80 px-3 py-1.5 text-[11px] text-slate-500">
+        <div className="dash-surface-inset flex flex-wrap items-center justify-between gap-2 rounded-none border-x-0 border-b-0 px-3 py-1.5 text-[11px] text-muted-foreground">
           <span className="truncate font-mono">{path}</span>
-          {truncated && (
-            <span className="text-amber-400/90">Preview truncated</span>
-          )}
+          {truncated && <span className="text-warning">Preview truncated</span>}
         </div>
       )}
     </div>

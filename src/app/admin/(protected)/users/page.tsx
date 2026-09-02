@@ -14,6 +14,7 @@ function PlanBadge({ plan }: { plan: string }) {
     emerald: "border-emerald-400/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
     cyan: "border-cyan-400/30 bg-cyan-500/10 text-accent",
     amber: "border-amber-400/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+    violet: "border-violet-400/30 bg-violet-500/10 text-violet-700 dark:text-violet-400",
     muted: "border-border bg-muted text-muted-foreground",
   }[tone];
   return (

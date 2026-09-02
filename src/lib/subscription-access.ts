@@ -50,11 +50,19 @@ export function computeAccessStatus(
   };
 }
 
+/**
+ * Confirms the profile is readable and returns its access status. Every
+ * account has at least the permanent Free tier, so this no longer blocks on
+ * trial/subscription expiry — per-resource caps (repos, seats, uploads, AI
+ * summaries; see plan-limits.ts) are what actually gate a Free-tier account.
+ * `featureLabel` is accepted for API stability with existing call sites.
+ */
 export async function verifyFeatureAccess(
   supabase: SupabaseClient,
   userId: string,
   featureLabel: string
 ): Promise<FeatureGateResult> {
+  void featureLabel;
   const { data: profile, error } = await supabase
     .from("profiles")
     .select("plan, trial_ends_at, subscription_ends_at")
@@ -69,20 +77,7 @@ export async function verifyFeatureAccess(
     };
   }
 
-  const status = computeAccessStatus(profile ?? {});
-  if (
-    status.hasActiveSubscription ||
-    status.onTrial ||
-    status.hasLegacyUnlimitedAccess
-  ) {
-    return { allowed: true, status };
-  }
-
-  return {
-    allowed: false,
-    error: `Your free trial has ended. Subscribe to continue using ${featureLabel}.`,
-    status,
-  };
+  return { allowed: true, status: computeAccessStatus(profile ?? {}) };
 }
 
 export const HOUR_MS = 60 * 60 * 1000;

@@ -3,14 +3,19 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import {
   IconCreditCard,
-  IconShield,
   IconCalendar,
   IconCheck,
   IconRocket,
+  IconShield,
 } from "@tabler/icons-react";
 import { getUsageSnapshot } from "@/lib/usage-stats";
-import { normalizePlan } from "@/lib/plan-limits";
-import { SubscribeButton } from "./subscribe-button";
+import {
+  getActiveAddonTypes,
+  isPlanEligibleForAddon,
+  resolveEffectivePlanTier,
+} from "@/lib/plan-limits";
+import { ADDONS } from "@/lib/pricing-tiers";
+import { AddonsSection } from "./addons-section";
 import { ManageSubscriptionButton } from "./manage-subscription-button";
 import { PlanComparisonTable } from "./plan-comparison-table";
 import { PlanUsageMeters } from "../plan-usage-meters";
@@ -47,7 +52,13 @@ export default async function BillingPage() {
     subscriptionEndsAt != null && subscriptionEndsAt > new Date();
   const trialExpired = trialEndsAt != null && trialEndsAt <= new Date();
   const onTrial = trialEndsAt != null && trialEndsAt > new Date();
-  const currentPlan = normalizePlan(profile?.plan);
+  const currentPlan = resolveEffectivePlanTier(profile ?? null);
+  const canSubscribe = !hasActiveSubscription || trialExpired;
+  const onFreePlan = currentPlan === "free";
+  const activeAddons = await getActiveAddonTypes(supabase, user.id);
+  const eligibleAddons = ADDONS.map((a) => a.type).filter((type) =>
+    isPlanEligibleForAddon(currentPlan, type),
+  );
 
   return (
     <div className="space-y-8">
@@ -109,17 +120,19 @@ export default async function BillingPage() {
               </div>
             </div>
           )}
-          {trialExpired && !hasActiveSubscription && (
+          {onFreePlan && (
             <div className="flex items-center gap-3 rounded-lg border border-warning-border bg-warning-subtle p-4">
               <IconRocket
                 className="h-5 w-5 shrink-0 text-warning"
                 aria-hidden
               />
               <div>
-                <p className="font-medium text-foreground">Trial ended</p>
+                <p className="font-medium text-foreground">
+                  {trialExpired ? "Trial ended — now on the Free plan" : "Free plan"}
+                </p>
                 <p className="text-sm text-muted-foreground">
-                  Subscribe now to keep full access to your repositories and
-                  features.
+                  1 tracked repository, 1 seat, 1 AI summary per month.
+                  Upgrade for more repos, seats, and AI summaries.
                 </p>
               </div>
             </div>
@@ -129,26 +142,14 @@ export default async function BillingPage() {
 
       <PlanUsageMeters usage={usage} />
 
-      <PlanComparisonTable currentPlan={currentPlan} />
+      <PlanComparisonTable currentPlan={currentPlan} canSubscribe={canSubscribe} />
 
-      {(!hasActiveSubscription || trialExpired) && (
-        <div className="dash-panel p-6 sm:p-8">
-          <h2 className="text-lg font-semibold text-foreground">
-            Subscribe with Paystack
-          </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Choose a plan and complete payment securely. You&apos;ll be charged
-            monthly. You can cancel or update your card from your Paystack
-            dashboard.
-          </p>
-          <div className="mt-6 flex flex-wrap items-center gap-4">
-            <SubscribeButton planId="starter" />
-            <SubscribeButton planId="pro" />
-          </div>
-          <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <IconShield className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-            <span>Secured by Paystack. We never store your card details.</span>
-          </div>
+      <AddonsSection activeAddons={activeAddons} eligibleAddons={eligibleAddons} />
+
+      {canSubscribe && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <IconShield className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+          <span>Secured by Paystack. We never store your card details.</span>
         </div>
       )}
 

@@ -2,8 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { IconBuilding, IconBuildingOff } from "@tabler/icons-react";
-import { FeatureLockedNotice } from "@/components/dashboard/feature-lock";
-import { useAccessStatus } from "../../../access-status-context";
 import { addTrackedRepoAction, removeTrackedRepoAction } from "../../actions";
 
 interface TrackSectionProps {
@@ -13,7 +11,9 @@ interface TrackSectionProps {
 }
 
 export function TrackSection({ owner, name, isTracked }: TrackSectionProps) {
-  const locked = useAccessStatus().trialExpired;
+  // Free tier is a permanent, real plan now — nothing is ever fully locked;
+  // per-resource caps (repos/seats/uploads/summaries) do the gating instead.
+  const locked = false;
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<{
     type: "success" | "error";
@@ -96,12 +96,6 @@ export function TrackSection({ owner, name, isTracked }: TrackSectionProps) {
           </div>
         ) : (
           <>
-            {locked && (
-              <FeatureLockedNotice
-                feature="Repository storage"
-                className="mb-4"
-              />
-            )}
             <button
               type="button"
               onClick={handleAdd}

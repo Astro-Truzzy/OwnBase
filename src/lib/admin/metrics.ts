@@ -1,9 +1,15 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { TIER_MONTHLY_PRICE_NGN } from "@/lib/pricing-tiers";
 
-// Pricing constants (must stay in sync with PricingPlans.tsx)
+// Current-price constants, sourced from pricing-tiers.ts (the single source
+// of truth for what a plan costs). Note: subscribers grandfathered at the
+// pre-redesign price (₦6,500 Starter / ₦15,000 Pro) still pay their old
+// rate in Paystack, so estimated MRR below is approximate until they
+// resubscribe at the current price.
 export const PLAN_PRICE_NGN = {
-  starter: 6_500,
-  pro: 15_000,
+  starter: TIER_MONTHLY_PRICE_NGN.starter,
+  pro: TIER_MONTHLY_PRICE_NGN.pro,
+  agency: TIER_MONTHLY_PRICE_NGN.agency,
   trial: 0,
 } as const;
 
@@ -17,9 +23,11 @@ export interface OverviewMetrics {
   new_30d: number;
   active_7d: number;
   active_30d: number;
+  plan_free: number;
   plan_trial: number;
   plan_starter: number;
   plan_pro: number;
+  plan_agency: number;
   trials_expiring_7d: number;
   repos_total: number;
   uploads_total: number;
@@ -52,6 +60,8 @@ export interface PlanHistoryRow {
   trial_count: number;
   starter_count: number;
   pro_count: number;
+  agency_count: number;
+  free_count: number;
 }
 
 export interface WebhookEvent {
@@ -73,10 +83,11 @@ export async function getAdminOverview(): Promise<OverviewMetrics> {
   if (error) throw new Error(`Admin overview metrics failed: ${error.message}`);
 
   const raw = data as Record<string, number>;
-  const paying = (raw.plan_starter ?? 0) + (raw.plan_pro ?? 0);
+  const paying = (raw.plan_starter ?? 0) + (raw.plan_pro ?? 0) + (raw.plan_agency ?? 0);
   const mrr =
     (raw.plan_starter ?? 0) * PLAN_PRICE_NGN.starter +
-    (raw.plan_pro ?? 0) * PLAN_PRICE_NGN.pro;
+    (raw.plan_pro ?? 0) * PLAN_PRICE_NGN.pro +
+    (raw.plan_agency ?? 0) * PLAN_PRICE_NGN.agency;
 
   return {
     total_users: Number(raw.total_users ?? 0),
@@ -84,9 +95,11 @@ export async function getAdminOverview(): Promise<OverviewMetrics> {
     new_30d: Number(raw.new_30d ?? 0),
     active_7d: Number(raw.active_7d ?? 0),
     active_30d: Number(raw.active_30d ?? 0),
+    plan_free: Number(raw.plan_free ?? 0),
     plan_trial: Number(raw.plan_trial ?? 0),
     plan_starter: Number(raw.plan_starter ?? 0),
     plan_pro: Number(raw.plan_pro ?? 0),
+    plan_agency: Number(raw.plan_agency ?? 0),
     trials_expiring_7d: Number(raw.trials_expiring_7d ?? 0),
     repos_total: Number(raw.repos_total ?? 0),
     uploads_total: Number(raw.uploads_total ?? 0),
@@ -175,6 +188,8 @@ export async function getPlanHistory(monthsBack = 6): Promise<PlanHistoryRow[]> 
     trial_count: Number(r.trial_count),
     starter_count: Number(r.starter_count),
     pro_count: Number(r.pro_count),
+    agency_count: Number(r.agency_count),
+    free_count: Number(r.free_count),
   }));
 }
 
@@ -207,10 +222,12 @@ export function formatNgn(amount: number): string {
 }
 
 /** Determine plan badge tone */
-export function planTone(plan: string): "emerald" | "cyan" | "amber" | "muted" {
+export function planTone(plan: string): "emerald" | "cyan" | "amber" | "violet" | "muted" {
   if (plan === "pro") return "emerald";
+  if (plan === "agency") return "violet";
   if (plan === "starter") return "cyan";
   if (plan === "trial") return "amber";
+  // "free" and anything unrecognized both fall through to muted.
   return "muted";
 }
 
@@ -221,7 +238,7 @@ export function subscriptionStatus(
   subEndsAt: string | null,
 ): "active" | "expiring" | "expired" | "none" {
   const now = Date.now();
-  if (plan === "pro" || plan === "starter") {
+  if (plan === "pro" || plan === "starter" || plan === "agency") {
     if (!subEndsAt) return "active";
     const ends = new Date(subEndsAt).getTime();
     if (ends < now) return "expired";
@@ -235,5 +252,7 @@ export function subscriptionStatus(
     if (ends < now + 7 * 86_400_000) return "expiring";
     return "active";
   }
+  // Free is a permanent resting state, not a lapsed trial/subscription — no urgency badge.
+  if (plan === "free") return "active";
   return "none";
 }

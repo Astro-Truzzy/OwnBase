@@ -26,8 +26,7 @@ import type { ExecutiveSummary } from "../../../lib/db/types";
 import type { ActivityLogRow } from "../../../lib/db/types";
 import {
   formatLimit,
-  getLimitsForPlan,
-  getUserPlanTier,
+  getEffectiveLimits,
 } from "../../../lib/plan-limits";
 import { verifyFeatureAccess } from "../../../lib/subscription-access";
 
@@ -43,6 +42,55 @@ export type AccessGrantOptions = {
 };
 
 const normalizeLogin = (username: string) => username.trim().replace(/^@/, "");
+
+/**
+ * True if adding `login` to org_members would consume a new seat — i.e. no
+ * row exists for them yet, or their only row is status "removed". Seats
+ * include the owner, so the count query only looks at other roster rows.
+ */
+async function isNewSeat(
+  supabase: SupabaseClient,
+  userId: string,
+  provider: string,
+  login: string,
+): Promise<boolean> {
+  const { data: existingMember } = await supabase
+    .from("org_members")
+    .select("status")
+    .eq("user_id", userId)
+    .eq("provider", provider)
+    .eq("login", login)
+    .maybeSingle();
+  return !existingMember || existingMember.status === "removed";
+}
+
+/**
+ * Enforces the plan's seat cap (owner + roster, including any active seats
+ * add-on) before a new member is added. Mirrors the tracked-repo cap check
+ * below: blocks new adds once at/over the limit, never removes anyone
+ * already over it.
+ */
+async function checkSeatCap(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<string | null> {
+  const { plan, limits } = await getEffectiveLimits(supabase, userId);
+  const { count, error } = await supabase
+    .from("org_members")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .neq("status", "removed");
+
+  if (error) {
+    return "Could not verify seat limits. Please try again.";
+  }
+
+  const seatsUsed = 1 + (count ?? 0); // +1 for the owner
+  if (seatsUsed >= limits.maxSeats) {
+    return `You've reached your seat limit (${limits.maxSeats}) for the ${plan} plan. Upgrade to add more team members.`;
+  }
+  return null;
+}
 
 /**
  * Best-effort persistence of the owner-native access model (org_members +
@@ -179,8 +227,7 @@ export async function generateRepoSummary(
     };
   }
 
-  const plan = await getUserPlanTier(supabase, user.id);
-  const limits = getLimitsForPlan(plan);
+  const { plan, limits } = await getEffectiveLimits(supabase, user.id);
   const now = new Date();
   const monthStartIso = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0)
@@ -365,6 +412,14 @@ export async function addCollaboratorAction(
     return { success: false, error: tracked.error };
   }
 
+  const normalizedLogin = normalizeLogin(username);
+  if (await isNewSeat(supabase, user.id, "github", normalizedLogin)) {
+    const seatError = await checkSeatCap(supabase, user.id);
+    if (seatError) {
+      return { success: false, error: seatError };
+    }
+  }
+
   const githubToken = await getGitHubAccessToken(supabase, user);
   const providerToken = session?.provider_token ?? githubToken;
   if (!providerToken) {
@@ -522,8 +577,7 @@ export async function addTrackedRepoAction(
     .maybeSingle();
 
   if (!existing) {
-    const plan = await getUserPlanTier(supabase, user.id);
-    const limits = getLimitsForPlan(plan);
+    const { plan, limits } = await getEffectiveLimits(supabase, user.id);
     const { count: trackedCount, error: trackedCountError } = await supabase
       .from("tracked_repos")
       .select("*", { count: "exact", head: true })
@@ -822,6 +876,13 @@ export async function upsertMemberAction(input: {
       success: false,
       error: "Provide a username, email, or name for the member.",
     };
+  }
+
+  if (login && (await isNewSeat(supabase, user.id, provider, login))) {
+    const seatError = await checkSeatCap(supabase, user.id);
+    if (seatError) {
+      return { success: false, error: seatError };
+    }
   }
 
   const { data: member, error } = await supabase

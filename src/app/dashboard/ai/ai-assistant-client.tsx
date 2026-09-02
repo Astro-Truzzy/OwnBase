@@ -16,10 +16,8 @@ import {
 import { FileFullViewModal } from "@/components/dashboard/file-full-view-modal";
 import { FileTypeIcon } from "@/components/dashboard/file-type-icon";
 import { DashboardSelect } from "@/components/dashboard/dashboard-select";
-import { FeatureLockedNotice } from "@/components/dashboard/feature-lock";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import { cn } from "@/lib/utils";
-import { useAccessStatus } from "../access-status-context";
 
 const CodeViewer = dynamic(
   () =>
@@ -52,7 +50,9 @@ interface AiAssistantClientProps {
 }
 
 export function AiAssistantClient({ initialRepos }: AiAssistantClientProps) {
-  const locked = useAccessStatus().trialExpired;
+  // Free tier is a permanent, real plan now — nothing is ever fully locked;
+  // per-resource caps (repos/seats/uploads/summaries) do the gating instead.
+  const locked = false;
   const [repos] = useState(initialRepos);
   const [fullName, setFullName] = useState<string>(initialRepos[0]?.full_name ?? "");
   const [branch, setBranch] = useState("");
@@ -513,8 +513,6 @@ export function AiAssistantClient({ initialRepos }: AiAssistantClientProps) {
             {chatError}
           </p>
         )}
-
-        {locked && <FeatureLockedNotice feature="Ask AI" className="mb-3" />}
 
         <div className="flex gap-2">
           <textarea

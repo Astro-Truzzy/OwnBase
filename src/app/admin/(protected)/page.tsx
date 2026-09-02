@@ -55,6 +55,8 @@ export default async function AdminOverviewPage() {
             trialCount={metrics.plan_trial}
             starterCount={metrics.plan_starter}
             proCount={metrics.plan_pro}
+            agencyCount={metrics.plan_agency}
+            freeCount={metrics.plan_free}
           />
           <div className="rounded-xl border border-border bg-card p-4 space-y-3">
             <p className="text-sm font-semibold text-foreground">Quick Stats</p>

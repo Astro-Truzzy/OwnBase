@@ -113,8 +113,8 @@ function buildMessage(countdown: AccessCountdown): {
       };
     case "expired":
       return {
-        lead: "Your free trial has ended — features are locked.",
-        sub: "Subscribe to restore access.",
+        lead: "Your free trial has ended — you're now on the Free plan.",
+        sub: "Upgrade for more repos, seats, and AI summaries.",
       };
     default:
       return { lead: "" };

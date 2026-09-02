@@ -1,33 +1,10 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useState,
-  useSyncExternalStore,
-  type MouseEvent,
-} from "react";
+import { useCallback, useEffect, useState, type MouseEvent } from "react";
 import { usePathname } from "next/navigation";
 import { IconMoon, IconSun } from "@tabler/icons-react";
-import { readThemeMode, toggleThemeWithTransition } from "@/lib/theme";
+import { toggleThemeWithTransition, useThemeIsDark } from "@/lib/theme";
 import { cn } from "@/lib/utils";
-
-function subscribe(callback: () => void) {
-  const obs = new MutationObserver(callback);
-  obs.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ["class"],
-  });
-  return () => obs.disconnect();
-}
-
-function useThemeIsDark() {
-  return useSyncExternalStore(
-    subscribe,
-    () => readThemeMode() === "dark",
-    () => false,
-  );
-}
 
 export type ThemeToggleButtonProps = {
   className?: string;

@@ -176,9 +176,9 @@ export async function buildDashboardNotifications(
       id,
       kind: "billing",
       title: "Trial has ended",
-      summary: "Subscribe to restore full access to your workspace.",
+      summary: "You're now on the Free plan.",
       detail:
-        "Your organization data is still available, but plan-gated features may be limited until you pick a paid plan.",
+        "1 tracked repository, 1 seat, 1 AI summary per month. Your data is still available — upgrade any time for more.",
       href: "/dashboard/billing",
       createdAt: trialEnds.toISOString(),
       read: readIds.has(id),

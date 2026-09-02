@@ -7,7 +7,14 @@ import { useAccessStatus } from "../access-status-context";
 import { uploadProjectAction } from "./actions";
 
 export function UploadForm() {
-  const locked = useAccessStatus().trialExpired;
+  const status = useAccessStatus();
+  // Mirrors resolveEffectivePlanTier's Free-tier fallback (no active
+  // subscription, not on trial, not a legacy-unlimited account) — Free's
+  // maxUploads is 0, so uploads are the one feature still fully locked there.
+  const locked =
+    !status.hasActiveSubscription &&
+    !status.onTrial &&
+    !status.hasLegacyUnlimitedAccess;
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -67,7 +74,12 @@ export function UploadForm() {
       <p className="mt-1 text-sm text-muted-foreground">
         Max 50 MB. Your code is stored in an environment owned by your business.
       </p>
-      <FeatureLockOverlay locked={locked} feature="Uploads" className="mt-6">
+      <FeatureLockOverlay
+        locked={locked}
+        feature="Uploads"
+        reason="Uploads aren't included on the Free plan. Upgrade to Starter or above to unlock them."
+        className="mt-6"
+      >
         <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label

@@ -4,11 +4,12 @@ import { IconCreditCard, IconLock } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 
 /**
- * Shared "blocked feature" primitives shown after a trial/subscription lapses.
- * These are presentation only — the real enforcement stays server-side in
- * `verifyFeatureAccess`. Callers pass a `locked` boolean derived from
- * `useAccessStatus().trialExpired`.
+ * Shared "blocked feature" primitives for a feature the current plan doesn't
+ * include at all (e.g. Uploads on the Free tier). Presentation only — the
+ * real enforcement is the per-resource plan limit checked server-side.
  */
+
+const DEFAULT_REASON = "This feature isn't included on your current plan.";
 
 /** Solid red call-to-action that routes to billing. */
 export function SubscribeCta({
@@ -35,9 +36,11 @@ export function SubscribeCta({
 /** Inline red callout placed at the top of a locked section. */
 export function FeatureLockedNotice({
   feature,
+  reason = DEFAULT_REASON,
   className,
 }: {
   feature: string;
+  reason?: string;
   className?: string;
 }) {
   return (
@@ -54,8 +57,7 @@ export function FeatureLockedNotice({
           aria-hidden
         />
         <p className="text-red-700 dark:text-red-300">
-          <span className="font-semibold">{feature} — locked.</span> Your trial
-          has ended. Subscribe to restore access.
+          <span className="font-semibold">{feature} — locked.</span> {reason}
         </p>
       </div>
       <SubscribeCta className="sm:self-center" />
@@ -86,11 +88,13 @@ export function FeatureLockedBadge({ className }: { className?: string }) {
 export function FeatureLockOverlay({
   locked,
   feature,
+  reason = DEFAULT_REASON,
   children,
   className,
 }: {
   locked: boolean;
   feature: string;
+  reason?: string;
   children: ReactNode;
   className?: string;
 }) {
@@ -116,9 +120,7 @@ export function FeatureLockOverlay({
             <p className="text-sm font-semibold text-foreground">
               {feature} locked
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Your trial has ended. Subscribe to restore access.
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">{reason}</p>
           </div>
           <SubscribeCta />
         </div>

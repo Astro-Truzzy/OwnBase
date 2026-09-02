@@ -14,7 +14,6 @@ import {
 } from "@tabler/icons-react";
 import { AiSummaryCard } from "@/components/dashboard/ai-summary-card";
 import { ExecutiveSummaryBody } from "@/components/dashboard/executive-summary-body";
-import { FeatureLockedNotice } from "@/components/dashboard/feature-lock";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { SummaryFreshnessPill } from "@/components/dashboard/summary-freshness-pill";
 import { SummaryHistoryPanel } from "@/components/dashboard/summary-history-panel";
@@ -25,7 +24,6 @@ import type {
 } from "@/lib/ai/insights-overview";
 import type { ExecutiveSummary } from "@/lib/db/types";
 import { cn } from "@/lib/utils";
-import { useAccessStatus } from "../access-status-context";
 import { generateSummaryForTrackedRepo } from "./actions";
 import { AiAssistantClient } from "./ai-assistant-client";
 
@@ -45,7 +43,9 @@ interface AiInsightsClientProps {
 
 export function AiInsightsClient({ overview, chatRepos }: AiInsightsClientProps) {
   const router = useRouter();
-  const locked = useAccessStatus().trialExpired;
+  // Free tier is a permanent, real plan now — nothing is ever fully locked;
+  // per-resource caps (repos/seats/uploads/summaries) do the gating instead.
+  const locked = false;
   const [, startTransition] = useTransition();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -161,8 +161,6 @@ export function AiInsightsClient({ overview, chatRepos }: AiInsightsClientProps)
             Manage tracked repos
           </Link>
         </div>
-
-        {locked && <FeatureLockedNotice feature="AI codebase summaries" />}
 
         {overview.repos.length === 0 ? (
           <p className="rounded-xl border border-border/70 bg-card/90 p-6 text-sm text-muted-foreground">

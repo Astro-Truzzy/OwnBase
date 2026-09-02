@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyPaystackSignature } from "@/lib/paystack";
+import {
+  resolveAddonTypeFromPlanCode,
+  resolveTierFromPlanCode,
+  type PaystackPlanTier,
+} from "@/lib/paystack-plans";
+import type { AddonType } from "@/lib/plan-limits";
 import { createHash } from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +15,7 @@ type PaystackMetadata = {
   user_id?: string;
   plan_id?: string;
   plan_code?: string;
+  addon_type?: string;
 };
 
 type PaystackPayload = {
@@ -47,22 +54,36 @@ function deriveEventKey(
   return { eventKey: `paystack:${eventType}:${digest}`, paystackEventId: null };
 }
 
-function derivePlanFromPayload(payload: PaystackPayload): "starter" | "pro" {
+function detectPlanCode(payload: PaystackPayload): string | undefined {
   const metadata = payload.metadata ?? payload.transaction?.metadata;
-  if (metadata?.plan_id === "pro" || metadata?.plan_id === "starter") {
-    return metadata.plan_id;
-  }
-  const detectedPlanCode =
+  return (
     metadata?.plan_code ??
     payload.plan?.plan_code ??
     payload.subscription?.plan?.plan_code ??
     payload.subscription?.plan_code ??
-    payload.transaction?.plan?.plan_code;
-  const proCode = process.env.PAYSTACK_PLAN_PRO;
-  if (detectedPlanCode && proCode && detectedPlanCode === proCode) {
-    return "pro";
+    payload.transaction?.plan?.plan_code
+  );
+}
+
+function derivePlanFromPayload(payload: PaystackPayload): PaystackPlanTier {
+  const metadata = payload.metadata ?? payload.transaction?.metadata;
+  if (
+    metadata?.plan_id === "pro" ||
+    metadata?.plan_id === "starter" ||
+    metadata?.plan_id === "agency"
+  ) {
+    return metadata.plan_id;
   }
-  return "starter";
+  return resolveTierFromPlanCode(detectPlanCode(payload)) ?? "starter";
+}
+
+/** Tells an add-on event (repos/seats) apart from a base-plan event — metadata is authoritative on the initial charge, plan_code on renewals. */
+function detectAddonType(payload: PaystackPayload): AddonType | null {
+  const metadata = payload.metadata ?? payload.transaction?.metadata;
+  if (metadata?.addon_type === "repos" || metadata?.addon_type === "seats") {
+    return metadata.addon_type;
+  }
+  return resolveAddonTypeFromPlanCode(detectPlanCode(payload));
 }
 
 export async function POST(request: Request) {
@@ -155,14 +176,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true, warning: "No user_id resolved" });
   }
 
-  const { data: currentProfile } = await supabase
-    .from("profiles")
-    .select(
-      "plan, subscription_ends_at, paystack_subscription_code, paystack_customer_code"
-    )
-    .eq("user_id", userId)
-    .maybeSingle();
-
   const normalizedStatus = (data.status ?? "").toLowerCase();
   const successfulInvoiceState =
     normalizedStatus === "" ||
@@ -174,6 +187,64 @@ export async function POST(request: Request) {
     (eventType !== "invoice.update" || successfulInvoiceState);
   const isTerminalEvent =
     eventType === "subscription.disable" || eventType === "subscription.not_renew";
+
+  // Add-on events (repos/seats) are a separate, independent subscription —
+  // never fall through to the base-plan branch below, which would otherwise
+  // misclassify the add-on's plan_code via resolveTierFromPlanCode's
+  // "unknown code -> starter" fallback and overwrite the user's real plan.
+  const addonType = detectAddonType(data);
+  if (addonType) {
+    let addonError: { message: string } | null = null;
+    if (isSuccessEvent) {
+      const currentPeriodEndsAt = nextPaymentDate
+        ? new Date(nextPaymentDate).toISOString()
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      const res = await supabase.from("addon_subscriptions").upsert(
+        {
+          user_id: userId,
+          addon_type: addonType,
+          status: "active",
+          paystack_subscription_code: subscriptionCode ?? null,
+          paystack_customer_code: customerCode ?? null,
+          current_period_ends_at: currentPeriodEndsAt,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,addon_type" }
+      );
+      addonError = res.error;
+    } else if (isTerminalEvent) {
+      const res = await supabase
+        .from("addon_subscriptions")
+        .update({ status: "canceled", updated_at: new Date().toISOString() })
+        .eq("user_id", userId)
+        .eq("addon_type", addonType);
+      addonError = res.error;
+    }
+
+    if (addonError) {
+      console.error("Paystack webhook: addon subscription update failed", addonError);
+      return NextResponse.json({ error: "Addon subscription update failed" }, { status: 500 });
+    }
+
+    await supabase
+      .from("paystack_webhook_events")
+      .update({
+        processed_at: new Date().toISOString(),
+        user_id: userId,
+        subscription_code: subscriptionCode ?? null,
+      })
+      .eq("event_key", eventKey);
+
+    return NextResponse.json({ received: true });
+  }
+
+  const { data: currentProfile } = await supabase
+    .from("profiles")
+    .select(
+      "plan, subscription_ends_at, paystack_subscription_code, paystack_customer_code"
+    )
+    .eq("user_id", userId)
+    .maybeSingle();
 
   let error: { message: string } | null = null;
   if (isSuccessEvent) {

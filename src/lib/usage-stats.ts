@@ -1,7 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-  getLimitsForPlan,
-  getUserPlanTier,
+  getEffectiveLimits,
   type PlanLimits,
   type PlanTier,
 } from "./plan-limits";
@@ -30,8 +29,7 @@ export async function getUsageSnapshot(
   supabase: SupabaseClient,
   userId: string
 ): Promise<UsageSnapshot> {
-  const plan = await getUserPlanTier(supabase, userId);
-  const limits = getLimitsForPlan(plan);
+  const { plan, limits } = await getEffectiveLimits(supabase, userId);
 
   const now = new Date();
   const monthStartIso = new Date(
