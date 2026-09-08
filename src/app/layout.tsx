@@ -3,7 +3,12 @@ import Script from "next/script";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { OAuthErrorRecovery } from "@/components/auth/oauth-error-recovery";
 import { GlobalThemeToggle } from "@/components/ThemeToggle";
+import { getSiteOrigin } from "@/lib/auth/redirects";
 import "./globals.css";
+
+const SITE_TITLE = "Ownbase — Your Software. Your Base.";
+const SITE_DESCRIPTION =
+  "One place to see what you own, who has access, and how it works. Built for leaders who want clarity and control.";
 
 const themeInitScript =
   '(function(){try{var k="ownbase-theme",t=localStorage.getItem(k);if(t==="dark")document.documentElement.classList.add("dark");if(t==="light")document.documentElement.classList.remove("dark");}catch(e){}})();';
@@ -22,12 +27,25 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ownbase — Your Software. Your Base.",
-  description:
-    "One place to see what you own, who has access, and how it works. Built for leaders who want clarity and control.",
+  metadataBase: new URL(getSiteOrigin()),
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
   icons: {
     icon: [{ url: "/LOGO/Logo-Icon.png", type: "image/png" }],
     apple: "/LOGO/Logo-Icon.png",
+  },
+  openGraph: {
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    url: "/",
+    siteName: "Ownbase",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
   },
 };
 

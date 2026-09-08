@@ -59,7 +59,26 @@ export async function runRepoAssistantChat(input: {
     if (!reply) return { reply: "", error: "Empty model response." };
     return { reply };
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Chat request failed.";
-    return { reply: "", error: message };
+    return { reply: "", error: toUserFacingError(e) };
   }
+}
+
+function toUserFacingError(e: unknown): string {
+  if (e instanceof OpenAI.APIError) {
+    switch (e.status) {
+      case 429:
+        return "The AI assistant is temporarily unavailable due to high demand. Please try again shortly.";
+      case 401:
+      case 403:
+        return "The AI assistant is misconfigured. Please contact support.";
+      case 400:
+        return "That request couldn't be processed — try shortening your message or removing an attached file.";
+      default:
+        if (e.status && e.status >= 500) {
+          return "The AI assistant is temporarily unavailable. Please try again shortly.";
+        }
+        return "The AI assistant couldn't complete your request. Please try again.";
+    }
+  }
+  return "The AI assistant couldn't complete your request. Please try again.";
 }
