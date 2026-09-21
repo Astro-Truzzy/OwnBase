@@ -109,6 +109,8 @@ export interface ProfileRow {
   paystack_customer_code: string | null;
   paystack_subscription_code: string | null;
   subscription_ends_at: string | null;
+  /** Paid tier granted without payment — excluded from admin revenue figures. */
+  is_comp?: boolean | null;
   onboarding_checklist_dismissed_at?: string | null;
   dashboard_walkthrough_completed_at?: string | null;
   avatar_storage_path?: string | null;

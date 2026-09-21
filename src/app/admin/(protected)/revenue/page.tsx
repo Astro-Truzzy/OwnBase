@@ -50,7 +50,11 @@ export default async function AdminRevenuePage() {
             {formatNgn(mrrNgn)}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Display-only estimate · excludes trials
+            {metrics.comped_users > 0
+              ? `Display-only estimate · excludes trials and ${metrics.comped_users} comped account${
+                  metrics.comped_users === 1 ? "" : "s"
+                }`
+              : "Display-only estimate · excludes trials"}
           </p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
@@ -61,8 +65,8 @@ export default async function AdminRevenuePage() {
             {metrics.paying_users}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {metrics.plan_starter} starter · {metrics.plan_pro} pro ·{" "}
-            {metrics.plan_agency} agency
+            {metrics.paying_starter} starter · {metrics.paying_pro} pro ·{" "}
+            {metrics.paying_agency} agency
           </p>
         </div>
         <div className="rounded-xl border border-amber-400/25 bg-amber-500/5 p-5">
@@ -90,8 +94,8 @@ export default async function AdminRevenuePage() {
               </span>
               <span className="ml-1 text-xs text-muted-foreground">/mo</span>
               <p className="text-xs text-muted-foreground">
-                {metrics.plan_starter} users ={" "}
-                {formatNgn(metrics.plan_starter * PLAN_PRICE_NGN.starter)}/mo
+                {metrics.paying_starter} users ={" "}
+                {formatNgn(metrics.paying_starter * PLAN_PRICE_NGN.starter)}/mo
               </p>
             </div>
           </div>
@@ -103,8 +107,8 @@ export default async function AdminRevenuePage() {
               </span>
               <span className="ml-1 text-xs text-muted-foreground">/mo</span>
               <p className="text-xs text-muted-foreground">
-                {metrics.plan_pro} users ={" "}
-                {formatNgn(metrics.plan_pro * PLAN_PRICE_NGN.pro)}/mo
+                {metrics.paying_pro} users ={" "}
+                {formatNgn(metrics.paying_pro * PLAN_PRICE_NGN.pro)}/mo
               </p>
             </div>
           </div>
@@ -116,8 +120,8 @@ export default async function AdminRevenuePage() {
               </span>
               <span className="ml-1 text-xs text-muted-foreground">/mo</span>
               <p className="text-xs text-muted-foreground">
-                {metrics.plan_agency} users ={" "}
-                {formatNgn(metrics.plan_agency * PLAN_PRICE_NGN.agency)}/mo
+                {metrics.paying_agency} users ={" "}
+                {formatNgn(metrics.paying_agency * PLAN_PRICE_NGN.agency)}/mo
               </p>
             </div>
           </div>

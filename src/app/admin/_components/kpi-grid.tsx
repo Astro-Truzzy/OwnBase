@@ -97,7 +97,9 @@ export function KpiGrid({ metrics }: { metrics: OverviewMetrics }) {
         </div>
       </div>
 
-      {/* Row 2: Revenue */}
+      {/* Row 2: Revenue. Every card here is a REVENUE figure, so the tier cards
+          read the paying_* counts — comped accounts hold the same tier but pay
+          nothing, and counting them would overstate MRR. */}
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           Revenue
@@ -111,13 +113,28 @@ export function KpiGrid({ metrics }: { metrics: OverviewMetrics }) {
             animate={false}
           />
           <KpiCard label="Paying Users" value={metrics.paying_users} tone="green" />
-          <KpiCard label="Starter Plan" value={metrics.plan_starter} sub="₦6,500/mo" />
-          <KpiCard label="Pro Plan" value={metrics.plan_pro} sub="₦15,000/mo" tone="violet" />
+          <KpiCard
+            label="Starter Plan"
+            value={metrics.paying_starter}
+            sub={`${formatNgn(PLAN_PRICE_NGN.starter)}/mo · paying`}
+          />
+          <KpiCard
+            label="Pro Plan"
+            value={metrics.paying_pro}
+            sub={`${formatNgn(PLAN_PRICE_NGN.pro)}/mo · paying`}
+            tone="violet"
+          />
           <KpiCard
             label="Agency Plan"
-            value={metrics.plan_agency}
-            sub={`${formatNgn(PLAN_PRICE_NGN.agency)}/mo`}
+            value={metrics.paying_agency}
+            sub={`${formatNgn(PLAN_PRICE_NGN.agency)}/mo · paying`}
             tone="violet"
+          />
+          <KpiCard
+            label="Comped"
+            value={metrics.comped_users}
+            sub="free grants · not revenue"
+            tone={metrics.comped_users > 0 ? "amber" : "default"}
           />
         </div>
       </div>

@@ -23,11 +23,18 @@ export interface OverviewMetrics {
   new_30d: number;
   active_7d: number;
   active_30d: number;
+  // Entitlement view — every account on that effective tier, comps included.
   plan_free: number;
   plan_trial: number;
   plan_starter: number;
   plan_pro: number;
   plan_agency: number;
+  // Revenue view — same tiers excluding comped accounts.
+  paying_starter: number;
+  paying_pro: number;
+  paying_agency: number;
+  /** Paid tiers granted without payment. Visible, but never counted as revenue. */
+  comped_users: number;
   trials_expiring_7d: number;
   repos_total: number;
   uploads_total: number;
@@ -50,6 +57,7 @@ export interface AdminUser {
   plan: string;
   trial_ends_at: string | null;
   subscription_ends_at: string | null;
+  is_comp: boolean;
   tracked_repos_count: number;
   last_activity: string | null;
   created_at: string;
@@ -77,17 +85,57 @@ export interface WebhookEvent {
 // Overview
 // ─────────────────────────────────────────────────────────────────────────────
 
+interface RevenueBreakdown {
+  payingStarter: number;
+  payingPro: number;
+  payingAgency: number;
+  payingUsers: number;
+  mrrNgn: number;
+}
+
+/**
+ * Turns the raw RPC payload into the REVENUE view: who counts as paying, and
+ * what that is worth per month.
+ *
+ * The entitlement buckets (`plan_*`) include comped accounts — a paid tier
+ * granted without payment — so they must not be used to compute revenue.
+ * The RPC exposes a parallel `paying_*` split with comps filtered out, which
+ * is what this reads once the is_comp migration is applied.
+ */
+function deriveRevenue(raw: Record<string, number>): RevenueBreakdown {
+  // The paying_* split ships with the is_comp migration, and migrations here are
+  // applied by hand — so this code can run against an RPC that predates it.
+  // Defaulting a missing key to 0 would render ₦0 MRR, which reads as "revenue
+  // collapsed" rather than "migration pending". Fall back to the entitlement
+  // counts instead: that is exactly the pre-migration behaviour, so the numbers
+  // stay honest either way. The migration adds all three keys together or none.
+  const hasPayingSplit = raw.paying_agency !== undefined;
+  const payingFor = (tier: "starter" | "pro" | "agency") =>
+    Number((hasPayingSplit ? raw[`paying_${tier}`] : raw[`plan_${tier}`]) ?? 0);
+
+  const payingStarter = payingFor("starter");
+  const payingPro = payingFor("pro");
+  const payingAgency = payingFor("agency");
+
+  return {
+    payingStarter,
+    payingPro,
+    payingAgency,
+    payingUsers: payingStarter + payingPro + payingAgency,
+    mrrNgn:
+      payingStarter * PLAN_PRICE_NGN.starter +
+      payingPro * PLAN_PRICE_NGN.pro +
+      payingAgency * PLAN_PRICE_NGN.agency,
+  };
+}
+
 export async function getAdminOverview(): Promise<OverviewMetrics> {
   const admin = createAdminClient();
   const { data, error } = await admin.rpc("get_admin_overview_metrics");
   if (error) throw new Error(`Admin overview metrics failed: ${error.message}`);
 
   const raw = data as Record<string, number>;
-  const paying = (raw.plan_starter ?? 0) + (raw.plan_pro ?? 0) + (raw.plan_agency ?? 0);
-  const mrr =
-    (raw.plan_starter ?? 0) * PLAN_PRICE_NGN.starter +
-    (raw.plan_pro ?? 0) * PLAN_PRICE_NGN.pro +
-    (raw.plan_agency ?? 0) * PLAN_PRICE_NGN.agency;
+  const revenue = deriveRevenue(raw);
 
   return {
     total_users: Number(raw.total_users ?? 0),
@@ -100,14 +148,18 @@ export async function getAdminOverview(): Promise<OverviewMetrics> {
     plan_starter: Number(raw.plan_starter ?? 0),
     plan_pro: Number(raw.plan_pro ?? 0),
     plan_agency: Number(raw.plan_agency ?? 0),
+    paying_starter: revenue.payingStarter,
+    paying_pro: revenue.payingPro,
+    paying_agency: revenue.payingAgency,
+    comped_users: Number(raw.comped_users ?? 0),
     trials_expiring_7d: Number(raw.trials_expiring_7d ?? 0),
     repos_total: Number(raw.repos_total ?? 0),
     uploads_total: Number(raw.uploads_total ?? 0),
     summaries_month: Number(raw.summaries_month ?? 0),
     webhook_pending_7d: Number(raw.webhook_pending_7d ?? 0),
     inactive_with_repos: Number(raw.inactive_with_repos ?? 0),
-    paying_users: paying,
-    estimated_mrr_ngn: mrr,
+    paying_users: revenue.payingUsers,
+    estimated_mrr_ngn: revenue.mrrNgn,
   };
 }
 
@@ -168,7 +220,12 @@ export async function getAdminUsers(
   if (countRes.error) throw new Error(`Users count failed: ${countRes.error.message}`);
 
   return {
-    users: (usersRes.data as AdminUser[]) ?? [],
+    // `is_comp` is absent from the RPC payload until the migration is applied —
+    // normalise so the typed field is never a lie.
+    users: ((usersRes.data as AdminUser[]) ?? []).map((u) => ({
+      ...u,
+      is_comp: Boolean(u.is_comp),
+    })),
     total: Number(countRes.data ?? 0),
   };
 }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { getAdminUsers, planTone, subscriptionStatus } from "@/lib/admin/metrics";
 import { cn } from "@/lib/utils";
+import { CompControl } from "./comp-control";
 
 export const metadata: Metadata = { title: "Users" };
 
@@ -31,6 +32,22 @@ function StatusBadge({ status }: { status: string }) {
       ? "text-amber-600 dark:text-amber-400"
       : "text-red-600 dark:text-red-400";
   return <span className={cn("text-xs font-medium", toneClass)}>{status}</span>;
+}
+
+/**
+ * Marks an account whose paid tier was granted without payment. It sits beside
+ * the plan badge rather than replacing it: the tier is real (full entitlements),
+ * it just isn't revenue.
+ */
+function CompedBadge() {
+  return (
+    <span
+      title="Paid tier granted without payment — excluded from revenue figures"
+      className="inline-flex rounded-full border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400"
+    >
+      comped
+    </span>
+  );
 }
 
 function relativeTime(iso: string | null): string {
@@ -106,12 +123,13 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                 <th className="px-4 py-3 text-right font-medium text-muted-foreground">Repos</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Last Active</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Joined</th>
+                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Access</th>
               </tr>
             </thead>
             <tbody>
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
+                  <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
                     {search ? `No users matching "${search}".` : "No users found."}
                   </td>
                 </tr>
@@ -130,11 +148,14 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                         i % 2 === 0 ? "" : "bg-muted/10",
                       )}
                     >
-                      <td className="px-4 py-3 font-mono text-xs text-foreground truncate max-w-[240px]">
+                      <td className="px-4 py-3 font-mono text-xs text-foreground truncate max-w-60">
                         {user.email}
                       </td>
                       <td className="px-4 py-3">
-                        <PlanBadge plan={user.plan} />
+                        <div className="flex items-center gap-1.5">
+                          <PlanBadge plan={user.plan} />
+                          {user.is_comp && <CompedBadge />}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={status} />
@@ -151,6 +172,14 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                           month: "short",
                           year: "numeric",
                         })}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <CompControl
+                          userId={user.user_id}
+                          email={user.email}
+                          isComp={user.is_comp}
+                          currentPlan={user.plan}
+                        />
                       </td>
                     </tr>
                   );
